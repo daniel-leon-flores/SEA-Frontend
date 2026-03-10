@@ -1,0 +1,111 @@
+import AxiosClient from './axios';
+import { AxiosRequestConfig } from 'axios';
+import { ApiResponse } from "@/kernel/types";
+
+// Request interceptor
+AxiosClient.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('sea_token');
+    const activeRole = localStorage.getItem('sea_selectedRole');
+
+    if (token) (config.headers as any).Authorization = `Bearer ${token}`;
+    if (activeRole) (config.headers as any)['X-Active-Role'] = activeRole;
+
+    if (config.data instanceof FormData) {
+      (config.headers as any)['Content-Type'] = 'multipart/form-data';
+    } else if (!(config.headers as any)['Content-Type']) {
+      (config.headers as any)['Content-Type'] = 'application/json';
+    }
+
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Response interceptor — handles token refresh on 401
+AxiosClient.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const status = error?.response?.status;
+    const originalRequest = error.config;
+
+    if (status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      const refreshToken = localStorage.getItem('sea_refresh');
+      if (refreshToken) {
+        try {
+          const { data } = await AxiosClient.post('/api/auth/refresh/', { refresh: refreshToken });
+          localStorage.setItem('sea_token', data.access);
+          originalRequest.headers['Authorization'] = `Bearer ${data.access}`;
+          return AxiosClient(originalRequest);
+        } catch {
+          // Refresh failed — fall through to logout
+        }
+      }
+      localStorage.removeItem('sea_token');
+      localStorage.removeItem('sea_refresh');
+      localStorage.removeItem('sea_selectedRole');
+      localStorage.removeItem('sea_userName');
+      window.location.href = '/login';
+    }
+
+    if (status === 403) {
+      window.location.href = '/unauthorized';
+    }
+
+    return Promise.reject(error);
+  }
+);
+
+export default {
+  get(endpoint: string) {
+    return AxiosClient.get(endpoint);
+  },
+  getBlob(endpoint: string) {
+    return AxiosClient.get(endpoint, { responseType: 'blob' });
+  },
+  post(endpoint: string, payload: any, config?: AxiosRequestConfig) {
+    return AxiosClient.post(endpoint, payload, config);
+  },
+  postBlob(endpoint: string, payload: any) {
+    return AxiosClient.post(endpoint, payload, { responseType: 'blob' });
+  },
+  put(endpoint: string, payload: any) {
+    return AxiosClient.put(endpoint, payload);
+  },
+  patch(endpoint: string, payload: any) {
+    return AxiosClient.patch(endpoint, payload);
+  },
+  delete(endpoint: string, payload: any, config?: AxiosRequestConfig) {
+    return AxiosClient.delete(endpoint, {
+      ...config,
+      data: payload,
+    });
+  }
+}
+
+export async function handleRequest<T, P = undefined>(
+  method: "post" | "put" | "get" | "delete" | "patch",
+  url: string,
+  payload?: P,
+  config?: AxiosRequestConfig
+): Promise<ApiResponse<T>> {
+  try {
+    const requestConfig = config || {};
+    const { data: apiResponse } = await (AxiosClient as any)[method](url, payload, requestConfig);
+    return apiResponse as ApiResponse<T>;
+  } catch (error: any) {
+    const errorResponse = error.response?.data as ApiResponse<T>;
+    if (errorResponse) return errorResponse;
+    return {
+      success: false,
+      code: error.response?.status || 500,
+      message: error.message || 'Error inesperado en solicitud',
+      timestamp: new Date().toISOString(),
+      error: {
+        message: error.response?.data?.error?.message || error.message,
+        details: error.response?.data?.error?.details
+      }
+    };
+  }
+}
