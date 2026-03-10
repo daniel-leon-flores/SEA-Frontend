@@ -50,15 +50,13 @@ VITE_API_BASE_URL=http://localhost:8080
 
 ---
 
-## Credenciales de prueba (Mock Auth)
+## Credenciales de prueba
 
-| Matrícula     | Contraseña   | Rol       |
+| Correo     | Contraseña   | Rol       |
 |---------------|-------------|-----------|
-| 20233TN001    | student123  | STUDENT   |
-| 20233TN002    | teacher123  | TEACHER   |
-| 20233TN003    | admin123    | ADMIN     |
-
-> Las credenciales están definidas en `src/config/mock-auth.ts`. Son temporales hasta la integración con el backend.
+| admin@legacydevs.com    | 1234  | admin   |
+| profesor@legacydevs.com    | 1234  | teacher   |
+| alumno@legacydevs.com    | 1234    | student     |
 
 ---
 
