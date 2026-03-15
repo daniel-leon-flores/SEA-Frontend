@@ -44,12 +44,18 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/modules/questions/adapters/views/QuestionBankView.vue'),
         meta: { roles: ['TEACHER', 'ADMIN'] },
       },
-      // Groups
+      // Generations
       {
-        path: 'groups',
-        name: 'Groups',
-        component: () => import('@/modules/groups/adapters/views/GroupListView.vue'),
-        meta: { roles: ['TEACHER', 'ADMIN'] },
+        path: 'generations',
+        name: 'Generations',
+        component: () => import('@/modules/generations/adapters/views/GenerationListView.vue'),
+        meta: { roles: ['ADMIN'] },
+      },
+      {
+        path: 'generations/:id/groups',
+        name: 'GenerationGroups',
+        component: () => import('@/modules/groups/adapters/views/GenerationGroupsView.vue'),
+        meta: { roles: ['ADMIN'] },
       },
       // Subjects
       {
@@ -69,6 +75,12 @@ const routes: RouteRecordRaw[] = [
         path: 'users/:id',
         name: 'UserDetail',
         component: () => import('@/modules/users/adapters/views/UserDetailView.vue'),
+        meta: { roles: ['ADMIN'] },
+      },
+      {
+        path: 'generations/:generationId/groups/:groupId/students',
+        name: 'GroupStudents',
+        component: () => import('@/modules/users/adapters/views/GroupStudentsView.vue'),
         meta: { roles: ['ADMIN'] },
       },
       // Terms

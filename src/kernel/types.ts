@@ -14,6 +14,18 @@ export interface ApiResponse<T = any> {
   };
 }
 
+export interface PaginatedData<T = any> {
+  results: T[];
+  pagination: {
+    count: number;
+    page: number;
+    page_size: number;
+    total_pages: number;
+    next: string | null;
+    previous: string | null;
+  };
+}
+
 export enum TypesResponse {
   SUCCESS = 'SUCCESS',
   ERROR = 'ERROR',

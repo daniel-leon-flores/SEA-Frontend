@@ -30,6 +30,7 @@ export const roleMenus: Record<string, RoleMenu> = {
   ADMIN: {
     navItems: [
       { title: 'Dashboard', icon: 'mdi-view-dashboard', to: '/' },
+      { title: 'Generaciones', icon: 'mdi-view-list', to: '/generations' },
       { title: 'Crear Examen', icon: 'mdi-file-document-edit', to: '/create-exam' },
       { title: 'Reportes', icon: 'mdi-chart-bar', to: '/reports' },
       { title: 'Usuarios', icon: 'mdi-account-multiple', to: '/users' },
