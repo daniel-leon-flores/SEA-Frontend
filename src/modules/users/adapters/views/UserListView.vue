@@ -243,20 +243,6 @@
                 />
               </v-col>
             </v-row>
-
-            <!-- Hint de contraseña -->
-            <v-alert
-              v-if="payload.matricula && payload.role"
-              type="info"
-              variant="tonal"
-              density="compact"
-              class="mt-3"
-              icon="mdi-key-outline"
-            >
-              Contraseña generada:
-              <strong>{{ passwordPrefix }}{{ payload.matricula.slice(-3) }}***</strong>
-              — se enviará al correo del usuario.
-            </v-alert>
           </v-form>
         </v-card-text>
 
