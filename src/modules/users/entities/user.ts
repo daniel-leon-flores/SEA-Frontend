@@ -1,14 +1,27 @@
 import { Entity } from "@/kernel/types";
 
+export type UserGroup = {
+  id_group: number;
+  group_letter: string;
+  academic_level: number;
+};
+
+export type UserSubject = {
+  id_subject: number;
+  name: string;
+};
+
 export type User = Entity<number> & {
-  id: number;
+  id_user: number;
   username: string;
   email: string;
+  matricula: string;
   firstName: string;
   lastName: string;
-  role: string;
+  fullName: string;
+  role: 'student' | 'teacher' | 'admin';
   isActive: boolean;
-  lastLogin?: string;
-  createdAt: string;
-  updatedAt: string;
+  dateJoined: string;
+  group: UserGroup | null;
+  subjects: UserSubject[];
 };

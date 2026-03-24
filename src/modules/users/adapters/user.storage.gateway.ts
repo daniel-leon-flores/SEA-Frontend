@@ -14,7 +14,7 @@ export class UserStorageGateway implements UserRepository {
   }
 
   async createUser(user: CreateUserDto): Promise<ApiResponse<User>> {
-    return handleRequest<User, CreateUserDto>('post', '/api/users/save', user);
+    return handleRequest<User, CreateUserDto>('post', '/api/users/register/', user);
   }
 
   async deleteUser(id: number): Promise<ApiResponse<boolean>> {
