@@ -1,8 +1,10 @@
 export type CreateUserDto = {
-  username: string;
+  first_name: string;
+  last_name: string;
   email: string;
-  firstName: string;
-  lastName: string;
-  password: string;
-  role: string;
+  matricula: string;
+  role: 'student' | 'teacher' | 'admin';
+  status: boolean;
+  id_group?: number | null;
+  subject_ids?: number[];
 };
