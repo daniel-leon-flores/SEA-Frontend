@@ -12,16 +12,14 @@ export interface RoleMenu {
 export const roleMenus: Record<string, RoleMenu> = {
   STUDENT: {
     navItems: [
-      { title: 'Dashboard', icon: 'mdi-view-dashboard', to: '/' },
       { title: 'Mis Exámenes', icon: 'mdi-clipboard-text', to: '/my-exams' },
     ],
     quickActions: [],
   },
   TEACHER: {
     navItems: [
-      { title: 'Dashboard', icon: 'mdi-view-dashboard', to: '/' },
+      { title: 'Reportes', icon: 'mdi-chart-bar', to: '/' },
       { title: 'Crear Examen', icon: 'mdi-file-document-edit', to: '/create-exam' },
-      { title: 'Reportes', icon: 'mdi-chart-bar', to: '/reports' },
     ],
     quickActions: [
       { title: 'Banco de Preguntas', icon: 'mdi-book-open-page-variant', to: '/questions' },
@@ -29,10 +27,9 @@ export const roleMenus: Record<string, RoleMenu> = {
   },
   ADMIN: {
     navItems: [
-      { title: 'Dashboard', icon: 'mdi-view-dashboard', to: '/' },
+      { title: 'Reportes', icon: 'mdi-chart-bar', to: '/' },
       { title: 'Generaciones', icon: 'mdi-view-list', to: '/generations' },
       { title: 'Crear Examen', icon: 'mdi-file-document-edit', to: '/create-exam' },
-      { title: 'Reportes', icon: 'mdi-chart-bar', to: '/reports' },
       { title: 'Usuarios', icon: 'mdi-account-multiple', to: '/users' },
       { title: 'Ajustes', icon: 'mdi-cog', to: '/settings' },
     ],

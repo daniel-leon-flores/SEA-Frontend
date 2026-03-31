@@ -19,11 +19,6 @@ const routes: RouteRecordRaw[] = [
     component: MainLayout,
     meta: { requiresAuth: true },
     children: [
-      {
-        path: '',
-        name: 'Dashboard',
-        component: () => import('@/modules/dashboard/adapters/views/DashboardView.vue'),
-      },
       // Exams
       {
         path: 'my-exams',
@@ -92,7 +87,7 @@ const routes: RouteRecordRaw[] = [
       },
       // Reports
       {
-        path: 'reports',
+        path: '',
         name: 'Reports',
         component: () => import('@/modules/reports/adapters/views/ReportsView.vue'),
         meta: { roles: ['TEACHER', 'ADMIN'] },
@@ -121,7 +116,7 @@ router.beforeEach((to, _from, next) => {
   // Public routes
   if (to.meta.requiresAuth === false) {
     if (token && (to.name === 'Login')) {
-      return next({ name: 'Dashboard' });
+      return next({ name: 'Reports' });
     }
     return next();
   }
