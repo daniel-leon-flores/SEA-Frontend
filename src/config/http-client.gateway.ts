@@ -46,7 +46,13 @@ AxiosClient.interceptors.response.use(
     const originalRequest = error.config;
 
     // Si es 401 y no es un intento de refresh y no hemos reintentado ya
-    if (status === 401 && !originalRequest.url?.includes('/auth/refresh/')) {
+    // EXCLUIR endpoints que pueden devolver 401 por validación (no por token)
+    const excludedEndpoints = ['/auth/refresh/', '/auth/change-password/'];
+    const isExcludedEndpoint = excludedEndpoints.some(endpoint => 
+      originalRequest.url?.includes(endpoint)
+    );
+    
+    if (status === 401 && !isExcludedEndpoint) {
       
       if (isRefreshing) {
         // Si ya está en proceso de refresh, agregar a la cola

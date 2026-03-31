@@ -106,45 +106,56 @@
         <!-- Estado -->
         <template #cell-status="{ row }">
           <v-chip
-            :color="row.status ? 'success' : 'error'"
+            :color="row.status ? '#10b981' : '#f59e0b'"
             size="small"
-            variant="flat"
+            class="status-chip"
           >
-            <v-icon start size="14">
-              {{ row.status ? 'mdi-check-circle' : 'mdi-close-circle' }}
-            </v-icon>
-            {{ row.status_display }}
+            {{ row.status ? 'Activo' : 'Inactivo' }}
           </v-chip>
         </template>
 
         <!-- Acciones -->
         <template #cell-actions="{ row }">
-          <div class="d-flex gap-1 justify-center">
-            <v-tooltip text="Ver detalles" location="top">
+          <div class="d-flex justify-center">
+            <v-menu>
               <template #activator="{ props }">
                 <v-btn
                   v-bind="props"
-                  icon="mdi-eye-outline"
+                  icon="mdi-dots-vertical"
                   size="small"
                   variant="text"
-                  color="primary"
-                  @click="openDetailModal(row)"
+                  color="grey-darken-1"
                 />
               </template>
-            </v-tooltip>
-            
-            <v-tooltip text="Editar usuario" location="top">
-              <template #activator="{ props }">
-                <v-btn
-                  v-bind="props"
-                  icon="mdi-pencil-outline"
-                  size="small"
-                  variant="text"
-                  color="warning"
-                  @click="editUser(row)"
-                />
-              </template>
-            </v-tooltip>
+              <v-list density="compact">
+                <v-list-item @click="openDetailModal(row)">
+                  <template #prepend>
+                    <v-icon color="primary">mdi-eye-outline</v-icon>
+                  </template>
+                  <v-list-item-title>Ver detalles</v-list-item-title>
+                </v-list-item>
+                
+                <v-list-item @click="editUser(row)">
+                  <template #prepend>
+                    <v-icon color="warning">mdi-pencil-outline</v-icon>
+                  </template>
+                  <v-list-item-title>Editar usuario</v-list-item-title>
+                </v-list-item>
+
+                <v-divider class="my-1" />
+
+                <v-list-item @click="openStatusInfoModal(row)">
+                  <template #prepend>
+                    <v-icon :color="row.status ? 'error' : 'success'">
+                      {{ row.status ? 'mdi-account-cancel' : 'mdi-account-check' }}
+                    </v-icon>
+                  </template>
+                  <v-list-item-title>
+                    {{ row.status ? 'Desactivar' : 'Activar' }}
+                  </v-list-item-title>
+                </v-list-item>
+              </v-list>
+            </v-menu>
           </div>
         </template>
       </PaginatedTable>
@@ -243,130 +254,38 @@
       </v-card>
     </v-dialog>
 
-    <!-- Modal de registro de usuario -->
-    <v-dialog v-model="dialog" max-width="640" persistent scrollable>
-      <v-card>
-        <v-card-title class="pa-5 pb-3 d-flex align-center">
-          <v-icon start color="primary">mdi-account-plus</v-icon>
-          Registrar nuevo usuario
-          <v-spacer />
-          <v-btn icon="mdi-close" variant="text" size="small" @click="closeDialog" />
-        </v-card-title>
-        <v-divider />
+    <!-- Modales de creación y edición -->
+    <CreateUserModal 
+      :dialog="createDialog" 
+      @update:dialog="createDialog = $event"
+      @user-created="handleUserCreated"
+    />
+    
+    <UpdateUserModal 
+      :dialog="updateDialog"
+      @update:dialog="updateDialog = $event"
+      :user="selectedUserForEdit"
+      @user-updated="handleUserUpdated"
+    />
 
-        <v-card-text class="pa-5">
-          <v-form ref="formRef" v-model="valid" @submit.prevent="submit">
-            <v-row>
-              <v-col cols="12" md="6">
-                <v-text-field
-                  v-model="payload.first_name"
-                  label="Nombre(s)"
-                  variant="outlined"
-                  density="compact"
-                  :rules="[rules.required]"
-                  :error-messages="serverErrors.first_name"
-                />
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-text-field
-                  v-model="payload.last_name"
-                  label="Apellidos"
-                  variant="outlined"
-                  density="compact"
-                  :rules="[rules.required]"
-                  :error-messages="serverErrors.last_name"
-                />
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-text-field
-                  v-model="payload.email"
-                  label="Correo electrónico"
-                  type="email"
-                  variant="outlined"
-                  density="compact"
-                  :rules="[rules.required, rules.email]"
-                  :error-messages="serverErrors.email"
-                />
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-text-field
-                  v-model="payload.matricula"
-                  label="Matrícula"
-                  variant="outlined"
-                  density="compact"
-                  :rules="[rules.required]"
-                  :error-messages="serverErrors.matricula"
-                />
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-select
-                  v-model="payload.role"
-                  label="Rol"
-                  :items="roleItems"
-                  item-title="label"
-                  item-value="value"
-                  variant="outlined"
-                  density="compact"
-                  :rules="[rules.required]"
-                  @update:model-value="onRoleChange"
-                />
-              </v-col>
+    <!-- Modal de confirmación de cambio de estado -->
+    <StatusChangeInfoModal
+      :dialog="statusInfoDialog"
+      @update:dialog="statusInfoDialog = $event"
+      :user="userForStatusChange"
+      :new-status="newStatusValue"
+      @proceed="openStatusConfirmModal"
+      @cancel="handleStatusChangeCancel"
+    />
 
-              <!-- Grupo — solo alumnos -->
-              <v-col v-if="payload.role === 'student'" cols="12">
-                <v-select
-                  v-model="payload.id_group"
-                  label="Grupo académico"
-                  :items="groups"
-                  item-title="label"
-                  item-value="id_group"
-                  variant="outlined"
-                  density="compact"
-                  :rules="[rules.required]"
-                  :error-messages="serverErrors.id_group"
-                  :loading="loadingGroups"
-                  clearable
-                />
-              </v-col>
-
-              <!-- Materias — solo docentes -->
-              <v-col v-if="payload.role === 'teacher'" cols="12">
-                <v-select
-                  v-model="payload.subject_ids"
-                  label="Materias asignadas"
-                  :items="subjects"
-                  item-title="name"
-                  item-value="id_subject"
-                  variant="outlined"
-                  density="compact"
-                  multiple
-                  chips
-                  clearable
-                  :error-messages="serverErrors.subject_ids"
-                  :loading="loadingSubjects"
-                />
-              </v-col>
-            </v-row>
-          </v-form>
-        </v-card-text>
-
-        <v-divider />
-        <v-card-actions class="pa-5 pt-3">
-          <v-spacer />
-          <v-btn variant="text" @click="closeDialog">Cancelar</v-btn>
-          <v-btn
-            color="primary"
-            variant="elevated"
-            :loading="submitting"
-            :disabled="!valid"
-            @click="submit"
-          >
-            <v-icon start>mdi-check</v-icon>
-            Registrar
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <ConfirmStatusChangeModal
+      :dialog="statusConfirmDialog"
+      @update:dialog="statusConfirmDialog = $event"
+      :user="userForStatusChange"
+      :new-status="newStatusValue"
+      @confirm="handleStatusChangeConfirm"
+      @cancel="handleStatusChangeCancel"
+    />
 
     <!-- Snackbar para notificaciones -->
     <v-snackbar
@@ -383,12 +302,20 @@
 <script lang="ts">
 import PaginatedTable from '@/components/PaginatedTable.vue'
 import Loader from '@/components/Loader.vue'
+import CreateUserModal from '../components/CreateUserModal.vue'
+import UpdateUserModal from '../components/UpdateUserModal.vue'
+import StatusChangeInfoModal from '../components/StatusChangeInfoModal.vue'
+import ConfirmStatusChangeModal from '../components/ConfirmStatusChangeModal.vue'
 
 export default {
   name: 'UserListView',
   components: {
     PaginatedTable,
-    Loader
+    Loader,
+    CreateUserModal,
+    UpdateUserModal,
+    StatusChangeInfoModal,
+    ConfirmStatusChangeModal
   },
   data() {
     return {
@@ -399,33 +326,15 @@ export default {
       filterStatus: null,
       detailModal: false,
       selectedUser: null,
-      // Modal de registro
-      dialog: false,
-      valid: false,
-      submitting: false,
-      loadingGroups: false,
-      loadingSubjects: false,
-      groups: [],
-      subjects: [],
-      payload: {
-        first_name: '',
-        last_name: '',
-        email: '',
-        matricula: '',
-        role: 'student',
-        id_group: null,
-        subject_ids: []
-      },
-      serverErrors: {},
-      roleItems: [
-        { label: 'Alumno', value: 'student' },
-        { label: 'Docente', value: 'teacher' },
-        { label: 'Administrador', value: 'admin' }
-      ],
-      rules: {
-        required: (v) => (v !== null && v !== undefined && v !== '') || 'Campo requerido',
-        email: (v) => /.+@.+\..+/.test(v) || 'Correo inválido'
-      },
+      // Modales separados
+      createDialog: false,
+      updateDialog: false,
+      selectedUserForEdit: null,
+      // Modales de cambio de estado (doble confirmación)
+      statusInfoDialog: false,
+      statusConfirmDialog: false,
+      userForStatusChange: null,
+      newStatusValue: false,
       pagination: {
         count: 0,
         totalPages: 1,
@@ -443,7 +352,7 @@ export default {
         { label: 'Correo', key: 'email', width: '220px', minWidth: '180px' },
         { label: 'Rol', key: 'role', width: '140px', minWidth: '120px' },
         { label: 'Estado', key: 'status', width: '120px', minWidth: '100px' },
-        { label: 'Acciones', key: 'actions', width: '120px', minWidth: '100px' }
+        { label: 'Acciones', key: 'actions', width: '100px', minWidth: '80px' }
       ],
       filterRoleItems: [
         { label: 'Estudiantes', value: 'student' },
@@ -590,93 +499,18 @@ export default {
       this.snackbar.show = true
     },
     
-    async openDialog() {
-      // Cargar grupos y materias si no están cargados
-      if (this.groups.length === 0) await this.loadGroups()
-      if (this.subjects.length === 0) await this.loadSubjects()
-      this.dialog = true
+    openDialog() {
+      this.createDialog = true
     },
     
-    closeDialog() {
-      this.dialog = false
-      if (this.$refs.formRef) {
-        this.$refs.formRef.reset()
-      }
-      this.serverErrors = {}
-      Object.assign(this.payload, {
-        first_name: '',
-        last_name: '',
-        email: '',
-        matricula: '',
-        role: 'student',
-        id_group: null,
-        subject_ids: []
-      })
+    handleUserCreated(user) {
+      this.showSnackbar('Usuario registrado exitosamente. Se envió el correo con las credenciales.', 'success')
+      this.fetchUsers()
     },
     
-    onRoleChange() {
-      this.payload.id_group = null
-      this.payload.subject_ids = []
-    },
-    
-    async loadGroups() {
-      this.loadingGroups = true
-      try {
-        const { default: AxiosClient } = await import('@/config/axios')
-        const res = await AxiosClient.get('/api/academic/groups/?status=true&page_size=100')
-        const results = res.data?.data?.results ?? res.data?.data ?? []
-        this.groups = results.map((g) => ({
-          id_group: g.id_group,
-          label: `${g.academic_level}${g.group_letter} — Gen. ${g.generation_year}`
-        }))
-      } catch (error) {
-        console.error('Error loading groups:', error)
-      } finally {
-        this.loadingGroups = false
-      }
-    },
-    
-    async loadSubjects() {
-      this.loadingSubjects = true
-      try {
-        const { default: AxiosClient } = await import('@/config/axios')
-        const res = await AxiosClient.get('/api/academic/subjects/?status=true&page_size=100')
-        this.subjects = res.data?.data?.results ?? res.data?.data ?? []
-      } catch (error) {
-        console.error('Error loading subjects:', error)
-      } finally {
-        this.loadingSubjects = false
-      }
-    },
-    
-    async submit() {
-      this.serverErrors = {}
-      const { valid } = await this.$refs.formRef.validate()
-      if (!valid) return
-
-      this.submitting = true
-      try {
-        const { UserController } = await import('../user.controller')
-        const controller = new UserController()
-        const response = await controller.createUser({ ...this.payload })
-
-        if (response.success) {
-          this.showSnackbar('Usuario registrado exitosamente. Se envió el correo con las credenciales.', 'success')
-          this.closeDialog()
-          this.fetchUsers()
-        } else {
-          const errors = response?.errors ?? {}
-          Object.entries(errors).forEach(([k, v]) => {
-            this.serverErrors[k] = Array.isArray(v) ? v[0] : String(v)
-          })
-          this.showSnackbar(response.message || 'Error al registrar el usuario.', 'error')
-        }
-      } catch (error) {
-        console.error('Error submitting user:', error)
-        this.showSnackbar('Error inesperado. Intenta de nuevo.', 'error')
-      } finally {
-        this.submitting = false
-      }
+    handleUserUpdated(user) {
+      this.showSnackbar('Usuario actualizado exitosamente.', 'success')
+      this.fetchUsers()
     },
     
     openDetailModal(user) {
@@ -685,8 +519,55 @@ export default {
     },
     
     editUser(user) {
-      this.showSnackbar('Funcionalidad de edición en desarrollo', 'info')
-      console.log('Editar usuario:', user)
+      this.selectedUserForEdit = user
+      this.updateDialog = true
+    },
+    
+    openStatusInfoModal(user) {
+      this.userForStatusChange = user
+      this.newStatusValue = !user.status
+      this.statusInfoDialog = true
+    },
+    
+    openStatusConfirmModal() {
+      // Cerrar el modal de información y abrir el de confirmación
+      this.statusInfoDialog = false
+      this.statusConfirmDialog = true
+    },
+    
+    async handleStatusChangeConfirm() {
+      if (!this.userForStatusChange) return
+      
+      const userId = this.userForStatusChange.id_user
+      const newStatus = this.newStatusValue
+      
+      try {
+        const { UserController } = await import('../user.controller')
+        const controller = new UserController()
+        const response = await controller.updateUserStatus(userId, newStatus)
+        
+        if (response.success) {
+          const message = newStatus 
+            ? 'Usuario activado exitosamente.'
+            : 'Usuario desactivado exitosamente.'
+          this.showSnackbar(message, 'success')
+          this.statusConfirmDialog = false
+          this.userForStatusChange = null
+          this.fetchUsers()
+        } else {
+          this.showSnackbar(response.message || 'Error al cambiar el estado del usuario.', 'error')
+        }
+      } catch (error) {
+        console.error('Error changing user status:', error)
+        this.showSnackbar('Error inesperado al cambiar el estado.', 'error')
+      }
+    },
+    
+    handleStatusChangeCancel() {
+      // Cerrar ambos modales y limpiar
+      this.statusInfoDialog = false
+      this.statusConfirmDialog = false
+      this.userForStatusChange = null
     },
     
     viewUserDetail(user) {
@@ -709,5 +590,9 @@ export default {
 
 .gap-2 {
   gap: 8px;
+}
+
+.status-chip {
+  font-weight: 600;
 }
 </style>
