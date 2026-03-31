@@ -1,5 +1,5 @@
 <template>
-  <v-layout>
+  <v-layout class="app-layout">
     <SideBar v-if="showSidebar" :role="userRole" />
     <v-main class="main-content">
       <router-view />
@@ -20,8 +20,16 @@ const showSidebar = computed(() => {
 </script>
 
 <style scoped>
+/* Constrain entire layout to the viewport — prevents sidebar from stretching */
+.app-layout {
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Main area scrolls independently; sidebar stays fixed */
 .main-content {
   background-color: #FFFFFF;
-  min-height: 100vh;
+  height: 100vh;
+  overflow-y: auto;
 }
 </style>
