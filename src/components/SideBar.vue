@@ -58,7 +58,7 @@
                 v-bind="tip"
                 class="rail-btn mb-1"
                 :class="{ 'rail-btn--active': isItemActive(item) }"
-                @click="router.push(item.to)"
+                @click="$router.push(item.to)"
               >
                 <v-icon size="22" :color="isItemActive(item) ? 'white' : '#9fb5b8'">{{ item.icon }}</v-icon>
               </div>
@@ -80,7 +80,7 @@
                   v-bind="tip"
                   class="rail-btn mt-2 mb-1"
                   :class="{ 'rail-btn--active': isItemActive(item) }"
-                  @click="router.push(item.to)"
+                  @click="$router.push(item.to)"
                 >
                   <v-icon size="22" :color="isItemActive(item) ? 'white' : '#9fb5b8'">{{ item.icon }}</v-icon>
                 </div>
@@ -98,13 +98,13 @@
             <v-list-item
               v-for="item in navItems"
               :key="item.title"
-              :to="item.to"
-              :exact="item.to === '/'"
               class="sidebar-item mx-2 mb-1"
               rounded="lg"
               :prepend-icon="item.icon"
               :title="item.title"
+              :active="isItemActive(item)"
               active-color="white"
+              @click="$router.push(item.to)"
             />
 
             <template v-if="quickActions.length">
@@ -113,12 +113,13 @@
               <v-list-item
                 v-for="item in quickActions"
                 :key="item.title"
-                :to="item.to"
                 class="sidebar-item mx-2 mb-1"
                 rounded="lg"
                 :prepend-icon="item.icon"
                 :title="item.title"
+                :active="isItemActive(item)"
                 active-color="white"
+                @click="$router.push(item.to)"
               />
             </template>
           </v-list>
@@ -325,14 +326,14 @@ export default defineComponent({
           this.showSnackbar(errorMsg, 'error');
           
           // Si hay errores de validación, volver al primer modal
-          if (response.errors) {
+          if (response.error) {
             this.confirmChangeDialog = false;
             this.changePasswordDialog = true;
             
             // Pasar errores al modal
             this.$nextTick(() => {
               if (this.$refs.changePasswordModalRef) {
-                (this.$refs.changePasswordModalRef as any).setServerErrors(response.errors);
+                (this.$refs.changePasswordModalRef as any).setServerErrors(response.error);
               }
             });
           }
@@ -366,6 +367,9 @@ export default defineComponent({
 <style scoped>
 .sea-sidebar {
   border-right: 1px solid #1b324e;
+  height: 100vh !important;
+  max-height: 100vh !important;
+  overflow: hidden;
 }
 
 .logo-avatar {
@@ -382,6 +386,7 @@ export default defineComponent({
 .scrollable-menu {
   overflow-y: auto;
   flex: 1;
+  min-height: 0; /* required for flex children to shrink and allow scroll */
 }
 
 .section-label {
