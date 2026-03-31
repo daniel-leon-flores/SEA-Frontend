@@ -3,6 +3,7 @@ import { User } from "../entities/user";
 import { UserRepository } from "../use-cases/ports/user.repository";
 import { handleRequest } from "@/config/http-client.gateway";
 import { CreateUserDto } from "../entities/create-user.dto";
+import { UpdateUserDto } from "../entities/update-user.dto";
 
 export class UserStorageGateway implements UserRepository {
   async getUsers(pagination: PaginationDto, role?: string, status?: string): Promise<ApiResponse<User[]>> {
@@ -36,14 +37,18 @@ export class UserStorageGateway implements UserRepository {
   }
 
   async getUserById(id: number): Promise<ApiResponse<User>> {
-    return handleRequest<User>('get', `/api/users/${id}`);
+    return handleRequest<User>('get', `/api/users/${id}/`);
   }
 
   async createUser(user: CreateUserDto): Promise<ApiResponse<User>> {
-    return handleRequest<User, CreateUserDto>('post', '/api/users/register/', user);
+    return handleRequest<User, CreateUserDto>('post', '/api/users/', user);
+  }
+
+  async updateUser(id: number, user: UpdateUserDto): Promise<ApiResponse<User>> {
+    return handleRequest<User, UpdateUserDto>('put', `/api/users/${id}/`, user);
   }
 
   async deleteUser(id: number): Promise<ApiResponse<boolean>> {
-    return handleRequest<boolean>('delete', `/api/users/${id}`);
+    return handleRequest<boolean>('delete', `/api/users/${id}/`);
   }
 }
