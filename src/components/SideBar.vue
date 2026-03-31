@@ -129,6 +129,21 @@
       <template #append>
         <div v-if="!rail">
           <v-divider class="mb-2" style="border-color: #1fb07a;" />
+          
+          <!-- Cambiar contraseña -->
+          <div class="pa-2 px-3">
+            <v-btn
+              block
+              variant="tonal"
+              color="#1fb07a"
+              class="text-none"
+              prepend-icon="mdi-lock-reset"
+              @click="openChangePasswordDialog"
+            >
+              Cambiar contraseña
+            </v-btn>
+          </div>
+
           <div class="pa-4 d-flex align-center">
             <v-avatar size="40" class="profile-avatar">
               {{ userInitials }}
@@ -144,6 +159,23 @@
         </div>
         <div v-else class="pb-3">
           <v-divider style="border-color: #1fb07a;" class="mb-3" />
+          
+          <!-- Cambiar contraseña en modo rail -->
+          <div class="d-flex justify-center mb-3">
+            <v-tooltip text="Cambiar contraseña" location="right">
+              <template #activator="{ props: tip }">
+                <v-btn
+                  v-bind="tip"
+                  icon="mdi-lock-reset"
+                  variant="text"
+                  color="#1fb07a"
+                  size="small"
+                  @click="openChangePasswordDialog"
+                />
+              </template>
+            </v-tooltip>
+          </div>
+
           <div class="d-flex justify-center">
           <v-btn
             icon="mdi-logout"
@@ -156,69 +188,179 @@
         </div>
       </template>
     </v-navigation-drawer>
+
+    <!-- Modales de cambio de contraseña -->
+    <ChangePasswordModal
+      :dialog="changePasswordDialog"
+      @update:dialog="changePasswordDialog = $event"
+      @proceed="handlePasswordFormSubmit"
+      ref="changePasswordModalRef"
+    />
+
+    <ConfirmPasswordChangeModal
+      :dialog="confirmChangeDialog"
+      @update:dialog="confirmChangeDialog = $event"
+      :loading="changingPassword"
+      @confirm="handlePasswordChangeConfirm"
+      @cancel="handlePasswordChangeCancel"
+    />
+
+    <!-- Snackbar para notificaciones -->
+    <v-snackbar
+      v-model="snackbar.show"
+      :color="snackbar.color"
+      :timeout="3000"
+      location="top right"
+    >
+      {{ snackbar.message }}
+    </v-snackbar>
   </div>
 </template>
 
-<script setup lang="ts">
-import { ref, computed } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
+<script lang="ts">
+import { defineComponent } from 'vue';
 import { useDisplay } from 'vuetify';
 import { roleMenus } from '@/constants/menu-items';
 import type { MenuItem } from '@/constants/menu-items';
+import ChangePasswordModal from './ChangePasswordModal.vue';
+import ConfirmPasswordChangeModal from './ConfirmPasswordChangeModal.vue';
+import { AuthService } from '@/services/auth.service';
+import type { ChangePasswordDto } from '@/modules/auth/entities/change-password.dto';
 
-interface Props {
-  role: string;
-}
+export default defineComponent({
+  name: 'SideBar',
+  components: {
+    ChangePasswordModal,
+    ConfirmPasswordChangeModal
+  },
+  props: {
+    role: {
+      type: String,
+      required: true
+    }
+  },
+  setup() {
+    const display = useDisplay();
+    return { display };
+  },
+  data() {
+    return {
+      drawer: true,
+      rail: false,
+      changePasswordDialog: false,
+      confirmChangeDialog: false,
+      changingPassword: false,
+      passwordData: null as ChangePasswordDto | null,
+      snackbar: {
+        show: false,
+        message: '',
+        color: 'success'
+      }
+    }
+  },
+  computed: {
+    isMobile(): boolean {
+      return this.display.smAndDown.value;
+    },
+    navItems(): MenuItem[] {
+      return (roleMenus as any)[this.role]?.navItems || [];
+    },
+    quickActions(): MenuItem[] {
+      return (roleMenus as any)[this.role]?.quickActions || [];
+    },
+    userName(): string {
+      return localStorage.getItem('sea_userName') || 'Usuario';
+    },
+    userInitials(): string {
+      const name = this.userName;
+      const parts = name.split(' ');
+      return parts.map(p => p.charAt(0)).slice(0, 2).join('').toUpperCase();
+    },
+    roleLabel(): string {
+      const roleLabels: Record<string, string> = {
+        'STUDENT': 'Estudiante',
+        'TEACHER': 'Profesor',
+        'ADMIN': 'Administrador',
+      };
+      return roleLabels[this.role] || this.role;
+    }
+  },
+  methods: {
+    isItemActive(item: MenuItem): boolean {
+      if (item.to === '/') return this.$route.path === '/';
+      return this.$route.path.startsWith(item.to);
+    },
+    toggleRail() {
+      if (!this.isMobile) {
+        this.rail = !this.rail;
+      }
+    },
+    openChangePasswordDialog() {
+      this.changePasswordDialog = true;
+    },
+    handlePasswordFormSubmit(data: ChangePasswordDto) {
+      this.passwordData = data;
+      this.changePasswordDialog = false;
+      this.confirmChangeDialog = true;
+    },
+    async handlePasswordChangeConfirm() {
+      if (!this.passwordData) return;
 
-const props = defineProps<Props>();
-const router = useRouter();
-const route = useRoute();
-const display = useDisplay();
-
-const drawer = ref(true);
-const rail = ref(false);
-
-const isMobile = computed(() => display.smAndDown.value);
-
-const navItems = computed(() => roleMenus[props.role]?.navItems || []);
-const quickActions = computed(() => roleMenus[props.role]?.quickActions || []);
-
-const isItemActive = (item: MenuItem) => {
-  if (item.to === '/') return route.path === '/';
-  return route.path.startsWith(item.to);
-};
-
-const userName = computed(() => {
-  return localStorage.getItem('sea_userName') || 'Usuario';
-});
-
-const userInitials = computed(() => {
-  const name = userName.value;
-  const parts = name.split(' ');
-  return parts.map(p => p.charAt(0)).slice(0, 2).join('').toUpperCase();
-});
-
-const roleLabel = computed(() => {
-  const roleLabels: Record<string, string> = {
-    'STUDENT': 'Estudiante',
-    'TEACHER': 'Profesor',
-    'ADMIN': 'Administrador',
-  };
-  return roleLabels[props.role] || props.role;
-});
-
-const toggleRail = () => {
-  if (!isMobile.value) {
-    rail.value = !rail.value;
+      this.changingPassword = true;
+      
+      try {
+        const response = await AuthService.changePassword(this.passwordData);
+        
+        if (response.success) {
+          this.showSnackbar('Contraseña cambiada exitosamente. Serás redirigido al login.', 'success');
+          this.confirmChangeDialog = false;
+          this.passwordData = null;
+          
+          // Cerrar sesión después de 2 segundos
+          setTimeout(() => {
+            this.logout();
+          }, 2000);
+        } else {
+          const errorMsg = response.message || 'Error al cambiar la contraseña.';
+          this.showSnackbar(errorMsg, 'error');
+          
+          // Si hay errores de validación, volver al primer modal
+          if (response.errors) {
+            this.confirmChangeDialog = false;
+            this.changePasswordDialog = true;
+            
+            // Pasar errores al modal
+            this.$nextTick(() => {
+              if (this.$refs.changePasswordModalRef) {
+                (this.$refs.changePasswordModalRef as any).setServerErrors(response.errors);
+              }
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error changing password:', error);
+        this.showSnackbar('Error inesperado al cambiar la contraseña.', 'error');
+      } finally {
+        this.changingPassword = false;
+      }
+    },
+    handlePasswordChangeCancel() {
+      this.confirmChangeDialog = false;
+      this.passwordData = null;
+    },
+    showSnackbar(message: string, color: string = 'success') {
+      this.snackbar.message = message;
+      this.snackbar.color = color;
+      this.snackbar.show = true;
+    },
+    logout() {
+      localStorage.removeItem('sea_token');
+      localStorage.removeItem('sea_selectedRole');
+      localStorage.removeItem('sea_userName');
+      this.$router.push({ name: 'Login' });
+    }
   }
-};
-
-const logout = () => {
-  localStorage.removeItem('sea_token');
-  localStorage.removeItem('sea_selectedRole');
-  localStorage.removeItem('sea_userName');
-  router.push({ name: 'Login' });
-};
+});
 </script>
 
 <style scoped>
