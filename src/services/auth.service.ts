@@ -10,8 +10,8 @@ export class AuthService {
    * @returns Respuesta del servidor
    */
   static async changePassword(data: ChangePasswordDto): Promise<ApiResponse<{ message: string }>> {
-    // Cifrar el payload
-    const encryptedData = CryptoService.encryptData(data);
+    // Cifrar el payload usando AES-GCM
+    const encryptedData = await CryptoService.encryptData(data);
     
     return handleRequest<{ message: string }, { encrypted_data: string }>(
       'post',
