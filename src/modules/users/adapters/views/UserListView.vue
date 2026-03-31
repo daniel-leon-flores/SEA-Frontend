@@ -106,45 +106,56 @@
         <!-- Estado -->
         <template #cell-status="{ row }">
           <v-chip
-            :color="row.status ? 'success' : 'error'"
+            :color="row.status ? '#10b981' : '#f59e0b'"
             size="small"
-            variant="flat"
+            class="status-chip"
           >
-            <v-icon start size="14">
-              {{ row.status ? 'mdi-check-circle' : 'mdi-close-circle' }}
-            </v-icon>
-            {{ row.status_display }}
+            {{ row.status ? 'Activo' : 'Inactivo' }}
           </v-chip>
         </template>
 
         <!-- Acciones -->
         <template #cell-actions="{ row }">
-          <div class="d-flex gap-1 justify-center">
-            <v-tooltip text="Ver detalles" location="top">
+          <div class="d-flex justify-center">
+            <v-menu>
               <template #activator="{ props }">
                 <v-btn
                   v-bind="props"
-                  icon="mdi-eye-outline"
+                  icon="mdi-dots-vertical"
                   size="small"
                   variant="text"
-                  color="primary"
-                  @click="openDetailModal(row)"
+                  color="grey-darken-1"
                 />
               </template>
-            </v-tooltip>
-            
-            <v-tooltip text="Editar usuario" location="top">
-              <template #activator="{ props }">
-                <v-btn
-                  v-bind="props"
-                  icon="mdi-pencil-outline"
-                  size="small"
-                  variant="text"
-                  color="warning"
-                  @click="editUser(row)"
-                />
-              </template>
-            </v-tooltip>
+              <v-list density="compact">
+                <v-list-item @click="openDetailModal(row)">
+                  <template #prepend>
+                    <v-icon color="primary">mdi-eye-outline</v-icon>
+                  </template>
+                  <v-list-item-title>Ver detalles</v-list-item-title>
+                </v-list-item>
+                
+                <v-list-item @click="editUser(row)">
+                  <template #prepend>
+                    <v-icon color="warning">mdi-pencil-outline</v-icon>
+                  </template>
+                  <v-list-item-title>Editar usuario</v-list-item-title>
+                </v-list-item>
+
+                <v-divider class="my-1" />
+
+                <v-list-item @click="openStatusInfoModal(row)">
+                  <template #prepend>
+                    <v-icon :color="row.status ? 'error' : 'success'">
+                      {{ row.status ? 'mdi-account-cancel' : 'mdi-account-check' }}
+                    </v-icon>
+                  </template>
+                  <v-list-item-title>
+                    {{ row.status ? 'Desactivar' : 'Activar' }}
+                  </v-list-item-title>
+                </v-list-item>
+              </v-list>
+            </v-menu>
           </div>
         </template>
       </PaginatedTable>
@@ -257,6 +268,25 @@
       @user-updated="handleUserUpdated"
     />
 
+    <!-- Modal de confirmación de cambio de estado -->
+    <StatusChangeInfoModal
+      :dialog="statusInfoDialog"
+      @update:dialog="statusInfoDialog = $event"
+      :user="userForStatusChange"
+      :new-status="newStatusValue"
+      @proceed="openStatusConfirmModal"
+      @cancel="handleStatusChangeCancel"
+    />
+
+    <ConfirmStatusChangeModal
+      :dialog="statusConfirmDialog"
+      @update:dialog="statusConfirmDialog = $event"
+      :user="userForStatusChange"
+      :new-status="newStatusValue"
+      @confirm="handleStatusChangeConfirm"
+      @cancel="handleStatusChangeCancel"
+    />
+
     <!-- Snackbar para notificaciones -->
     <v-snackbar
       v-model="snackbar.show"
@@ -274,6 +304,8 @@ import PaginatedTable from '@/components/PaginatedTable.vue'
 import Loader from '@/components/Loader.vue'
 import CreateUserModal from '../components/CreateUserModal.vue'
 import UpdateUserModal from '../components/UpdateUserModal.vue'
+import StatusChangeInfoModal from '../components/StatusChangeInfoModal.vue'
+import ConfirmStatusChangeModal from '../components/ConfirmStatusChangeModal.vue'
 
 export default {
   name: 'UserListView',
@@ -281,7 +313,9 @@ export default {
     PaginatedTable,
     Loader,
     CreateUserModal,
-    UpdateUserModal
+    UpdateUserModal,
+    StatusChangeInfoModal,
+    ConfirmStatusChangeModal
   },
   data() {
     return {
@@ -296,6 +330,11 @@ export default {
       createDialog: false,
       updateDialog: false,
       selectedUserForEdit: null,
+      // Modales de cambio de estado (doble confirmación)
+      statusInfoDialog: false,
+      statusConfirmDialog: false,
+      userForStatusChange: null,
+      newStatusValue: false,
       pagination: {
         count: 0,
         totalPages: 1,
@@ -313,7 +352,7 @@ export default {
         { label: 'Correo', key: 'email', width: '220px', minWidth: '180px' },
         { label: 'Rol', key: 'role', width: '140px', minWidth: '120px' },
         { label: 'Estado', key: 'status', width: '120px', minWidth: '100px' },
-        { label: 'Acciones', key: 'actions', width: '120px', minWidth: '100px' }
+        { label: 'Acciones', key: 'actions', width: '100px', minWidth: '80px' }
       ],
       filterRoleItems: [
         { label: 'Estudiantes', value: 'student' },
@@ -484,6 +523,53 @@ export default {
       this.updateDialog = true
     },
     
+    openStatusInfoModal(user) {
+      this.userForStatusChange = user
+      this.newStatusValue = !user.status
+      this.statusInfoDialog = true
+    },
+    
+    openStatusConfirmModal() {
+      // Cerrar el modal de información y abrir el de confirmación
+      this.statusInfoDialog = false
+      this.statusConfirmDialog = true
+    },
+    
+    async handleStatusChangeConfirm() {
+      if (!this.userForStatusChange) return
+      
+      const userId = this.userForStatusChange.id_user
+      const newStatus = this.newStatusValue
+      
+      try {
+        const { UserController } = await import('../user.controller')
+        const controller = new UserController()
+        const response = await controller.updateUserStatus(userId, newStatus)
+        
+        if (response.success) {
+          const message = newStatus 
+            ? 'Usuario activado exitosamente.'
+            : 'Usuario desactivado exitosamente.'
+          this.showSnackbar(message, 'success')
+          this.statusConfirmDialog = false
+          this.userForStatusChange = null
+          this.fetchUsers()
+        } else {
+          this.showSnackbar(response.message || 'Error al cambiar el estado del usuario.', 'error')
+        }
+      } catch (error) {
+        console.error('Error changing user status:', error)
+        this.showSnackbar('Error inesperado al cambiar el estado.', 'error')
+      }
+    },
+    
+    handleStatusChangeCancel() {
+      // Cerrar ambos modales y limpiar
+      this.statusInfoDialog = false
+      this.statusConfirmDialog = false
+      this.userForStatusChange = null
+    },
+    
     viewUserDetail(user) {
       this.$router.push({ name: 'UserDetail', params: { id: user.id_user } })
     }
@@ -504,5 +590,9 @@ export default {
 
 .gap-2 {
   gap: 8px;
+}
+
+.status-chip {
+  font-weight: 600;
 }
 </style>

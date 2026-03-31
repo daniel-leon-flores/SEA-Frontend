@@ -8,5 +8,6 @@ export interface UserRepository {
   getUserById(id: number): Promise<ApiResponse<User>>;
   createUser(user: CreateUserDto): Promise<ApiResponse<User>>;
   updateUser(id: number, user: UpdateUserDto): Promise<ApiResponse<User>>;
+  updateUserStatus(id: number, status: boolean): Promise<ApiResponse<{ id_user: number; status: boolean }>>;
   deleteUser(id: number): Promise<ApiResponse<boolean>>;
 }

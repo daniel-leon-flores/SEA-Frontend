@@ -48,6 +48,14 @@ export class UserStorageGateway implements UserRepository {
     return handleRequest<User, UpdateUserDto>('put', `/api/users/${id}/`, user);
   }
 
+  async updateUserStatus(id: number, status: boolean): Promise<ApiResponse<{ id_user: number; status: boolean }>> {
+    return handleRequest<{ id_user: number; status: boolean }, { status: boolean }>(
+      'patch', 
+      `/api/users/${id}/status/`, 
+      { status }
+    );
+  }
+
   async deleteUser(id: number): Promise<ApiResponse<boolean>> {
     return handleRequest<boolean>('delete', `/api/users/${id}/`);
   }
