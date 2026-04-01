@@ -48,6 +48,17 @@
               </template>
             </v-text-field>
 
+            <div class="text-right mb-2">
+              <v-btn
+                variant="text"
+                size="small"
+                color="primary"
+                @click="goToPasswordRecovery"
+              >
+                ¿Olvidaste tu contraseña?
+              </v-btn>
+            </div>
+
             <v-btn
               class="mt-4"
               block
@@ -89,6 +100,10 @@ function togglePassword() {
   showPassword.value = !showPassword.value;
 }
 
+function goToPasswordRecovery() {
+  router.push('/password-recovery');
+}
+
 async function login() {
   const { valid } = await formRef.value.validate();
   if (!valid) return;
@@ -104,10 +119,26 @@ async function login() {
     localStorage.setItem('sea_refresh', data.refresh);
     localStorage.setItem('sea_selectedRole', data.user.role.toUpperCase());
     localStorage.setItem('sea_userName', data.user.full_name);
-    router.push('/');
+    
+    // Redirigir según el rol del usuario
+    const userRole = data.user.role.toUpperCase();
+    if (userRole === 'STUDENT') {
+      router.push('/my-exams');
+    } else {
+      router.push('/');
+    }
   } catch (err: any) {
-    const msg = err?.response?.data?.detail || err?.response?.data?.message;
-    loginError.value = msg || 'Credenciales inválidas. Verifica tu correo y contraseña.';
+    // Extraer mensaje de error del backend
+    const msg = err?.response?.data?.error || 
+                err?.response?.data?.detail || 
+                err?.response?.data?.message;
+    
+    // Mostrar el mensaje del backend o uno genérico
+    if (msg && msg.toLowerCase().includes('inactivo')) {
+      loginError.value = 'Tu cuenta está inactiva. Contacta al administrador para más información.';
+    } else {
+      loginError.value = msg || 'Credenciales inválidas. Verifica tu correo y contraseña.';
+    }
   } finally {
     loading.value = false;
   }

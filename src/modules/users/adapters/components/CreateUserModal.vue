@@ -43,7 +43,7 @@
                 :error-messages="serverErrors.email"
               />
             </v-col>
-            <v-col cols="12" md="6">
+            <v-col v-if="payload.role !== 'admin'" cols="12" md="6">
               <v-text-field
                 v-model="payload.matricula"
                 label="Matrícula"
