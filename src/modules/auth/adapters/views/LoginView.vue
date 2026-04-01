@@ -128,8 +128,17 @@ async function login() {
       router.push('/');
     }
   } catch (err: any) {
-    const msg = err?.response?.data?.detail || err?.response?.data?.message;
-    loginError.value = msg || 'Credenciales inválidas. Verifica tu correo y contraseña.';
+    // Extraer mensaje de error del backend
+    const msg = err?.response?.data?.error || 
+                err?.response?.data?.detail || 
+                err?.response?.data?.message;
+    
+    // Mostrar el mensaje del backend o uno genérico
+    if (msg && msg.toLowerCase().includes('inactivo')) {
+      loginError.value = 'Tu cuenta está inactiva. Contacta al administrador para más información.';
+    } else {
+      loginError.value = msg || 'Credenciales inválidas. Verifica tu correo y contraseña.';
+    }
   } finally {
     loading.value = false;
   }
