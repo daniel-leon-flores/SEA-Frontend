@@ -13,18 +13,8 @@
 
       <v-card-text class="pa-5" v-if="user">
         <v-row>
-          <!-- Solo mostrar matrícula y grupo si NO es admin -->
+          <!-- Solo mostrar grupo si NO es admin -->
           <template v-if="user.role !== 'admin'">
-            <v-col cols="12">
-              <div class="mb-3">
-                <p class="text-caption text-grey-darken-1 mb-2">Matrícula</p>
-                <div class="d-flex align-center">
-                  <v-icon class="mr-2" color="grey-darken-1">mdi-card-account-details</v-icon>
-                  <span class="text-body-1 font-weight-medium">{{ user.matricula }}</span>
-                </div>
-              </div>
-            </v-col>
-
             <v-col cols="12" v-if="user.group">
               <div class="mb-3">
                 <p class="text-caption text-grey-darken-1 mb-2">Grupo asignado</p>

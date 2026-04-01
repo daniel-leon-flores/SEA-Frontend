@@ -78,6 +78,16 @@
         @update:page="handlePageChange"
         @update:page-size="handlePageSizeChange"
       >
+        <!-- Matrícula -->
+        <template #cell-matricula="{ row }">
+          <span v-if="row.role === 'admin'" class="text-body-2 font-italic text-grey-darken-1">
+            No aplica
+          </span>
+          <span v-else class="text-body-2">
+            {{ row.matricula || '-' }}
+          </span>
+        </template>
+      
         <!-- Nombre completo -->
         <template #cell-fullName="{ row }">
           <div class="text-center">
@@ -290,7 +300,8 @@ export default {
         color: 'success'
       },
       columns: [
-        { label: 'Nombre Completo', key: 'fullName', width: '300px', minWidth: '250px' },
+        { label: 'Matrícula', key: 'matricula', width: '150px', minWidth: '120px' },
+        { label: 'Nombre Completo', key: 'fullName', width: '250px', minWidth: '200px' },
         { label: 'Correo', key: 'email', width: '250px', minWidth: '200px' },
         { label: 'Rol', key: 'role', width: '140px', minWidth: '120px' },
         { label: 'Estado', key: 'status', width: '120px', minWidth: '100px' },
