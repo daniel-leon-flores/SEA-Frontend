@@ -8,7 +8,7 @@ export class GetPeriodReportInteractor implements UseCase<ReportFiltersDto, ApiR
   constructor(private readonly reportRepository: ReportRepository) {}
 
   async execute(payload?: ReportFiltersDto): Promise<ApiResponse<PeriodReportData>> {
-    if (!payload || !payload.periodId) {
+    if (!payload?.periodId) {
       throw new Error('Missing periodId for GetPeriodReportInteractor');
     }
     return this.reportRepository.getPeriodReport(payload);

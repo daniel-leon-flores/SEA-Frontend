@@ -102,9 +102,9 @@ export function mockPeriodReport(periodId: number): PeriodReportData {
     exams: [
       { examId: 1, examTitle: 'Parcial 1',     subjectName: 'Matemáticas', groupLetter: '1A', averageGrade: 78.5, approvalRate: 83.3, totalStudents: 30 },
       { examId: 2, examTitle: 'Parcial 2',     subjectName: 'Matemáticas', groupLetter: '1A', averageGrade: 74.2, approvalRate: 76.7, totalStudents: 30 },
-      { examId: 3, examTitle: 'Extraordinario',subjectName: 'Matemáticas', groupLetter: '1A', averageGrade: 65.0, approvalRate: 60.0, totalStudents: 10 },
+      { examId: 3, examTitle: 'Extraordinario',subjectName: 'Matemáticas', groupLetter: '1A', averageGrade: 65, approvalRate: 60, totalStudents: 10 },
       { examId: 4, examTitle: 'Parcial 1',     subjectName: 'Matemáticas', groupLetter: '1B', averageGrade: 81.3, approvalRate: 86.7, totalStudents: 30 },
-      { examId: 5, examTitle: 'Parcial 2',     subjectName: 'Matemáticas', groupLetter: '1B', averageGrade: 77.9, approvalRate: 80.0, totalStudents: 30 },
+      { examId: 5, examTitle: 'Parcial 2',     subjectName: 'Matemáticas', groupLetter: '1B', averageGrade: 77.9, approvalRate: 80, totalStudents: 30 },
       { examId: 6, examTitle: 'Extraordinario',subjectName: 'Matemáticas', groupLetter: '1B', averageGrade: 68.5, approvalRate: 62.5, totalStudents: 8  },
     ],
   };
@@ -121,15 +121,15 @@ export function mockGroupReport(groupId: number): GroupReportData {
     metrics: METRICS,
     gradeDistribution: GRADE_DIST,
     students: [
-      { studentId: 101, matricula: 'ALU001', fullName: 'Juan Pérez López',       totalExams: 3, averageGrade: 85.0, approvalRate: 100  },
+      { studentId: 101, matricula: 'ALU001', fullName: 'Juan Pérez López',       totalExams: 3, averageGrade: 85, approvalRate: 100  },
       { studentId: 102, matricula: 'ALU002', fullName: 'María García Ramírez',   totalExams: 3, averageGrade: 91.3, approvalRate: 100  },
       { studentId: 103, matricula: 'ALU003', fullName: 'Carlos Hernández Díaz',  totalExams: 3, averageGrade: 58.7, approvalRate: 33.3 },
       { studentId: 104, matricula: 'ALU004', fullName: 'Ana Torres Sánchez',     totalExams: 3, averageGrade: 76.3, approvalRate: 100  },
-      { studentId: 105, matricula: 'ALU005', fullName: 'Luis Martínez Flores',   totalExams: 2, averageGrade: 70.0, approvalRate: 50.0 },
+      { studentId: 105, matricula: 'ALU005', fullName: 'Luis Martínez Flores',   totalExams: 2, averageGrade: 70, approvalRate: 50 },
       { studentId: 106, matricula: 'ALU006', fullName: 'Sofía López Gutiérrez',  totalExams: 3, averageGrade: 95.7, approvalRate: 100  },
       { studentId: 107, matricula: 'ALU007', fullName: 'Diego Ramírez Castro',   totalExams: 3, averageGrade: 65.3, approvalRate: 66.7 },
       { studentId: 108, matricula: 'ALU008', fullName: 'Valentina Cruz Morales', totalExams: 3, averageGrade: 48.7, approvalRate: 0    },
-      { studentId: 109, matricula: 'ALU009', fullName: 'Ricardo Moreno Vargas',  totalExams: 1, averageGrade: 80.0, approvalRate: 100  },
+      { studentId: 109, matricula: 'ALU009', fullName: 'Ricardo Moreno Vargas',  totalExams: 1, averageGrade: 80, approvalRate: 100  },
       { studentId: 110, matricula: 'ALU010', fullName: 'Isabella Jiménez Ruiz',  totalExams: 3, averageGrade: 82.3, approvalRate: 100  },
     ],
   };
