@@ -8,7 +8,7 @@ export class GetStudentReportInteractor implements UseCase<ReportFiltersDto, Api
   constructor(private readonly reportRepository: ReportRepository) {}
 
   async execute(payload?: ReportFiltersDto): Promise<ApiResponse<StudentReportData>> {
-    if (!payload || !payload.studentId) {
+    if (!payload?.studentId) {
       throw new Error('Missing studentId for GetStudentReportInteractor');
     }
     return this.reportRepository.getStudentReport(payload);

@@ -14,7 +14,7 @@ const processQueue = (error: any, token: string | null = null) => {
       prom.resolve(token);
     }
   });
-  
+
   failedQueue = [];
 };
 
@@ -48,12 +48,12 @@ AxiosClient.interceptors.response.use(
     // Si es 401 y no es un intento de refresh y no hemos reintentado ya
     // EXCLUIR endpoints que pueden devolver 401 por validación (no por token)
     const excludedEndpoints = ['/auth/refresh/', '/auth/change-password/'];
-    const isExcludedEndpoint = excludedEndpoints.some(endpoint => 
+    const isExcludedEndpoint = excludedEndpoints.some(endpoint =>
       originalRequest.url?.includes(endpoint)
     );
-    
+
     if (status === 401 && !isExcludedEndpoint) {
-      
+
       if (isRefreshing) {
         // Si ya está en proceso de refresh, agregar a la cola
         return new Promise((resolve, reject) => {
@@ -64,7 +64,7 @@ AxiosClient.interceptors.response.use(
             return AxiosClient(originalRequest);
           })
           .catch(err => {
-            return Promise.reject(err);
+            throw err;
           });
       }
 
@@ -72,61 +72,64 @@ AxiosClient.interceptors.response.use(
       isRefreshing = true;
 
       const refreshToken = localStorage.getItem('sea_refresh');
-      
+
       if (!refreshToken) {
         // No hay refresh token, limpiar y redirigir
         isRefreshing = false;
         processQueue(new Error('No refresh token'), null);
         localStorage.clear();
-        window.location.href = '/login';
-        return Promise.reject(error);
+
+        globalThis.location.href = '/login';
+
+        throw error;
       }
 
       try {
         // Intentar refrescar el token
         const { data } = await AxiosClient.post('/api/auth/refresh/', { refresh: refreshToken });
-        
+
         const newAccessToken = data.access;
-        
+
         // Actualizar token en localStorage
         localStorage.setItem('sea_token', newAccessToken);
-        
+
         // Si el backend devuelve un nuevo refresh token, actualizarlo
         if (data.refresh) {
           localStorage.setItem('sea_refresh', data.refresh);
         }
-        
+
         // Actualizar el header de la petición original
         originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
-        
+
         // Procesar la cola de peticiones pendientes
         processQueue(null, newAccessToken);
         isRefreshing = false;
-        
+
         // Reintentar la petición original con el nuevo token
         return AxiosClient(originalRequest);
       } catch (refreshError) {
-        // Si el refresh falla, limpiar todo y redirigir al login
+        // Si el refresh falla, limpia y redirige al login
         console.error('Token refresh failed:', refreshError);
         processQueue(refreshError, null);
         isRefreshing = false;
-        
+
         localStorage.removeItem('sea_token');
         localStorage.removeItem('sea_refresh');
         localStorage.removeItem('sea_selectedRole');
         localStorage.removeItem('sea_userName');
-        window.location.href = '/login';
-        
-        return Promise.reject(refreshError);
+
+        globalThis.location.href = '/login';
+
+        throw refreshError;
       }
     }
 
     // Si es 403, redirigir a página de no autorizado
     if (status === 403) {
-      window.location.href = '/unauthorized';
+      globalThis.location.href = '/unauthorized';
     }
 
-    return Promise.reject(error);
+    throw error;
   }
 );
 

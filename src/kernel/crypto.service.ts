@@ -18,13 +18,13 @@ export class CryptoService {
     // Convertir la clave string a bytes y ajustar a 32 bytes (256 bits)
     const encoder = new TextEncoder();
     const keyData = encoder.encode(keyString);
-    
+
     // Ajustar a 32 bytes
     const key32Bytes = new Uint8Array(32);
     for (let i = 0; i < Math.min(keyData.length, 32); i++) {
       key32Bytes[i] = keyData[i];
     }
-    
+
     // Importar la clave para usar con AES-GCM
     return await crypto.subtle.importKey(
       'raw',
@@ -45,13 +45,13 @@ export class CryptoService {
       const jsonString = JSON.stringify(data);
       const encoder = new TextEncoder();
       const dataBytes = encoder.encode(jsonString);
-      
+
       // Generar nonce aleatorio de 12 bytes (96 bits, recomendado para GCM)
       const nonce = crypto.getRandomValues(new Uint8Array(12));
-      
+
       // Obtener la clave derivada
       const key = await this.deriveKey(ENCRYPTION_KEY);
-      
+
       // Cifrar usando AES-GCM
       const encryptedData = await crypto.subtle.encrypt(
         {
@@ -61,13 +61,13 @@ export class CryptoService {
         key,
         dataBytes
       );
-      
+
       // Combinar nonce + ciphertext (GCM incluye el tag automáticamente)
       const encryptedBytes = new Uint8Array(encryptedData);
       const result = new Uint8Array(nonce.length + encryptedBytes.length);
       result.set(nonce, 0);
       result.set(encryptedBytes, nonce.length);
-      
+
       // Convertir a base64
       return this.arrayBufferToBase64(result);
     } catch (error) {
@@ -84,16 +84,16 @@ export class CryptoService {
     try {
       // Decodificar de base64
       const encryptedBytes = this.base64ToArrayBuffer(encryptedString);
-      
+
       // Extraer nonce (primeros 12 bytes)
       const nonce = encryptedBytes.slice(0, 12);
-      
+
       // Extraer ciphertext (resto de los bytes)
       const ciphertext = encryptedBytes.slice(12);
-      
+
       // Obtener la clave derivada
       const key = await this.deriveKey(ENCRYPTION_KEY);
-      
+
       // Descifrar usando AES-GCM
       const decryptedData = await crypto.subtle.decrypt(
         {
@@ -103,11 +103,11 @@ export class CryptoService {
         key,
         ciphertext
       );
-      
+
       // Convertir bytes a string
       const decoder = new TextDecoder();
       const jsonString = decoder.decode(decryptedData);
-      
+
       // Parsear JSON
       return JSON.parse(jsonString);
     } catch (error) {
@@ -124,7 +124,7 @@ export class CryptoService {
     let binary = '';
     const len = buffer.byteLength;
     for (let i = 0; i < len; i++) {
-      binary += String.fromCharCode(buffer[i]);
+      binary += String.fromCodePoint(buffer[i]);
     }
     return btoa(binary);
   }
@@ -139,7 +139,7 @@ export class CryptoService {
     const len = binary.length;
     const bytes = new Uint8Array(len);
     for (let i = 0; i < len; i++) {
-      bytes[i] = binary.charCodeAt(i);
+      bytes[i] = binary.codePointAt(i)!;
     }
     return bytes;
   }
