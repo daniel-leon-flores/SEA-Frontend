@@ -127,7 +127,7 @@ router.beforeEach((to, _from, next) => {
   }
 
   // Role-based check
-  const allowedRoles = to.meta.roles as string[] | undefined;
+  const allowedRoles = to.meta.roles; 
   if (allowedRoles && role && !allowedRoles.includes(role)) {
     return next({ name: 'Unauthorized' });
   }

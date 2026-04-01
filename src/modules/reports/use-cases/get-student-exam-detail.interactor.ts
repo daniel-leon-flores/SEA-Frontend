@@ -8,7 +8,7 @@ export class GetStudentExamDetailInteractor implements UseCase<ReportFiltersDto,
   constructor(private readonly reportRepository: ReportRepository) {}
 
   async execute(payload?: ReportFiltersDto): Promise<ApiResponse<StudentExamDetailData>> {
-    if (!payload || !payload.studentId || !payload.examId) {
+    if (!payload?.studentId || !payload?.examId) {
       throw new Error('Missing studentId or examId for GetStudentExamDetailInteractor');
     }
     return this.reportRepository.getStudentExamDetail(payload);
