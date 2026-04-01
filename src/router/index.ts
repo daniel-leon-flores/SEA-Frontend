@@ -9,6 +9,12 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: false },
   },
   {
+    path: '/password-recovery',
+    name: 'PasswordRecovery',
+    component: () => import('@/modules/auth/adapters/views/PasswordRecoveryView.vue'),
+    meta: { requiresAuth: false },
+  },
+  {
     path: '/unauthorized',
     name: 'Unauthorized',
     component: () => import('@/views/UnauthorizedView.vue'),
@@ -115,8 +121,13 @@ router.beforeEach((to, _from, next) => {
 
   // Public routes
   if (to.meta.requiresAuth === false) {
-    if (token && (to.name === 'Login')) {
-      return next({ name: 'Reports' });
+    // Si ya está autenticado e intenta acceder a Login o PasswordRecovery, redirigir
+    if (token && role && (to.name === 'Login' || to.name === 'PasswordRecovery')) {
+      if (role === 'STUDENT') {
+        return next({ name: 'MyExams' });
+      } else {
+        return next({ name: 'Reports' });
+      }
     }
     return next();
   }
