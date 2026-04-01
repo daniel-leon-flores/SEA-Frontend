@@ -78,11 +78,6 @@
         @update:page="handlePageChange"
         @update:page-size="handlePageSizeChange"
       >
-        <!-- Matrícula -->
-        <template #cell-matricula="{ value }">
-          <span class="text-body-2 font-weight-medium">{{ value }}</span>
-        </template>
-
         <!-- Nombre completo -->
         <template #cell-fullName="{ row }">
           <div class="text-center">
@@ -193,66 +188,12 @@
       </v-col>
     </v-row>
 
-    <!-- Modal de detalle del usuario (simplificado) -->
-    <v-dialog v-model="detailModal" max-width="500" persistent>
-      <v-card rounded="lg" elevation="0">
-        <v-card-title class="d-flex align-center justify-space-between pa-5 bg-primary">
-          <div class="d-flex align-center ga-3">
-            <v-icon color="white">mdi-information-outline</v-icon>
-            <span class="text-h6 text-white">Detalles Adicionales</span>
-          </div>
-          <v-btn icon variant="text" @click="detailModal = false">
-            <v-icon color="white">mdi-close</v-icon>
-          </v-btn>
-        </v-card-title>
-
-        <v-card-text class="pa-5" v-if="selectedUser">
-          <v-row>
-            <!-- Solo mostrar grupo si NO es admin -->
-            <template v-if="selectedUser.role !== 'admin'">
-              <v-col cols="12" v-if="selectedUser.group">
-                <div class="mb-3">
-                  <p class="text-caption text-grey-darken-1 mb-2">Grupo asignado</p>
-                  <v-chip color="info" variant="tonal" size="large">
-                    <v-icon start>mdi-account-group</v-icon>
-                    {{ selectedUser.group.group_letter }} - Nivel {{ selectedUser.group.academic_level }}
-                  </v-chip>
-                </div>
-              </v-col>
-
-              <v-col cols="12" v-else>
-                <v-alert type="info" variant="tonal" density="compact">
-                  Este usuario no tiene un grupo asignado
-                </v-alert>
-              </v-col>
-            </template>
-
-            <v-col cols="12" v-if="selectedUser.role !== 'admin'">
-              <v-divider class="my-2" />
-            </v-col>
-
-            <v-col cols="12">
-              <div>
-                <p class="text-caption text-grey-darken-1 mb-2">Fecha de registro</p>
-                <div class="d-flex align-center">
-                  <v-icon class="mr-2" color="grey-darken-1">mdi-calendar</v-icon>
-                  <span class="text-body-1">{{ formatDate(selectedUser.date_joined) }}</span>
-                </div>
-              </div>
-            </v-col>
-          </v-row>
-        </v-card-text>
-
-        <v-divider />
-
-        <v-card-actions class="pa-4">
-          <v-spacer />
-          <v-btn variant="text" color="primary" @click="detailModal = false">
-            Cerrar
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <!-- Modal de detalle del usuario -->
+    <UserDetailModal
+      :dialog="detailModal"
+      @update:dialog="detailModal = $event"
+      :user="selectedUser"
+    />
 
     <!-- Modales de creación y edición -->
     <CreateUserModal 
@@ -304,6 +245,7 @@ import PaginatedTable from '@/components/PaginatedTable.vue'
 import Loader from '@/components/Loader.vue'
 import CreateUserModal from '../components/CreateUserModal.vue'
 import UpdateUserModal from '../components/UpdateUserModal.vue'
+import UserDetailModal from '../components/UserDetailModal.vue'
 import StatusChangeInfoModal from '../components/StatusChangeInfoModal.vue'
 import ConfirmStatusChangeModal from '../components/ConfirmStatusChangeModal.vue'
 
@@ -314,6 +256,7 @@ export default {
     Loader,
     CreateUserModal,
     UpdateUserModal,
+    UserDetailModal,
     StatusChangeInfoModal,
     ConfirmStatusChangeModal
   },
@@ -347,9 +290,8 @@ export default {
         color: 'success'
       },
       columns: [
-        { label: 'Matrícula', key: 'matricula', width: '130px', minWidth: '120px' },
-        { label: 'Nombre Completo', key: 'fullName', width: '250px', minWidth: '200px' },
-        { label: 'Correo', key: 'email', width: '220px', minWidth: '180px' },
+        { label: 'Nombre Completo', key: 'fullName', width: '300px', minWidth: '250px' },
+        { label: 'Correo', key: 'email', width: '250px', minWidth: '200px' },
         { label: 'Rol', key: 'role', width: '140px', minWidth: '120px' },
         { label: 'Estado', key: 'status', width: '120px', minWidth: '100px' },
         { label: 'Acciones', key: 'actions', width: '100px', minWidth: '80px' }
@@ -481,16 +423,6 @@ export default {
         admin: 'mdi-shield-crown'
       }
       return icons[role] || 'mdi-account'
-    },
-    
-    formatDate(dateString) {
-      if (!dateString) return 'N/A'
-      const date = new Date(dateString)
-      return date.toLocaleDateString('es-MX', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      })
     },
     
     showSnackbar(message, color = 'success') {
