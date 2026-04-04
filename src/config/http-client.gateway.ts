@@ -24,13 +24,13 @@ AxiosClient.interceptors.request.use(
     const token = localStorage.getItem('sea_token');
     const activeRole = localStorage.getItem('sea_selectedRole');
 
-    if (token) (config.headers as any).Authorization = `Bearer ${token}`;
-    if (activeRole) (config.headers as any)['X-Active-Role'] = activeRole;
+    if (token) config.headers.Authorization = `Bearer ${token}`;
+    if (activeRole) config.headers['X-Active-Role'] = activeRole;
 
     if (config.data instanceof FormData) {
-      (config.headers as any)['Content-Type'] = 'multipart/form-data';
-    } else if (!(config.headers as any)['Content-Type']) {
-      (config.headers as any)['Content-Type'] = 'application/json';
+      config.headers['Content-Type'] = 'multipart/form-data';
+    } else if (!config.headers['Content-Type']) {
+      config.headers['Content-Type'] = 'application/json';
     }
 
     return config;
