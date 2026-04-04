@@ -1,5 +1,3 @@
-export type AuditLogOperation = 'Creación' | 'Actualización' | 'Eliminación' | string;
-
 export interface AuditChange {
   field: string;
   old: unknown;
@@ -8,7 +6,7 @@ export interface AuditChange {
 
 export interface AuditLog {
   table: string;
-  operation: AuditLogOperation;
+  operation: string;
   changed_at: string;
   user: string;
   changes: AuditChange[];
