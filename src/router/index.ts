@@ -56,7 +56,7 @@ const routes: RouteRecordRaw[] = [
       childRoute('generations/:generationId/groups/:groupId/students', 'GroupStudents', () => import('@/modules/users/adapters/views/GroupStudentsView.vue'), R_ADMIN),
       childRoute('terms',       'Terms',             () => import('@/modules/terms/adapters/views/TermListView.vue'),                       R_ADMIN),
       childRoute('',            'Reports',           () => import('@/modules/reports/adapters/views/ReportsView.vue'),                      R_TEACHER_ADMIN),
-      childRoute('settings',    'Settings',          () => import('@/views/SettingsView.vue'),                                              R_ADMIN),
+      childRoute('settings',    'Settings',          () => import('@/modules/audit/adapters/views/auditLogView.vue'),                       R_ADMIN),
     ],
   },
 ];

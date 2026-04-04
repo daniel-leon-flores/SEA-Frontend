@@ -31,7 +31,7 @@ export const roleMenus: Record<string, RoleMenu> = {
       { title: 'Generaciones', icon: 'mdi-view-list', to: '/generations' },
       { title: 'Exámenes', icon: 'mdi-file-document-edit', to: '/exams' },
       { title: 'Usuarios', icon: 'mdi-account-multiple', to: '/users' },
-      { title: 'Ajustes', icon: 'mdi-cog', to: '/settings' },
+      { title: 'Bitácora', icon: 'mdi-clipboard-text-clock-outline', to: '/settings' },
     ],
     quickActions: [
       { title: 'Banco de Preguntas', icon: 'mdi-book-open-page-variant', to: '/questions' },
