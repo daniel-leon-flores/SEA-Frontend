@@ -1,10 +1,12 @@
-export type CreateExamDto = {
-  title: string;
-  description: string;
-  subjectId: number;
-  groupId: number;
-  duration: number;
-  questionIds: number[];
-  startDate: string;
-  endDate: string;
-};
+export interface CreateExamDto {
+  name: string;
+  id_subject: number;
+  unit_number: number;
+  difficulty_level: 'easy' | 'medium' | 'hard';
+  secure_mode: boolean;
+  minimum_score: string;
+}
+
+export interface UpdateExamDto extends CreateExamDto {
+  status: boolean;
+}

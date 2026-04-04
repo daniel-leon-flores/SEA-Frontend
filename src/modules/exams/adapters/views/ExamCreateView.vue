@@ -1,6 +1,6 @@
 <template>
   <v-container fluid class="pa-6">
-    <HeaderSession title="Crear Examen" />
+    <HeaderSession title="Exámenes" />
     <v-row>
       <v-col cols="12">
         <v-card color="#063244" class="pa-6">

@@ -1,5 +1,23 @@
-import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router';
+import { createRouter, createWebHistory } from 'vue-router';
+import type { RouteRecordRaw } from 'vue-router';
 import MainLayout from '@/components/MainLayout.vue';
+
+// ---------------------------------------------------------------------------
+// Role constants — single source of truth for meta.roles values
+// ---------------------------------------------------------------------------
+const R_STUDENT       = ['STUDENT'];
+const R_TEACHER_ADMIN = ['TEACHER', 'ADMIN'];
+const R_ADMIN         = ['ADMIN'];
+
+// Factory: collapses repeated 5-line route objects into a single call
+function childRoute(
+  path: string,
+  name: string,
+  component: () => Promise<unknown>,
+  roles: string[],
+): RouteRecordRaw {
+  return { path, name, component, meta: { roles } } as RouteRecordRaw;
+}
 
 const routes: RouteRecordRaw[] = [
   {
@@ -25,86 +43,20 @@ const routes: RouteRecordRaw[] = [
     component: MainLayout,
     meta: { requiresAuth: true },
     children: [
-      // Exams
-      {
-        path: 'my-exams',
-        name: 'MyExams',
-        component: () => import('@/modules/exams/adapters/views/ExamListView.vue'),
-        meta: { roles: ['STUDENT', 'TEACHER', 'ADMIN'] },
-      },
-      {
-        path: 'create-exam',
-        name: 'CreateExam',
-        component: () => import('@/modules/exams/adapters/views/ExamCreateView.vue'),
-        meta: { roles: ['TEACHER', 'ADMIN'] },
-      },
-      // Questions
-      {
-        path: 'questions',
-        name: 'Questions',
-        component: () => import('@/modules/questions/adapters/views/QuestionBankView.vue'),
-        meta: { roles: ['TEACHER', 'ADMIN'] },
-      },
-      // Generations
-      {
-        path: 'generations',
-        name: 'Generations',
-        component: () => import('@/modules/generations/adapters/views/GenerationListView.vue'),
-        meta: { roles: ['ADMIN'] },
-      },
-      {
-        path: 'generations/:id/groups',
-        name: 'GenerationGroups',
-        component: () => import('@/modules/groups/adapters/views/GenerationGroupsView.vue'),
-        meta: { roles: ['ADMIN'] },
-      },
-      // Subjects
-      {
-        path: 'subjects',
-        name: 'Subjects',
-        component: () => import('@/modules/subjects/adapters/views/SubjectListView.vue'),
-        meta: { roles: ['TEACHER', 'ADMIN'] },
-      },
-      // Users
-      {
-        path: 'users',
-        name: 'Users',
-        component: () => import('@/modules/users/adapters/views/UserListView.vue'),
-        meta: { roles: ['ADMIN'] },
-      },
-      {
-        path: 'users/:id',
-        name: 'UserDetail',
-        component: () => import('@/modules/users/adapters/views/UserDetailView.vue'),
-        meta: { roles: ['ADMIN'] },
-      },
-      {
-        path: 'generations/:generationId/groups/:groupId/students',
-        name: 'GroupStudents',
-        component: () => import('@/modules/users/adapters/views/GroupStudentsView.vue'),
-        meta: { roles: ['ADMIN'] },
-      },
-      // Terms
-      {
-        path: 'terms',
-        name: 'Terms',
-        component: () => import('@/modules/terms/adapters/views/TermListView.vue'),
-        meta: { roles: ['ADMIN'] },
-      },
-      // Reports
-      {
-        path: '',
-        name: 'Reports',
-        component: () => import('@/modules/reports/adapters/views/ReportsView.vue'),
-        meta: { roles: ['TEACHER', 'ADMIN'] },
-      },
-      // Settings
-      {
-        path: 'settings',
-        name: 'Settings',
-        component: () => import('@/views/SettingsView.vue'),
-        meta: { roles: ['ADMIN'] },
-      },
+      childRoute('my-exams',    'MyExams',          () => import('@/modules/exams/adapters/views/StudentExamListView.vue'),                R_STUDENT),
+      childRoute('exams',       'ManageExams',       () => import('@/modules/exams/adapters/views/ExamListView.vue'),                        R_TEACHER_ADMIN),
+      childRoute('exams/:id/grades', 'ExamGrades',  () => import('@/modules/exams/adapters/views/ExamGradesView.vue'),                     R_TEACHER_ADMIN),
+      childRoute('exams/:examId/assignments/:assignmentId/grade', 'ManualGrade', () => import('@/modules/exams/adapters/views/ManualGradeView.vue'), R_TEACHER_ADMIN),
+      childRoute('questions',   'Questions',         () => import('@/modules/questions/adapters/views/QuestionBankView.vue'),               R_TEACHER_ADMIN),
+      childRoute('generations', 'Generations',       () => import('@/modules/generations/adapters/views/GenerationListView.vue'),           R_ADMIN),
+      childRoute('generations/:id/groups', 'GenerationGroups', () => import('@/modules/groups/adapters/views/GenerationGroupsView.vue'),    R_ADMIN),
+      childRoute('subjects',    'Subjects',          () => import('@/modules/subjects/adapters/views/SubjectListView.vue'),                 R_TEACHER_ADMIN),
+      childRoute('users',       'Users',             () => import('@/modules/users/adapters/views/UserListView.vue'),                       R_ADMIN),
+      childRoute('users/:id',   'UserDetail',        () => import('@/modules/users/adapters/views/UserDetailView.vue'),                     R_ADMIN),
+      childRoute('generations/:generationId/groups/:groupId/students', 'GroupStudents', () => import('@/modules/users/adapters/views/GroupStudentsView.vue'), R_ADMIN),
+      childRoute('terms',       'Terms',             () => import('@/modules/terms/adapters/views/TermListView.vue'),                       R_ADMIN),
+      childRoute('',            'Reports',           () => import('@/modules/reports/adapters/views/ReportsView.vue'),                      R_TEACHER_ADMIN),
+      childRoute('settings',    'Settings',          () => import('@/views/SettingsView.vue'),                                              R_ADMIN),
     ],
   },
 ];
