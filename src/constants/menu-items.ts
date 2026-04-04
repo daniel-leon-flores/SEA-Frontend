@@ -19,7 +19,7 @@ export const roleMenus: Record<string, RoleMenu> = {
   TEACHER: {
     navItems: [
       { title: 'Reportes', icon: 'mdi-chart-bar', to: '/' },
-      { title: 'Crear Examen', icon: 'mdi-file-document-edit', to: '/create-exam' },
+      { title: 'Exámenes', icon: 'mdi-file-document-edit', to: '/exams' },
     ],
     quickActions: [
       { title: 'Banco de Preguntas', icon: 'mdi-book-open-page-variant', to: '/questions' },
@@ -29,7 +29,7 @@ export const roleMenus: Record<string, RoleMenu> = {
     navItems: [
       { title: 'Reportes', icon: 'mdi-chart-bar', to: '/' },
       { title: 'Generaciones', icon: 'mdi-view-list', to: '/generations' },
-      { title: 'Crear Examen', icon: 'mdi-file-document-edit', to: '/create-exam' },
+      { title: 'Exámenes', icon: 'mdi-file-document-edit', to: '/exams' },
       { title: 'Usuarios', icon: 'mdi-account-multiple', to: '/users' },
       { title: 'Ajustes', icon: 'mdi-cog', to: '/settings' },
     ],
