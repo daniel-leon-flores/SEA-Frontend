@@ -24,7 +24,8 @@ export const subjectService = {
     if (query.academic_level != null) params.set('academic_level', String(query.academic_level));
     if (query.status !== undefined) params.set('status', String(query.status));
     const qs = params.toString();
-    return handleRequest<SubjectListPayload>('get', `/api/academic/subjects/${qs ? `?${qs}` : ''}`);
+    const endpoint = qs ? `/api/academic/subjects/?${qs}` : '/api/academic/subjects/';
+    return handleRequest<SubjectListPayload>('get', endpoint);
   },
 
   getById(id: number): Promise<ApiResponse<Subject>> {
