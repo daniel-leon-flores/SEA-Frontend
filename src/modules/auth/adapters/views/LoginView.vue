@@ -1,16 +1,17 @@
 <template>
-  <v-container class="fill-height login-bg" fluid>
-    <v-row align="center" justify="center">
-      <v-col cols="12" sm="8" md="5" lg="4">
-        <div class="brand text-center mb-8">
-          <v-avatar size="64" class="brand-avatar mb-3">
-            <v-icon size="36">mdi-school</v-icon>
-          </v-avatar>
-          <h1 class="brand-title">SEA</h1>
-          <p class="brand-subtitle">Sistema de Exámenes Autogestionados</p>
-        </div>
+  <div ref="vantaRef" class="vanta-container">
+    <v-container class="fill-height login-overlay" fluid>
+      <v-row align="center" justify="center">
+        <v-col cols="12" sm="8" md="5" lg="4">
+          <div class="brand text-center mb-8">
+            <v-avatar size="64" class="brand-avatar mb-3">
+              <v-icon size="36">mdi-school</v-icon>
+            </v-avatar>
+            <h1 class="brand-title text-white">SEA</h1>
+            <p class="brand-subtitle text-white">Sistema de Exámenes Autogestionados</p>
+          </div>
 
-        <v-card class="pa-8" color="white" elevation="4" rounded="lg">
+          <v-card class="pa-8 login-card" color="white" elevation="8" rounded="lg">
           <h2 class="text-center mb-1" style="color: #1a1a1a; font-weight: 700;">Bienvenido</h2>
           <p class="text-center mb-6" style="color: #6b7280;">Inicia sesión con tus credenciales universitarias</p>
 
@@ -76,13 +77,16 @@
       </v-col>
     </v-row>
   </v-container>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import AxiosClient from '@/config/axios';
+import { useVantaBirds } from '@/composables/useVantaBirds';
 
+const vantaRef = ref<HTMLElement | null>(null);
 const email = ref('');
 const password = ref('');
 const showPassword = ref(false);
@@ -90,6 +94,22 @@ const loading = ref(false);
 const loginError = ref('');
 const formRef = ref<any>(null);
 const router = useRouter();
+
+// Inicializar Vanta Birds
+useVantaBirds(vantaRef, {
+  backgroundColor: 0x465199,
+  backgroundAlpha: 1,
+  color1: 0x05323b,
+  color2: 0x1cb07a,
+  colorMode: 'varianceGradient',
+  birdSize: 1,
+  wingSpan: 30,
+  speedLimit: 5,
+  separation: 20,
+  alignment: 20,
+  cohesion: 20,
+  quantity: 5,
+});
 
 const rules = {
   required: (v: string) => !!v || 'Campo requerido',
@@ -146,25 +166,40 @@ async function login() {
 </script>
 
 <style scoped>
-.login-bg {
-  background-color: #f0f4f8;
+.vanta-container {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.login-overlay {
+  position: relative;
+  z-index: 1;
+}
+
+.login-card {
+  background: rgba(255, 255, 255, 0.98) !important;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15) !important;
 }
 
 .brand-avatar {
   background-color: #081e53;
   color: white;
+  box-shadow: 0 4px 12px rgba(8, 30, 83, 0.3);
 }
 
 .brand-title {
   margin: 0;
   font-weight: 700;
-  color: #1a1a1a;
-  font-size: 2rem;
+  font-size: 2.5rem;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .brand-subtitle {
-  color: #6b7280;
   margin-top: 4px;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
 }
 </style>

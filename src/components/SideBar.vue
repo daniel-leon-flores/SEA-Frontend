@@ -153,7 +153,7 @@
               <div style="color: white; font-weight: 600;">{{ userName }}</div>
               <div style="color: #9fb5b8; font-size: 0.8rem;">{{ roleLabel }}</div>
             </div>
-            <v-btn icon class="ml-auto" variant="text" @click="logout">
+            <v-btn icon class="ml-auto" variant="text" @click="logoutDialog = true">
               <v-icon color="#9fb5b8">mdi-logout</v-icon>
             </v-btn>
           </div>
@@ -183,7 +183,7 @@
             variant="text"
             color="grey-darken-2"
             size="small"
-            @click="logout"
+            @click="logoutDialog = true"
           />
           </div>
         </div>
@@ -206,6 +206,14 @@
       @cancel="handlePasswordChangeCancel"
     />
 
+    <!-- Modal de confirmación de cierre de sesión -->
+    <LogoutConfirmModal
+      :dialog="logoutDialog"
+      @update:dialog="logoutDialog = $event"
+      @confirm="confirmLogout"
+      @cancel="logoutDialog = false"
+    />
+
     <!-- Snackbar para notificaciones -->
     <v-snackbar
       v-model="snackbar.show"
@@ -225,6 +233,7 @@ import { roleMenus } from '@/constants/menu-items';
 import type { MenuItem } from '@/constants/menu-items';
 import ChangePasswordModal from './ChangePasswordModal.vue';
 import ConfirmPasswordChangeModal from './ConfirmPasswordChangeModal.vue';
+import LogoutConfirmModal from '@/modules/auth/adapters/components/LogoutConfirmModal.vue';
 import { AuthService } from '@/services/auth.service';
 import type { ChangePasswordDto } from '@/modules/auth/entities/change-password.dto';
 
@@ -232,7 +241,8 @@ export default defineComponent({
   name: 'SideBar',
   components: {
     ChangePasswordModal,
-    ConfirmPasswordChangeModal
+    ConfirmPasswordChangeModal,
+    LogoutConfirmModal
   },
   props: {
     role: {
@@ -252,6 +262,7 @@ export default defineComponent({
       confirmChangeDialog: false,
       changingPassword: false,
       passwordData: null as ChangePasswordDto | null,
+      logoutDialog: false,
       snackbar: {
         show: false,
         message: '',
@@ -359,6 +370,10 @@ export default defineComponent({
       localStorage.removeItem('sea_selectedRole');
       localStorage.removeItem('sea_userName');
       this.$router.push({ name: 'Login' });
+    },
+    confirmLogout() {
+      this.logoutDialog = false;
+      this.logout();
     }
   }
 });
@@ -373,12 +388,12 @@ export default defineComponent({
 }
 
 .logo-avatar {
-  background-color: #1fb07a;
+  background-color: #0d7d5f;
   color: white;
 }
 
 .profile-avatar {
-  background-color: #1fb07a;
+  background-color: #0d7d5f;
   color: white;
   font-weight: 700;
 }
