@@ -1,5 +1,6 @@
 import AxiosClient from './axios';
 import { AxiosRequestConfig } from 'axios';
+import { getApiErrorMessage } from '@/kernel/api-error-message';
 import { ApiResponse } from "@/kernel/types";
 
 // Variable para controlar el refresh en progreso
@@ -178,8 +179,23 @@ export async function handleRequest<T, P = undefined>(
     const { data: apiResponse } = await (AxiosClient as any)[method](url, payload, requestConfig);
     return apiResponse as ApiResponse<T>;
   } catch (error: any) {
-    const errorResponse = error.response?.data as ApiResponse<T>;
-    if (errorResponse) return errorResponse;
+    const raw = error.response?.data;
+    if (raw && typeof raw === 'object') {
+      const mergedMessage = getApiErrorMessage(raw);
+      const base = raw as ApiResponse<T>;
+      return {
+        ...base,
+        success: false,
+        code: error.response?.status ?? base.code ?? 500,
+        message: mergedMessage,
+        timestamp: base.timestamp ?? new Date().toISOString(),
+        errors: (raw as ApiResponse<T>).errors,
+        error: {
+          message: mergedMessage,
+          details: (raw as ApiResponse<T>).errors ?? base.error?.details,
+        },
+      };
+    }
     return {
       success: false,
       code: error.response?.status || 500,

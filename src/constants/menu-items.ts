@@ -20,6 +20,7 @@ export const roleMenus: Record<string, RoleMenu> = {
     navItems: [
       { title: 'Reportes', icon: 'mdi-chart-bar', to: '/' },
       { title: 'Exámenes', icon: 'mdi-file-document-edit', to: '/exams' },
+      { title: 'Periodos', icon: 'mdi-calendar-month', to: '/periods' },
     ],
     quickActions: [
       { title: 'Banco de Preguntas', icon: 'mdi-book-open-page-variant', to: '/questions' },
@@ -29,6 +30,7 @@ export const roleMenus: Record<string, RoleMenu> = {
     navItems: [
       { title: 'Reportes', icon: 'mdi-chart-bar', to: '/' },
       { title: 'Generaciones', icon: 'mdi-view-list', to: '/generations' },
+      { title: 'Periodos', icon: 'mdi-calendar-month', to: '/periods' },
       { title: 'Exámenes', icon: 'mdi-file-document-edit', to: '/exams' },
       { title: 'Usuarios', icon: 'mdi-account-multiple', to: '/users' },
       { title: 'Bitácora', icon: 'mdi-clipboard-text-clock-outline', to: '/settings' },
