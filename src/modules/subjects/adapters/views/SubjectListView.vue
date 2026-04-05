@@ -1,22 +1,237 @@
 <template>
-  <v-container fluid class="pa-6">
-    <HeaderSession title="Materias" />
-    <v-row>
-      <v-col cols="12">
-        <v-card color="#063244" class="pa-6">
-          <v-card-title class="text-white">
-            <v-icon start>mdi-book-open-variant</v-icon>
-            Gestión de Materias
-          </v-card-title>
-          <v-card-text style="color: #9fb5b8;">
-            Administra las materias y su asignación a profesores.
-          </v-card-text>
-        </v-card>
+  <v-container fluid class="subjects-page pa-8">
+    <Loader :visible="loading" message="Cargando materias..." />
+
+    <div class="d-flex align-start justify-space-between mb-8 flex-wrap ga-4">
+      <div>
+        <h1 class="page-title">Materias</h1>
+        <p class="page-subtitle">Gestiona el catálogo de materias por nivel y unidades</p>
+      </div>
+      <v-btn
+        color="success"
+        size="default"
+        rounded="lg"
+        class="action-btn register-btn text-uppercase"
+        prepend-icon="mdi-plus"
+        @click="openCreate"
+      >
+        Registrar materia
+      </v-btn>
+    </div>
+
+    <v-row class="mb-6" align="center">
+      <v-col cols="12" sm="6" md="4">
+        <v-select
+          v-model="filterLevel"
+          label="Nivel académico"
+          :items="levelFilterItems"
+          item-title="label"
+          item-value="value"
+          variant="outlined"
+          density="comfortable"
+          clearable
+          hide-details
+          bg-color="white"
+          @update:model-value="onFiltersChanged"
+        />
+      </v-col>
+      <v-col cols="12" sm="6" md="4">
+        <v-select
+          v-model="filterStatus"
+          label="Estado"
+          :items="filterStatusItems"
+          item-title="label"
+          item-value="value"
+          variant="outlined"
+          density="comfortable"
+          clearable
+          hide-details
+          bg-color="white"
+          @update:model-value="onFiltersChanged"
+        />
       </v-col>
     </v-row>
+
+    <v-row>
+      <v-col v-for="s in subjects" :key="s.id_subject" cols="12" md="6" lg="4">
+        <SubjectCard
+          :subject="s"
+          subtitle="Materia académica"
+          :status-loading="statusTogglingId === s.id_subject"
+          @view="openDetail(s)"
+          @edit="openEdit(s)"
+          @toggle-status="onToggleStatus(s, $event)"
+        />
+      </v-col>
+    </v-row>
+
+    <v-alert v-if="!loading && subjects.length === 0" type="info" variant="tonal" class="mt-2" rounded="lg">
+      No hay materias registradas con los filtros seleccionados.
+    </v-alert>
+
+    <div v-if="!loading && pagination.totalPages > 1" class="d-flex justify-center mt-6">
+      <v-pagination
+        v-model="pagination.currentPage"
+        :length="pagination.totalPages"
+        rounded="circle"
+        density="comfortable"
+        @update:model-value="handlePageChange"
+      />
+    </div>
+
+    <p v-if="!loading && pagination.count > 0" class="pagination-caption text-center mt-2">
+      Mostrando {{ subjects.length }} de {{ pagination.count }} materias
+    </p>
+
+    <SubjectFormDialog v-model="formDialog" :subject="subjectToEdit" @saved="onFormSaved" />
+
+    <SubjectDetailDialog v-model="detailDialog" :subject="detailSubject" />
+
+    <v-snackbar v-model="snackbar.show" :color="snackbar.color" :timeout="3200" location="top right">
+      {{ snackbar.message }}
+    </v-snackbar>
   </v-container>
 </template>
 
 <script setup lang="ts">
-import HeaderSession from '@/components/HeaderSession.vue';
+import { onMounted, ref } from 'vue';
+import Loader from '@/components/Loader.vue';
+import SubjectFormDialog from '../components/SubjectFormDialog.vue';
+import SubjectCard from '../components/SubjectCard.vue';
+import SubjectDetailDialog from '../components/SubjectDetailDialog.vue';
+import { useSubjects } from '../../composables/useSubjects';
+import type { Subject } from '../../entities/subject';
+
+const {
+  loading,
+  subjects,
+  pagination,
+  filterLevel,
+  filterStatus,
+  fetchSubjects,
+  handlePageChange: pageChange,
+  setSubjectStatus,
+} = useSubjects();
+
+const levelFilterItems = [
+  { label: 'Todos los niveles', value: null },
+  ...Array.from({ length: 11 }, (_, i) => ({
+    label: `Nivel ${i + 1}`,
+    value: i + 1,
+  })),
+];
+
+const filterStatusItems = [
+  { label: 'Activas', value: 'true' },
+  { label: 'Inactivas', value: 'false' },
+];
+
+const formDialog = ref(false);
+const subjectToEdit = ref<Subject | null>(null);
+
+const detailDialog = ref(false);
+const detailSubject = ref<Subject | null>(null);
+
+const statusTogglingId = ref<number | null>(null);
+
+const snackbar = ref({ show: false, message: '', color: 'success' });
+
+function showSnackbar(message: string, color: string = 'success') {
+  snackbar.value = { show: true, message, color };
+}
+
+function openCreate() {
+  subjectToEdit.value = null;
+  formDialog.value = true;
+}
+
+function openEdit(s: Subject) {
+  subjectToEdit.value = s;
+  formDialog.value = true;
+}
+
+function openDetail(s: Subject) {
+  detailSubject.value = s;
+  detailDialog.value = true;
+}
+
+function onFormSaved() {
+  showSnackbar(subjectToEdit.value ? 'Materia actualizada correctamente.' : 'Materia registrada correctamente.');
+  fetchSubjects();
+}
+
+async function onToggleStatus(subject: Subject, value: boolean) {
+  statusTogglingId.value = subject.id_subject;
+  try {
+    const res = await setSubjectStatus(subject.id_subject, value);
+    if (res.success) {
+      showSnackbar(res.message || 'Estatus de materia actualizado.');
+    } else {
+      showSnackbar(res.message || 'No se pudo actualizar el estatus.', 'error');
+      await fetchSubjects();
+    }
+  } finally {
+    statusTogglingId.value = null;
+  }
+}
+
+async function onFiltersChanged() {
+  pagination.value.currentPage = 1;
+  await fetchSubjects();
+}
+
+function handlePageChange(p: number) {
+  pageChange(p);
+}
+
+onMounted(() => {
+  void fetchSubjects();
+});
 </script>
+
+<style scoped>
+.subjects-page {
+  background: linear-gradient(180deg, #f8fbff 0%, #f4f7fb 100%);
+  min-height: 100vh;
+}
+
+.page-title {
+  font-size: 40px;
+  line-height: 1;
+  margin: 0;
+  color: #0f172a;
+  font-weight: 750;
+}
+
+.page-subtitle {
+  margin: 8px 0 0;
+  color: #64748b;
+  font-size: 18px;
+}
+
+.action-btn {
+  font-size: 14px;
+  min-height: 38px;
+  padding-inline: 14px;
+}
+
+.register-btn {
+  letter-spacing: 0.04em;
+  font-weight: 700;
+}
+
+.pagination-caption {
+  color: #64748b;
+  font-size: 13px;
+}
+
+@media (max-width: 960px) {
+  .page-title {
+    font-size: 32px;
+  }
+
+  .page-subtitle {
+    font-size: 16px;
+  }
+}
+</style>

@@ -1,10 +1,13 @@
-import { ApiResponse, PaginationDto } from "@/kernel/types";
-import { Subject } from "../../entities/subject";
-import { CreateSubjectDto } from "../../entities/create-subject.dto";
+import type { ApiResponse } from '@/kernel/types';
+import type { Subject, SubjectListPayload } from '../../entities/subject';
+import type { CreateSubjectDto } from '../../entities/create-subject.dto';
+import type { UpdateSubjectDto } from '../../entities/update-subject.dto';
+import type { GetSubjectsDto } from '../../entities/get-subjects.dto';
 
 export interface SubjectRepository {
-  getSubjects(pagination: PaginationDto, teacherId?: number): Promise<ApiResponse<Subject[]>>;
+  getSubjects(payload: GetSubjectsDto): Promise<ApiResponse<SubjectListPayload>>;
   getSubjectById(id: number): Promise<ApiResponse<Subject>>;
   createSubject(subject: CreateSubjectDto): Promise<ApiResponse<Subject>>;
-  deleteSubject(id: number): Promise<ApiResponse<boolean>>;
+  updateSubject(id: number, subject: UpdateSubjectDto): Promise<ApiResponse<Subject>>;
+  updateSubjectStatus(id: number, status: boolean): Promise<ApiResponse<{ id_subject: number; status: boolean }>>;
 }

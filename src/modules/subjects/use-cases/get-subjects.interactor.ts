@@ -1,16 +1,16 @@
-import { UseCase } from "@/kernel/contract";
-import { ApiResponse } from "@/kernel/types";
-import { Subject } from "../entities/subject";
-import { SubjectRepository } from "./ports/subject.repository";
-import { GetSubjectsDto } from "../entities/get-subjects.dto";
+import type { UseCase } from '@/kernel/contract';
+import type { ApiResponse } from '@/kernel/types';
+import type { SubjectListPayload } from '../entities/subject';
+import type { SubjectRepository } from './ports/subject.repository';
+import type { GetSubjectsDto } from '../entities/get-subjects.dto';
 
-export class GetSubjectsInteractor implements UseCase<GetSubjectsDto, ApiResponse<Subject[]>> {
+export class GetSubjectsInteractor implements UseCase<GetSubjectsDto, ApiResponse<SubjectListPayload>> {
   constructor(private readonly subjectRepository: SubjectRepository) {}
 
-  async execute(payload?: GetSubjectsDto): Promise<ApiResponse<Subject[]>> {
+  async execute(payload?: GetSubjectsDto): Promise<ApiResponse<SubjectListPayload>> {
     if (!payload) {
-      throw new Error("Missing payload for GetSubjectsInteractor");
+      throw new Error('Missing payload for GetSubjectsInteractor');
     }
-    return this.subjectRepository.getSubjects(payload.pagination, payload.teacherId);
+    return this.subjectRepository.getSubjects(payload);
   }
 }
