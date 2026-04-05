@@ -13,7 +13,7 @@ export class SubjectStorageGateway implements SubjectRepository {
       page: pagination.page,
       page_size: pagination.limit,
       academic_level: academic_level ?? undefined,
-      status: status === null || status === undefined ? undefined : status,
+      status: status ?? undefined,
     });
   }
 

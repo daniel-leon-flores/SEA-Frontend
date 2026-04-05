@@ -43,7 +43,9 @@ export class AuditLogStorageGateway implements AuditLogRepository {
     const queryString = params.toString();
     const endpoint = queryString ? `/api/audit-logs?${queryString}` : '/api/audit-logs';
 
-    const response = await handleRequest<AuditLogPaginatedResponse>('get', endpoint);
+    const response = await handleRequest<AuditLogPaginatedResponse>('get', endpoint, undefined, {
+      timeout: 30000,
+    });
 
     if (this.isAuditLogPaginatedResponse(response)) {
       return response;
