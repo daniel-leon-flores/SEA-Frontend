@@ -91,6 +91,44 @@
               />
             </v-col>
 
+            <v-col cols="12" v-if="form.id_subject">
+              <v-divider class="my-2" />
+              <p class="text-subtitle-2 mb-2">Preguntas del examen</p>
+              <p class="text-caption text-medium-emphasis mb-2">
+                Solo se listan preguntas del banco de la misma materia. Todas formarán parte del examen; al asignar el examen, el
+                alumno verá las preguntas en orden aleatorio (no depende de cómo aparezcan aquí).
+              </p>
+              <v-select
+                v-model="addQuestionSelection"
+                label="Añadir pregunta del banco"
+                :items="availableQuestionItems"
+                item-title="title"
+                item-value="value"
+                variant="outlined"
+                density="comfortable"
+                clearable
+                hide-details
+                no-data-text="No hay más preguntas disponibles para esta materia"
+                :disabled="submitting || loadingSubjects || loadingQuestions"
+                :loading="loadingQuestions"
+                @update:model-value="onAddQuestion"
+              />
+              <v-list v-if="linkedQuestionIds.length" density="compact" class="border rounded mt-2">
+                <v-list-item v-for="(qid, idx) in linkedQuestionIds" :key="`${qid}-${idx}`">
+                  <v-list-item-title class="text-body-2 text-wrap">
+                    {{ questionTitle(qid) }}
+                  </v-list-item-title>
+                  <template #append>
+                    <v-btn icon size="x-small" variant="text" color="error" @click="removeQuestion(idx)">
+                      <v-icon size="small">mdi-close</v-icon>
+                    </v-btn>
+                  </template>
+                </v-list-item>
+              </v-list>
+              <p v-else class="text-caption text-medium-emphasis mt-1">
+                Ninguna pregunta vinculada. Podrá activar el examen cuando asigne al menos una pregunta y grupos.
+              </p>
+            </v-col>
 
           </v-row>
         </v-form>
@@ -121,6 +159,7 @@
 import { ref, computed } from 'vue';
 import Loader from '@/components/Loader.vue';
 import { ExamController } from '../exam.controller';
+import { QuestionController } from '@/modules/questions/adapters/question.controller';
 import type { Subject, SubjectUnit } from '../../entities/assign-exam.dto';
 import type { Exam } from '../../entities/exam';
 import { DIFFICULTY_OPTIONS, MAX_SCORE, MIN_SCORE } from '../../entities/exam-constants';
@@ -131,6 +170,7 @@ const emit = defineEmits<{
 }>();
 
 const controller = new ExamController();
+const questionController = new QuestionController();
 
 const visible = ref(false);
 const submitting = ref(false);
@@ -149,7 +189,20 @@ const form = ref({
   minimum_score: '7.00',
 });
 
+/** IDs de preguntas incluidas en el examen (sin orden semántico para el alumno). */
+const linkedQuestionIds = ref<number[]>([]);
+const questionTitles = ref<Record<number, string>>({});
+const loadingQuestions = ref(false);
+const addQuestionSelection = ref<number | null>(null);
+
 const isEditing = computed(() => editingExamId.value !== null);
+
+const availableQuestionItems = computed(() => {
+  const taken = new Set(linkedQuestionIds.value);
+  return Object.entries(questionTitles.value)
+    .filter(([id]) => !taken.has(Number(id)))
+    .map(([value, title]) => ({ value: Number(value), title }));
+});
 
 const unitItems = computed(() => {
   if (!form.value.id_subject) return [];
@@ -174,8 +227,71 @@ const rules = {
   },
 };
 
-function onSubjectChange() {
+async function loadBankQuestions() {
+  if (!form.value.id_subject) {
+    questionTitles.value = {};
+    return;
+  }
+  loadingQuestions.value = true;
+  try {
+    const res = await questionController.getQuestions({
+      pagination: { page: 1, limit: 500 },
+      subjectId: form.value.id_subject,
+    });
+    const map: Record<number, string> = {};
+    if (res.success && res.data?.results) {
+      for (const q of res.data.results) {
+        const t = q.text || '';
+        map[q.id] = t.length > 120 ? `${t.slice(0, 117)}…` : t;
+      }
+    }
+    questionTitles.value = map;
+  } finally {
+    loadingQuestions.value = false;
+  }
+}
+
+async function loadLinkedQuestions(examId: number) {
+  loadingQuestions.value = true;
+  try {
+    const res = await controller.getExamQuestions(examId);
+    if (res.success && res.data?.questions?.length) {
+      const sorted = res.data.questions.slice().sort((a, b) => a.id_exam_question - b.id_exam_question);
+      linkedQuestionIds.value = sorted.map((q) => q.id_question);
+      const merged = { ...questionTitles.value };
+      for (const q of sorted) {
+        const t = q.text || '';
+        merged[q.id_question] = t.length > 120 ? `${t.slice(0, 117)}…` : t;
+      }
+      questionTitles.value = merged;
+    } else {
+      linkedQuestionIds.value = [];
+    }
+  } finally {
+    loadingQuestions.value = false;
+  }
+}
+
+function questionTitle(id: number) {
+  return questionTitles.value[id] ?? `Pregunta #${id}`;
+}
+
+function onAddQuestion(id: number | null) {
+  if (id == null) return;
+  if (!linkedQuestionIds.value.includes(id)) {
+    linkedQuestionIds.value.push(id);
+  }
+  addQuestionSelection.value = null;
+}
+
+function removeQuestion(idx: number) {
+  linkedQuestionIds.value.splice(idx, 1);
+}
+
+async function onSubjectChange() {
   form.value.unit_number = null;
+  linkedQuestionIds.value = [];
+  await loadBankQuestions();
 }
 
 async function loadSubjects() {
@@ -201,6 +317,9 @@ function resetForm() {
   };
   editingExamId.value = null;
   editingExamOriginal.value = null;
+  linkedQuestionIds.value = [];
+  questionTitles.value = {};
+  addQuestionSelection.value = null;
 }
 
 async function openCreate() {
@@ -229,6 +348,8 @@ async function openEdit(examId: number) {
         secure_mode: exam.secure_mode,
         minimum_score: exam.minimum_score,
       };
+      await loadBankQuestions();
+      await loadLinkedQuestions(examId);
     } else {
       emit('error', res.message || 'Error al cargar el examen');
       close();
@@ -267,12 +388,27 @@ async function handleSubmit() {
         })
       : await controller.createExam(payload);
 
-    if (res.success) {
-      emit('saved');
-      close();
-    } else {
+    if (!res.success) {
       emit('error', res.message || 'Error al guardar el examen');
+      return;
     }
+
+    const examPk = isEditing.value && editingExamId.value
+      ? editingExamId.value
+      : res.data?.id_exam;
+
+    if (examPk != null) {
+      const qres = await controller.putExamQuestions(examPk, {
+        question_ids: [...linkedQuestionIds.value],
+      });
+      if (!qres.success) {
+        emit('error', qres.message || 'No se pudieron guardar las preguntas vinculadas al examen');
+        return;
+      }
+    }
+
+    emit('saved');
+    close();
   } catch {
     emit('error', 'Error de conexión al guardar el examen');
   } finally {

@@ -20,6 +20,7 @@ import type {
   GroupStudent,
   GetGroupStudentsDto,
 } from '../entities/assign-exam.dto';
+import type { ExamQuestionsResponse, ReplaceExamQuestionsDto } from '../entities/exam-linked-question';
 
 export class ExamController {
   private getRepository(): ExamRepository {
@@ -87,5 +88,13 @@ export class ExamController {
   getStudentAssignments(params?: GetMyAssignmentsDto): Promise<ApiResponse<MyAssignment[]>> {
     const interactor = new GetStudentAssignmentsInteractor(this.getRepository());
     return interactor.execute(params);
+  }
+
+  getExamQuestions(examId: number): Promise<ApiResponse<ExamQuestionsResponse>> {
+    return this.getRepository().getExamQuestions(examId);
+  }
+
+  putExamQuestions(examId: number, body: ReplaceExamQuestionsDto): Promise<ApiResponse<ExamQuestionsResponse>> {
+    return this.getRepository().putExamQuestions(examId, body);
   }
 }

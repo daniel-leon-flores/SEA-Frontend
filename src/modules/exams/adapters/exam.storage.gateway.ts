@@ -14,6 +14,7 @@ import {
   GetGroupStudentsDto,
 } from "../entities/assign-exam.dto";
 import { MyAssignment, GetMyAssignmentsDto } from "../entities/my-assignment";
+import type { ExamQuestionsResponse, ReplaceExamQuestionsDto } from "../entities/exam-linked-question";
 
 function buildQueryString(params: Record<string, unknown>): string {
   const qs = new URLSearchParams();
@@ -85,5 +86,17 @@ export class ExamStorageGateway implements ExamRepository {
 
   async getStudentAssignments(params: GetMyAssignmentsDto): Promise<ApiResponse<MyAssignment[]>> {
     return handleRequest<MyAssignment[]>('get', `/api/exams/exam-assignments/my-assignments/${buildQueryString({ ...params })}`);
+  }
+
+  async getExamQuestions(examId: number): Promise<ApiResponse<ExamQuestionsResponse>> {
+    return handleRequest<ExamQuestionsResponse>('get', `/api/exams/${examId}/questions/`);
+  }
+
+  async putExamQuestions(examId: number, body: ReplaceExamQuestionsDto): Promise<ApiResponse<ExamQuestionsResponse>> {
+    return handleRequest<ExamQuestionsResponse, ReplaceExamQuestionsDto>(
+      'put',
+      `/api/exams/${examId}/questions/`,
+      body,
+    );
   }
 }

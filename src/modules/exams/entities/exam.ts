@@ -15,8 +15,8 @@ export type Exam = Entity<number> & {
   minimum_score: string;
   creation_date: string;
   status: boolean;
-  created_at: string;
-  updated_at: string;
+  modified_at: string;
+  modified_by: number | null;
   // Only present in ExamSerializer (GET /api/exams/)
   id_teacher?: number;
   teacher_name?: string;
