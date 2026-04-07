@@ -76,7 +76,10 @@
                 <v-text-field
                   v-model.number="form.year"
                   type="number"
-                  hide-details
+                  :max="currentYear"
+                  :error="!!yearError"
+                  :error-messages="yearError"
+                  hide-details="auto"
                   variant="solo-filled"
                   rounded="lg"
                   density="comfortable"
@@ -146,15 +149,13 @@
 
                 <v-col cols="12" md="5">
                   <label class="field-label">Nivel académico actual</label>
-                  <v-select
-                    v-model.number="group.academic_level"
-                    :items="academicLevelOptions"
-                    item-title="label"
-                    item-value="value"
+                  <v-text-field
+                    :model-value="detectedAcademicLevel"
                     hide-details
                     variant="solo-filled"
                     rounded="lg"
                     density="comfortable"
+                    readonly
                   />
                 </v-col>
 
@@ -206,6 +207,7 @@ import { getGenerationGroupsInteractor, createGenerationGroupInteractor } from '
 import { Generation } from '../../entities/generation';
 import { CreateGenerationDto } from '../../entities/create-generation.dto';
 import { CreateGenerationGroupDto } from '@/modules/groups/entities/create-generation-group.dto';
+import { calculateAcademicLevel } from '@/modules/groups/utils/academic-level';
 
 type FormGroup = {
   uid: number;
@@ -216,6 +218,7 @@ type FormGroup = {
 
 const router = useRouter();
 const controller = new GenerationController();
+const currentYear = new Date().getFullYear();
 
 const loading = ref(false);
 const saving = ref(false);
@@ -243,14 +246,11 @@ const form = ref({
   total_levels: 11,
   groups: [] as FormGroup[],
 });
+const yearError = ref('');
 
-const academicLevelOptions = computed(() => {
-  const levels = form.value.total_levels || 11;
-  return Array.from({ length: levels }, (_, i) => ({
-    value: i + 1,
-    label: `Nivel ${i + 1}`,
-  }));
-});
+const detectedAcademicLevel = computed(() =>
+  calculateAcademicLevel(form.value.year, form.value.total_levels)
+);
 
 const showToast = (message: string, color: string = 'success') => {
   snackbar.value = { show: true, color, message };
@@ -260,12 +260,28 @@ const normalizeLetter = (value: string): string => value.trim().toUpperCase();
 
 const nextUid = (): number => Date.now() + Math.floor(Math.random() * 1000);
 
+const getYearValidationMessage = (year: number): string => {
+  if (!year || year < 1900) {
+    return 'Debes ingresar un año de generación válido.';
+  }
+
+  if (year > currentYear) {
+    return 'No puedes registrar generaciones mayores al año actual.';
+  }
+
+  return '';
+};
+
 const resetForm = () => {
+  const baseYear = new Date().getFullYear();
+  const baseTotalLevels = 11;
+  const baseAcademicLevel = calculateAcademicLevel(baseYear, baseTotalLevels);
+  yearError.value = '';
   form.value = {
-    year: new Date().getFullYear(),
+    year: baseYear,
     status: true,
-    total_levels: 11,
-    groups: [{ uid: nextUid(), group_letter: 'A', academic_level: 1, status: true }],
+    total_levels: baseTotalLevels,
+    groups: [{ uid: nextUid(), group_letter: 'A', academic_level: baseAcademicLevel, status: true }],
   };
   activeTab.value = 'info';
   isEditMode.value = false;
@@ -330,7 +346,12 @@ const addGroup = () => {
       nextLetter = String.fromCharCode(lastLetter.charCodeAt(0) + 1);
     }
   }
-  form.value.groups.push({ uid: nextUid(), group_letter: nextLetter, academic_level: 1, status: true });
+  form.value.groups.push({
+    uid: nextUid(),
+    group_letter: nextLetter,
+    academic_level: detectedAcademicLevel.value,
+    status: true,
+  });
 };
 
 const removeGroup = (index: number) => {
@@ -338,8 +359,8 @@ const removeGroup = (index: number) => {
 };
 
 const validateForm = (): boolean => {
-  if (!form.value.year || form.value.year < 1900) {
-    showToast('Debes ingresar un año de generación válido.', 'error');
+  yearError.value = getYearValidationMessage(form.value.year);
+  if (yearError.value) {
     return false;
   }
 
@@ -358,6 +379,9 @@ const saveGeneration = async () => {
   if (!validateForm()) {
     return;
   }
+
+  const resolvedAcademicLevel = detectedAcademicLevel.value;
+  form.value.groups = form.value.groups.map((item) => ({ ...item, academic_level: resolvedAcademicLevel }));
 
   saving.value = true;
   const generationPayload: CreateGenerationDto = {
@@ -435,6 +459,25 @@ onMounted(async () => {
 watch(currentPage, async () => {
   await loadGenerations();
 });
+
+watch(
+  () => form.value.year,
+  (year) => {
+    yearError.value = getYearValidationMessage(year);
+  },
+  { immediate: true }
+);
+
+watch(
+  () => [form.value.year, form.value.total_levels],
+  () => {
+    const resolvedAcademicLevel = detectedAcademicLevel.value;
+    form.value.groups = form.value.groups.map((group) => ({
+      ...group,
+      academic_level: resolvedAcademicLevel,
+    }));
+  }
+);
 </script>
 
 <style scoped>

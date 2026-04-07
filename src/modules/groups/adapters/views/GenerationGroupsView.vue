@@ -27,7 +27,7 @@
       >
         <GenerationGroupCard
           :group="group"
-          :students-count="0"
+          :students-count="group.students_count ?? 0"
           @view="goToGroupStudentsView(group)"
           @edit="openEditGroupModal(group)"
           @toggle-status="toggleGroupStatus(group, $event)"
@@ -83,15 +83,13 @@
 
           <v-col cols="12" md="6">
             <label class="field-label">Nivel académico actual</label>
-            <v-select
-              v-model.number="groupForm.academic_level"
-              :items="academicLevelOptions"
-              item-title="label"
-              item-value="value"
+            <v-text-field
+              :model-value="detectedAcademicLevel"
               hide-details
               variant="solo-filled"
               rounded="lg"
               density="comfortable"
+              readonly
             />
           </v-col>
 
@@ -132,6 +130,7 @@ import { getGenerationGroupsInteractor, createGenerationGroupInteractor, updateG
 import { CreateGenerationGroupDto } from '../../entities/create-generation-group.dto';
 import { UpdateGenerationGroupDto } from '../../entities/update-generation-group.dto';
 import type { GenerationGroup } from '../../entities/generation-group';
+import { calculateAcademicLevel } from '../../utils/academic-level';
 
 const route = useRoute();
 const router = useRouter();
@@ -165,14 +164,11 @@ const groupForm = ref({
   status: true,
 });
 
-const academicLevelOptions = computed(() =>
-  Array.from({ length: generationTotalLevels.value }, (_, index) => {
-    const level = index + 1;
-    return {
-      label: `Nivel ${level}`,
-      value: level,
-    };
-  })
+const detectedAcademicLevel = computed(() =>
+  calculateAcademicLevel(
+    generationYear.value ?? new Date().getFullYear(),
+    generationTotalLevels.value
+  )
 );
 
 const showToast = (message: string, color: string = 'success') => {
@@ -184,7 +180,7 @@ const normalizeLetter = (value: string): string => value.trim().toUpperCase();
 const resetGroupForm = () => {
   groupForm.value = {
     group_letter: '',
-    academic_level: 1,
+    academic_level: detectedAcademicLevel.value,
     status: true,
   };
   groupEditId.value = null;
@@ -250,7 +246,7 @@ const openEditGroupModal = (group: GenerationGroup) => {
   groupEditId.value = group.id_group;
   groupForm.value = {
     group_letter: group.group_letter,
-    academic_level: group.academic_level,
+    academic_level: detectedAcademicLevel.value,
     status: group.status,
   };
   showGroupModal.value = true;
@@ -269,9 +265,10 @@ const saveGroup = async () => {
   saving.value = true;
 
   if (groupEditId.value) {
+    const resolvedAcademicLevel = detectedAcademicLevel.value;
     const payload: UpdateGenerationGroupDto = {
       group_letter: normalizeLetter(groupForm.value.group_letter),
-      academic_level: Number(groupForm.value.academic_level),
+      academic_level: resolvedAcademicLevel,
       status: groupForm.value.status,
     };
     const response = await updateGenerationGroupInteractor.execute({ id: groupEditId.value, payload });
@@ -286,10 +283,11 @@ const saveGroup = async () => {
     return;
   }
 
+  const resolvedAcademicLevel = detectedAcademicLevel.value;
   const payload: CreateGenerationGroupDto = {
     id_generation: generationId,
     group_letter: normalizeLetter(groupForm.value.group_letter),
-    academic_level: Number(groupForm.value.academic_level),
+    academic_level: resolvedAcademicLevel,
     status: groupForm.value.status,
   };
   const response = await createGenerationGroupInteractor.execute(payload);
@@ -323,6 +321,13 @@ onMounted(async () => {
 
 watch(currentPage, async () => {
   await loadGroups();
+});
+
+watch(detectedAcademicLevel, (level) => {
+  if (!showGroupModal.value) {
+    return;
+  }
+  groupForm.value.academic_level = level;
 });
 </script>
 
