@@ -9,5 +9,6 @@ export type GenerationGroup = Entity<number> & {
   period_info: string | null;
   group_letter: string;
   academic_level: number;
+  students_count: number;
   status: boolean;
 };
