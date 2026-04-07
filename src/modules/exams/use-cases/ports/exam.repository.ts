@@ -12,6 +12,7 @@ import {
   GetGroupStudentsDto,
 } from "../../entities/assign-exam.dto";
 import { MyAssignment, GetMyAssignmentsDto } from "../../entities/my-assignment";
+import type { ExamQuestionsResponse, ReplaceExamQuestionsDto } from "../../entities/exam-linked-question";
 
 export interface ExamRepository {
   getMyExams(params: GetExamsDto): Promise<ApiResponse<PaginatedData<Exam>>>;
@@ -28,4 +29,6 @@ export interface ExamRepository {
   getGroupStats(examId: number, groupId: number): Promise<ApiResponse<GroupStats>>;
   getGroupStudents(examId: number, groupId: number, params: GetGroupStudentsDto): Promise<ApiResponse<PaginatedData<GroupStudent>>>;
   getStudentAssignments(params: GetMyAssignmentsDto): Promise<ApiResponse<MyAssignment[]>>;
+  getExamQuestions(examId: number): Promise<ApiResponse<ExamQuestionsResponse>>;
+  putExamQuestions(examId: number, body: ReplaceExamQuestionsDto): Promise<ApiResponse<ExamQuestionsResponse>>;
 }
