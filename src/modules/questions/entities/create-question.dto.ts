@@ -13,4 +13,4 @@ export type CreateQuestionDto = {
   code_question?: CodeQuestionPayload | null;
 };
 
-export type UpdateQuestionDto = CreateQuestionDto;
+export type UpdateQuestionDto = Partial<CreateQuestionDto>;
