@@ -35,8 +35,8 @@
       </div>
 
       <div class="d-flex align-center ga-1">
-        <v-btn icon variant="text" size="small" @click="$emit('view')">
-          <v-icon>mdi-eye-outline</v-icon>
+        <v-btn color="primary" variant="tonal" size="small" rounded="lg" @click="$emit('view')">
+          Ver grupos
         </v-btn>
         <v-btn icon variant="text" size="small" @click="$emit('edit')">
           <v-icon>mdi-pencil-outline</v-icon>

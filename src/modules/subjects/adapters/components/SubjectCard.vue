@@ -29,6 +29,7 @@
       <div class="d-flex align-center ga-2">
         <span class="text-medium-emphasis">Estado</span>
         <v-switch
+          v-if="!showGroupsBtn"
           :model-value="subject.status"
           hide-details
           density="compact"
@@ -39,12 +40,27 @@
       </div>
 
       <div class="d-flex align-center ga-1">
-        <v-btn icon variant="text" size="small" @click="$emit('view')">
-          <v-icon>mdi-eye-outline</v-icon>
-        </v-btn>
-        <v-btn icon variant="text" size="small" @click="$emit('edit')">
-          <v-icon>mdi-pencil-outline</v-icon>
-        </v-btn>
+        <template v-if="showGroupsBtn">
+          <v-btn
+            v-if="hasGroups !== false"
+            color="primary"
+            variant="tonal"
+            size="small"
+            rounded="lg"
+            @click="$emit('view-groups')"
+          >
+            Ver grupos
+          </v-btn>
+          <span v-else class="no-groups-text">Sin grupos asignados</span>
+        </template>
+        <template v-else>
+          <v-btn icon variant="text" size="small" @click="$emit('view')">
+            <v-icon>mdi-eye-outline</v-icon>
+          </v-btn>
+          <v-btn icon variant="text" size="small" @click="$emit('edit')">
+            <v-icon>mdi-pencil-outline</v-icon>
+          </v-btn>
+        </template>
       </div>
     </div>
   </v-card>
@@ -58,12 +74,15 @@ const props = defineProps<{
   subject: Subject;
   subtitle: string;
   statusLoading?: boolean;
+  showGroupsBtn?: boolean;
+  hasGroups?: boolean;
 }>();
 
 defineEmits<{
   (e: 'view'): void;
   (e: 'edit'): void;
   (e: 'toggle-status', value: boolean): void;
+  (e: 'view-groups'): void;
 }>();
 
 const unitsCount = computed(() => props.subject.units?.length ?? 0);
@@ -101,6 +120,13 @@ const unitsCount = computed(() => props.subject.units?.length ?? 0);
   margin: 4px 0 0;
   color: #64748b;
   font-size: 15px;
+}
+
+.no-groups-text {
+  font-size: 12px;
+  color: #94a3b8;
+  font-style: italic;
+  white-space: nowrap;
 }
 
 .status-chip {

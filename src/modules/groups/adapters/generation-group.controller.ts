@@ -3,6 +3,9 @@ import { DeleteGenerationGroupInteractor } from '../use-cases/delete-generation-
 import { GetGenerationGroupsInteractor } from '../use-cases/get-generation-groups.interactor';
 import { SetGenerationGroupStatusInteractor } from '../use-cases/set-generation-group-status.interactor';
 import { UpdateGenerationGroupInteractor } from '../use-cases/update-generation-group.interactor';
+import { CreateAssignmentInteractor } from '../use-cases/assign-teacher.interactor';
+import { DeleteAssignmentInteractor } from '../use-cases/delete-assignment.interactor';
+import { GetAvailableTeachersInteractor } from '../use-cases/get-available-teachers.interactor';
 import { GenerationGroupStorageGateway } from './generation-group.storage.gateway';
 
 const generationGroupRepository = new GenerationGroupStorageGateway();
@@ -12,3 +15,6 @@ export const deleteGenerationGroupInteractor = new DeleteGenerationGroupInteract
 export const getGenerationGroupsInteractor = new GetGenerationGroupsInteractor(generationGroupRepository);
 export const setGenerationGroupStatusInteractor = new SetGenerationGroupStatusInteractor(generationGroupRepository);
 export const updateGenerationGroupInteractor = new UpdateGenerationGroupInteractor(generationGroupRepository);
+export const createAssignmentInteractor = new CreateAssignmentInteractor(generationGroupRepository);
+export const deleteAssignmentInteractor = new DeleteAssignmentInteractor(generationGroupRepository);
+export const getAvailableTeachersInteractor = new GetAvailableTeachersInteractor(generationGroupRepository);
