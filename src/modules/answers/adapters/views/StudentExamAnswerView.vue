@@ -86,6 +86,28 @@
                   <div class="pa-5 pa-md-6">
                     <p class="text-h6 question-statement mb-6">{{ currentQuestion.statement }}</p>
 
+                    <v-sheet
+                      v-if="currentQuestion.image_url"
+                      rounded="xl"
+                      class="question-image-frame pa-2 mb-6 mx-auto"
+                      border
+                    >
+                      <v-img
+                        :src="currentQuestion.image_url"
+                        alt="Imagen de la pregunta"
+                        height="220"
+                        class="question-image"
+                        contain
+                      >
+                        <template #error>
+                          <v-sheet class="d-flex flex-column align-center justify-center text-medium-emphasis pa-6" color="grey-lighten-4">
+                            <v-icon size="28" class="mb-2">mdi-image-off-outline</v-icon>
+                            No se pudo cargar la imagen.
+                          </v-sheet>
+                        </template>
+                      </v-img>
+                    </v-sheet>
+
                     <template v-if="currentQuestion.question_type === 'MULTIPLE_CHOICE'">
                       <v-radio-group v-model="responses[currentQuestion.id_question]" color="primary" hide-details>
                         <v-radio
@@ -134,31 +156,6 @@
                       </div>
 
                       <CodeMirrorEditor v-model="codeResponses[currentQuestion.id_question]" />
-
-                      <v-expansion-panels class="mt-4" variant="accordion">
-                        <v-expansion-panel>
-                          <v-expansion-panel-title>Casos de prueba ({{ currentQuestion.codeQuestion?.test_cases.length ?? 0 }})</v-expansion-panel-title>
-                          <v-expansion-panel-text>
-                            <v-list density="compact">
-                              <v-list-item
-                                v-for="(testCase, index) in currentQuestion.codeQuestion?.test_cases ?? []"
-                                :key="`${currentQuestion.id_question}-${index}`"
-                                class="px-0"
-                              >
-                                <template #prepend>
-                                  <v-icon color="success">mdi-check-circle-outline</v-icon>
-                                </template>
-                                <v-list-item-title class="text-body-2">{{ testCase.input }}</v-list-item-title>
-                                <v-list-item-subtitle>Esperado: {{ testCase.expected }}</v-list-item-subtitle>
-                              </v-list-item>
-                            </v-list>
-                          </v-expansion-panel-text>
-                        </v-expansion-panel>
-                      </v-expansion-panels>
-
-                      <div class="d-flex justify-end mt-4">
-                        <v-btn color="teal-darken-2" variant="flat" prepend-icon="mdi-play" @click="runCode">Ejecutar</v-btn>
-                      </div>
                     </template>
                   </div>
                 </v-card>
@@ -358,6 +355,7 @@ type StudentCodeQuestion = {
 type StudentQuestion = {
   id_question: number;
   statement: string;
+  image_url?: string | null;
   question_type: StudentQuestionType;
   difficulty: StudentDifficulty;
   bloom_level: StudentBloomLevel;
@@ -475,17 +473,6 @@ function normalizeCodeTestCases(raw: unknown): Array<{ input: string; expected: 
     .filter((testCase) => testCase.input !== '-' || testCase.expected !== '-');
 }
 
-function shuffleQuestions(questions: StudentQuestion[]): StudentQuestion[] {
-  const shuffled = [...questions];
-
-  for (let i = shuffled.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-
-  return shuffled;
-}
-
 function initializeResponseState() {
   session.questions.forEach((question) => {
     responses[question.id_question] = responses[question.id_question] ?? '';
@@ -513,6 +500,7 @@ function mapQuestion(linkedQuestion: ExamLinkedQuestion): StudentQuestion {
   return {
     id_question: linkedQuestion.id_question,
     statement: linkedQuestion.text,
+    image_url: linkedQuestion.image_url ?? null,
     question_type: normalizeQuestionType(linkedQuestion.question_type),
     difficulty: normalizeDifficulty(linkedQuestion.difficulty),
     bloom_level: normalizeBloomLevel(linkedQuestion.bloom_level),
@@ -541,7 +529,7 @@ async function loadExamQuestions(examId: number) {
 
     const mappedQuestions = linkedQuestions.map((question) => mapQuestion(question));
 
-    session.questions = shuffleQuestions(mappedQuestions);
+    session.questions = mappedQuestions;
     currentIndex.value = 0;
     initializeResponseState();
   } catch {
@@ -715,10 +703,6 @@ function mapQuestionAnswer(question: StudentQuestion): SubmitAnswerItemDto | nul
     question_id: questionId,
     code_answer: codeAnswer,
   };
-}
-
-function runCode() {
-  showSnackbar('Ejecución simulada con CodeMirror y Python.', 'primary');
 }
 
 function resultRowClass(item: { graded: boolean; is_correct: boolean | null }) {
@@ -973,6 +957,18 @@ onMounted(() => {
 .question-statement {
   color: #1e3a5f;
   line-height: 1.55;
+}
+
+.question-image-frame {
+  border-color: rgba(20, 184, 166, 0.28) !important;
+  background: linear-gradient(180deg, #f0fdfa 0%, #f8fafc 100%);
+  max-width: 640px;
+}
+
+.question-image {
+  border-radius: 14px;
+  overflow: hidden;
+  background: #ffffff;
 }
 
 .answer-option {

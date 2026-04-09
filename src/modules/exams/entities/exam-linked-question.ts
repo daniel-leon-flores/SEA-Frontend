@@ -4,6 +4,7 @@ export type ExamLinkedQuestion = {
   id_exam: number;
   id_question: number;
   text: string;
+  image_url?: string | null;
   question_type: string;
   difficulty: string;
   bloom_level: string;

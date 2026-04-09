@@ -54,6 +54,7 @@ export type StudentAnswerRecord = {
   question: number;
   question_type: 'MULTIPLE_CHOICE' | 'MULTIPLE_SELECTION' | 'OPEN' | 'CODE';
   question_statement: string;
+  question_image_url?: string | null;
   question_points: number;
   question_difficulty: 'easy' | 'medium' | 'hard';
   question_bloom_level: 'remember' | 'understand' | 'apply' | 'analyze' | 'evaluate' | 'create';
@@ -74,6 +75,9 @@ export type StudentAnswerRecord = {
 
 export type AssignmentAnswersResult = {
   assignment_id: number;
+  exam_name?: string;
+  exam_title?: string;
+  student_name?: string;
   answers: StudentAnswerRecord[];
 };
 

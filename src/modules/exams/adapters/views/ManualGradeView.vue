@@ -23,7 +23,7 @@
           <div class="mb-6">
             <h1 class="page-title text-h4 font-weight-bold mb-2">Calificar examen</h1>
             <p class="page-subtitle text-body-1 text-medium-emphasis mb-0">
-              Asignación #{{ assignmentId }} · {{ gradedQuestions.length }} preguntas
+              {{ examName }} · {{ studentName }} · {{ gradedQuestions.length }} preguntas
             </p>
           </div>
 
@@ -91,6 +91,28 @@
               <v-divider />
 
               <div class="px-3 px-md-4 py-4">
+                <v-sheet
+                  v-if="item.question_image_url"
+                  class="question-image-frame pa-2 mb-4 mx-auto"
+                  rounded="xl"
+                  border
+                >
+                  <v-img
+                    :src="item.question_image_url"
+                    alt="Imagen de la pregunta"
+                    class="question-image"
+                    height="220"
+                    contain
+                  >
+                    <template #error>
+                      <v-sheet class="d-flex flex-column align-center justify-center text-medium-emphasis pa-6" color="grey-lighten-4">
+                        <v-icon size="28" class="mb-2">mdi-image-off-outline</v-icon>
+                        No se pudo cargar la imagen.
+                      </v-sheet>
+                    </template>
+                  </v-img>
+                </v-sheet>
+
                 <!-- ── Respuesta del alumno ── -->
                 <div class="text-subtitle-2 font-weight-bold mb-3">Respuesta del alumno</div>
 
@@ -248,6 +270,7 @@
     <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000" location="bottom right">
       {{ snackbar.message }}
       <template #actions>
+        <v-btn v-if="canReturnToGrades" variant="text" color="white" @click="goToGrades">Ir a calificaciones</v-btn>
         <v-btn variant="text" @click="snackbar.show = false">Cerrar</v-btn>
       </template>
     </v-snackbar>
@@ -256,9 +279,10 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import CodeMirrorEditor from '@/modules/answers/adapters/components/CodeMirrorEditor.vue';
 import { AnswersController } from '@/modules/answers/adapters/answers.controller';
+import { ExamController } from '../exam.controller';
 import type { StudentAnswerRecord } from '@/modules/answers/entities/exam-answer';
 
 type QuestionType = 'MULTIPLE_CHOICE' | 'MULTIPLE_SELECTION' | 'OPEN' | 'CODE';
@@ -271,10 +295,12 @@ type GradeRow = StudentAnswerRecord & {
 };
 
 const route = useRoute();
+const router = useRouter();
 const assignmentId = computed(() => Number(route.params.assignmentId));
 const examId = computed(() => Number(route.params.examId));
 
-const controller = new AnswersController();
+const answersController = new AnswersController();
+const examController = new ExamController();
 
 const pageLoading = ref(false);
 const pageError = ref('');
@@ -285,6 +311,9 @@ const gradedQuestions = reactive<GradeRow[]>([]);
 
 const assignmentFinalScore = ref<string | number | null>(null);
 const assignmentIsPassed = ref<boolean | null>(null);
+const canReturnToGrades = ref(false);
+const examName = ref('Examen');
+const studentName = ref('Alumno');
 
 const breadcrumbItems = computed(() => [
   { title: 'Exámenes', disabled: false, href: '/exams' },
@@ -300,6 +329,11 @@ const finalPercentage = computed(() => {
   if (!maxScore.value) return 0;
   return Math.round((totalScore.value / maxScore.value) * 100);
 });
+
+const gradesRoute = computed(() => ({
+  name: 'ExamGrades',
+  params: { id: String(examId.value) },
+}));
 
 function questionTypeLabel(type: QuestionType): string {
   const map: Record<QuestionType, string> = {
@@ -362,12 +396,13 @@ function mapToGradeRow(record: StudentAnswerRecord): GradeRow {
 
 async function saveAllGrades() {
   isSaving.value = true;
+  canReturnToGrades.value = false;
   let lastSummary: { score: string | number; is_passed: boolean } | null = null;
   let errorsCount = 0;
 
   for (const item of gradedQuestions) {
     try {
-      const response = await controller.manualGradeAnswer({
+      const response = await answersController.manualGradeAnswer({
         student_answer_id: item.id_student_answer,
         score: item.teacherScore,
         is_correct: item.teacherIsCorrect,
@@ -392,6 +427,7 @@ async function saveAllGrades() {
   if (lastSummary) {
     assignmentFinalScore.value = lastSummary.score;
     assignmentIsPassed.value = lastSummary.is_passed;
+    canReturnToGrades.value = true;
   }
 
   if (errorsCount === 0) {
@@ -409,6 +445,11 @@ function showSnackbar(message: string, color: 'success' | 'warning' | 'error' = 
   snackbar.value = { show: true, message, color };
 }
 
+async function goToGrades() {
+  snackbar.value.show = false;
+  await router.push(gradesRoute.value);
+}
+
 async function loadAnswers() {
   if (!assignmentId.value || Number.isNaN(assignmentId.value)) {
     pageError.value = 'ID de asignación inválido.';
@@ -419,12 +460,22 @@ async function loadAnswers() {
   pageError.value = '';
 
   try {
-    const response = await controller.getAssignmentAnswers(assignmentId.value);
+    const response = await answersController.getAssignmentAnswers(assignmentId.value);
 
     if (!response.success || !response.data) {
       pageError.value = response.message || 'No se pudieron obtener las respuestas.';
       return;
     }
+
+    examName.value =
+      response.data.exam_title ||
+      response.data.exam_name ||
+      String(route.query.examName || '').trim() ||
+      examName.value;
+    studentName.value =
+      response.data.student_name ||
+      String(route.query.studentName || '').trim() ||
+      studentName.value;
 
     gradedQuestions.splice(0, gradedQuestions.length, ...response.data.answers.map(mapToGradeRow));
   } catch {
@@ -434,7 +485,24 @@ async function loadAnswers() {
   }
 }
 
+async function loadExamMeta() {
+  if (!examId.value || Number.isNaN(examId.value)) return;
+
+  try {
+    const response = await examController.getExamById(examId.value);
+    if (response.success && response.data) {
+      const fallback = response.data.title || response.data.name;
+      if (fallback) {
+        examName.value = fallback;
+      }
+    }
+  } catch {
+    // Ignore and keep available fallbacks.
+  }
+}
+
 onMounted(() => {
+  void loadExamMeta();
   void loadAnswers();
 });
 </script>
@@ -482,6 +550,18 @@ onMounted(() => {
 .answer-box {
   border-color: #d7e7ea !important;
   background: #f8fcfd;
+}
+
+.question-image-frame {
+  border-color: rgba(15, 118, 110, 0.24) !important;
+  background: linear-gradient(180deg, #effcf9 0%, #f8fafc 100%);
+  max-width: 640px;
+}
+
+.question-image {
+  border-radius: 14px;
+  overflow: hidden;
+  background: #ffffff;
 }
 
 .answer-box--correct {

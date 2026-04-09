@@ -14,7 +14,6 @@
     <v-tabs v-model="activeTab" color="primary" class="mb-6" @update:model-value="onTabChange">
       <v-tab value="all">Todos</v-tab>
       <v-tab value="pending">Pendientes</v-tab>
-      <v-tab value="in_progress">En Progreso</v-tab>
       <v-tab value="completed">Completados</v-tab>
     </v-tabs>
 
@@ -118,15 +117,28 @@
 
           <v-card-actions class="pa-4">
             <v-spacer />
-            <v-btn
-              color="primary"
-              variant="flat"
-              :disabled="!item.can_start"
-              prepend-icon="mdi-play-circle"
-              @click="startExam(item)"
-            >
-              {{ item.status === 'in_progress' ? 'Continuar examen' : 'Empezar examen' }}
-            </v-btn>
+            <template v-if="item.status === 'completed'">
+              <v-btn
+                color="teal-darken-2"
+                variant="flat"
+                prepend-icon="mdi-eye"
+                :disabled="!item.can_review"
+                @click="viewAnswers(item)"
+              >
+                Ver respuestas
+              </v-btn>
+            </template>
+            <template v-else>
+              <v-btn
+                color="primary"
+                variant="flat"
+                :disabled="!item.can_start"
+                prepend-icon="mdi-play-circle"
+                @click="startExam(item)"
+              >
+                {{ item.status === 'in_progress' ? 'Continuar examen' : 'Empezar examen' }}
+              </v-btn>
+            </template>
           </v-card-actions>
         </v-card>
       </v-col>
@@ -157,7 +169,7 @@ const router = useRouter();
 const loading = ref(false);
 const errorMsg = ref('');
 const assignments = ref<MyAssignment[]>([]);
-const activeTab = ref<'all' | 'pending' | 'in_progress' | 'completed'>('all');
+const activeTab = ref<'all' | 'pending' | 'completed'>('all');
 
 const snackbar = ref({ show: false, message: '', color: 'error' });
 
@@ -171,7 +183,7 @@ async function loadAssignments() {
   try {
     const params = activeTab.value === 'all'
       ? { include_completed: true }
-      : { status: activeTab.value as 'pending' | 'in_progress' | 'completed', include_completed: true };
+      : { status: activeTab.value as 'pending' | 'completed', include_completed: true };
 
     const res = await controller.getStudentAssignments(params);
     if (res.success) {
@@ -198,6 +210,18 @@ function startExam(item: MyAssignment) {
 
   void router.push({
     name: 'AnswerExam',
+    params: { assignmentId: String(item.id_assignment) },
+  });
+}
+
+function viewAnswers(item: MyAssignment) {
+  if (!item.can_review) {
+    showSnackbar('Podrás ver tus respuestas cuando termine el periodo del examen.', 'warning');
+    return;
+  }
+
+  void router.push({
+    name: 'ReviewExam',
     params: { assignmentId: String(item.id_assignment) },
   });
 }

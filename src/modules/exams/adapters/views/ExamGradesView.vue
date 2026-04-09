@@ -126,18 +126,26 @@
 
           <template #cell-actions="{ row }">
             <div class="d-flex justify-center">
-              <v-tooltip text="Calificar manualmente" location="top">
+              <v-menu location="bottom end">
                 <template #activator="{ props }">
                   <v-btn
                     v-bind="props"
-                    icon="mdi-pencil-box-outline"
+                    icon="mdi-dots-vertical"
                     size="small"
                     variant="text"
-                    color="warning"
-                    @click="goToManualGrade(row)"
+                    color="grey-darken-2"
                   />
                 </template>
-              </v-tooltip>
+
+                <v-list density="compact" min-width="220">
+                  <v-list-item
+                    prepend-icon="mdi-pencil-box-outline"
+                    title="Calificar manualmente"
+                    :disabled="!canManualGrade(row)"
+                    @click="goToManualGrade(row)"
+                  />
+                </v-list>
+              </v-menu>
             </div>
           </template>
         </PaginatedTable>
@@ -226,6 +234,7 @@ export default {
       activeGroupIndex: 0,
       stats: null as GroupStats | null,
       students: [] as GroupStudent[],
+      examDisplayName: '',
       searchQuery: '',
       filterStatus: null as string | null,
       studentPagination: {
@@ -277,12 +286,24 @@ export default {
       this.errorMsg = 'ID de examen no válido';
       return;
     }
+    await this.loadExamInfo();
     await this.loadGroups();
   },
   methods: {
     formatDateTime,
     getStudentStatusColor,
     formatGroupLabel,
+
+    async loadExamInfo() {
+      try {
+        const res = await controller.getExamById(this.examId);
+        if (res.success && res.data) {
+          this.examDisplayName = res.data.title || res.data.name || '';
+        }
+      } catch {
+        this.examDisplayName = '';
+      }
+    },
 
     async loadGroups() {
       this.pageLoading = true;
@@ -390,12 +411,17 @@ export default {
       }, 500);
     },
 
-    goToManualGrade(student: GroupStudent) {
-      const assignmentId =
-        (student as unknown as { assignment_id?: number }).assignment_id ??
-        (student as unknown as { id_assignment?: number }).id_assignment;
+    canManualGrade(student: GroupStudent) {
+      return student.status === 'completed';
+    },
 
-      if (!assignmentId) {
+    goToManualGrade(student: GroupStudent) {
+      if (!this.canManualGrade(student)) {
+        this.showSnackbar('Solo se puede calificar manualmente cuando el examen está completado.', 'warning');
+        return;
+      }
+
+      if (!student.assignment_id) {
         this.showSnackbar('No se encontró la asignación del alumno para calificar.', 'warning');
         return;
       }
@@ -404,7 +430,11 @@ export default {
         name: 'ManualGrade',
         params: {
           examId: String(this.examId),
-          assignmentId: String(assignmentId),
+          assignmentId: String(student.assignment_id),
+        },
+        query: {
+          studentName: student.full_name,
+          examName: this.examDisplayName || undefined,
         },
       });
     },
