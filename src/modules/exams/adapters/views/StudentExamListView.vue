@@ -144,6 +144,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import Loader from '@/components/Loader.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import { ExamController } from '../exam.controller';
@@ -151,6 +152,7 @@ import type { MyAssignment } from '../../entities/my-assignment';
 import { formatDate } from '@/kernel/utils';
 
 const controller = new ExamController();
+const router = useRouter();
 
 const loading = ref(false);
 const errorMsg = ref('');
@@ -189,8 +191,15 @@ function onTabChange() {
 }
 
 function startExam(item: MyAssignment) {
-  // TODO: navigate to exam-taking view when it's implemented
-  showSnackbar(`Iniciando examen: ${item.exam_name}`, 'info');
+  if (!item.can_start) {
+    showSnackbar('Este examen no se puede iniciar en este momento.', 'warning');
+    return;
+  }
+
+  void router.push({
+    name: 'AnswerExam',
+    params: { assignmentId: String(item.id_assignment) },
+  });
 }
 
 // Helpers

@@ -134,7 +134,6 @@
                     size="small"
                     variant="text"
                     color="warning"
-                    :disabled="row.status === 'pending'"
                     @click="goToManualGrade(row)"
                   />
                 </template>
@@ -392,11 +391,20 @@ export default {
     },
 
     goToManualGrade(student: GroupStudent) {
+      const assignmentId =
+        (student as unknown as { assignment_id?: number }).assignment_id ??
+        (student as unknown as { id_assignment?: number }).id_assignment;
+
+      if (!assignmentId) {
+        this.showSnackbar('No se encontró la asignación del alumno para calificar.', 'warning');
+        return;
+      }
+
       this.$router.push({
         name: 'ManualGrade',
         params: {
           examId: String(this.examId),
-          assignmentId: String(student.assignment_id),
+          assignmentId: String(assignmentId),
         },
       });
     },

@@ -9,13 +9,15 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useRoute } from 'vue-router';
 import SideBar from './SideBar.vue';
 
+const route = useRoute();
 const userRole = computed(() => localStorage.getItem('sea_selectedRole') || '');
 
 const showSidebar = computed(() => {
   const role = userRole.value;
-  return role && ['STUDENT', 'TEACHER', 'ADMIN'].includes(role);
+  return Boolean(role && ['STUDENT', 'TEACHER', 'ADMIN'].includes(role) && !route.meta.hideSidebar);
 });
 </script>
 
