@@ -20,7 +20,7 @@
             :disabled="loading"
             @click="openCreateDialog"
           >
-            Crear examen
+            Registrar examen
           </v-btn>
         </template>
       </v-tooltip>
@@ -86,7 +86,7 @@
         :total-pages="pagination.totalPages"
         :current-page-prop="pagination.currentPage"
         :page-size-prop="pagination.pageSize"
-        :loading="tableLoading"
+        :loading="false"
         @update:page="handlePageChange"
         @update:page-size="handlePageSizeChange"
       >

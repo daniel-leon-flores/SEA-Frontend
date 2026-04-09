@@ -11,7 +11,7 @@
       </div>
       <div class="d-flex flex-wrap ga-2">
         <v-btn color="success" rounded="lg" class="text-none" prepend-icon="mdi-plus" @click="openCreate">
-          Nueva pregunta
+          Registrar pregunta
         </v-btn>
         <v-btn color="primary" variant="tonal" rounded="lg" class="text-none" prepend-icon="mdi-upload" @click="uploadDialog = true">
           Cargar Excel
@@ -73,7 +73,7 @@
         :total-pages="pagination.totalPages"
         :current-page-prop="pagination.currentPage"
         :page-size-prop="pagination.pageSize"
-        :loading="tableLoading"
+        :loading="false"
       >
         <template #cell-text="{ row }">
           <span class="text-body-2 text-left d-inline-block text-truncate" style="max-width: 320px">{{ row.text }}</span>
@@ -82,7 +82,7 @@
           {{ labelQuestionType(row.question_type) }}
         </template>
         <template #cell-difficulty="{ row }">
-          <v-chip size="small" :color="difficultyColor(row.difficulty)" variant="tonal">
+          <v-chip size="small" :color="difficultyColor(row.difficulty)" class="font-weight-bold">
             {{ labelDifficulty(row.difficulty) }}
           </v-chip>
         </template>
@@ -90,8 +90,33 @@
           {{ labelBloom(row.bloom_level) }}
         </template>
         <template #cell-actions="{ row }">
-          <v-btn icon size="small" variant="text" @click="openEdit(row)"><v-icon>mdi-pencil</v-icon></v-btn>
-          <v-btn icon size="small" variant="text" color="error" @click="confirmDelete(row)"><v-icon>mdi-delete</v-icon></v-btn>
+          <div class="d-flex justify-center">
+            <v-menu>
+              <template #activator="{ props }">
+                <v-btn
+                  v-bind="props"
+                  icon="mdi-dots-vertical"
+                  size="small"
+                  variant="text"
+                  color="grey-darken-1"
+                />
+              </template>
+              <v-list density="compact">
+                <v-list-item @click="openEdit(row)">
+                  <template #prepend>
+                    <v-icon color="warning">mdi-pencil-outline</v-icon>
+                  </template>
+                  <v-list-item-title>Editar pregunta</v-list-item-title>
+                </v-list-item>
+                <v-list-item @click="confirmDelete(row)">
+                  <template #prepend>
+                    <v-icon color="error">mdi-delete-outline</v-icon>
+                  </template>
+                  <v-list-item-title>Eliminar pregunta</v-list-item-title>
+                </v-list-item>
+              </v-list>
+            </v-menu>
+          </div>
         </template>
       </PaginatedTable>
     </v-card>
@@ -554,7 +579,7 @@ export default {
     difficultyColor(d: string): string {
       if (d === 'easy') return 'success';
       if (d === 'hard') return 'error';
-      return 'warning';
+      return 'primary';
     },
     showSnackbar(message: string, color = 'success') {
       this.snackbar = { show: true, message, color };

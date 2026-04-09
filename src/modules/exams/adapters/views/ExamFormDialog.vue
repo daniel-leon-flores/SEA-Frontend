@@ -1,12 +1,11 @@
 <template>
   <v-dialog v-model="visible" max-width="600" persistent>
     <v-card style="position: relative;">
-      <Loader :visible="loadingSubjects" :fullscreen="false" message="Cargando datos..." />
       <v-card-title class="text-h6 pa-4 d-flex align-center">
-        <v-icon start :color="isEditing ? 'warning' : 'success'">
+        <v-icon start :color="isEditing ? 'primary' : 'success'">
           {{ isEditing ? 'mdi-pencil-outline' : 'mdi-plus-circle-outline' }}
         </v-icon>
-        {{ isEditing ? 'Editar examen' : 'Crear examen' }}
+        {{ isEditing ? 'Editar examen' : 'Registrar examen' }}
       </v-card-title>
 
       <v-divider />
@@ -143,12 +142,12 @@
         </v-btn>
         <v-btn
           variant="elevated"
-          :color="isEditing ? 'warning' : 'success'"
+          :color="isEditing ? 'primary' : 'success'"
           :loading="submitting"
           :disabled="submitting || loadingSubjects"
           @click="handleSubmit"
         >
-          {{ isEditing ? 'Guardar cambios' : 'Crear examen' }}
+          {{ isEditing ? 'Guardar cambios' : 'Registrar examen' }}
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -157,7 +156,6 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import Loader from '@/components/Loader.vue';
 import { ExamController } from '../exam.controller';
 import { QuestionController } from '@/modules/questions/adapters/question.controller';
 import type { Subject, SubjectUnit } from '../../entities/assign-exam.dto';

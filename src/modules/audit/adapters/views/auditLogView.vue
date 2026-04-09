@@ -50,7 +50,7 @@
         </template>
 
         <template #cell-operation="{ value }">
-          <v-chip :color="getOperationColor(value)" size="small" variant="tonal">
+          <v-chip :color="getOperationColor(value)" size="small" class="font-weight-bold">
             {{ value }}
           </v-chip>
         </template>
@@ -252,9 +252,9 @@ export default defineComponent({
 
     getOperationColor(operation: string): string {
       if (operation === 'Creación' || operation === 'INSERT') return 'success';
-      if (operation === 'Actualización' || operation === 'UPDATE') return 'warning';
+      if (operation === 'Actualización' || operation === 'UPDATE') return 'primary';
       if (operation === 'Eliminación' || operation === 'DELETE') return 'error';
-      return 'primary';
+      return 'grey';
     },
 
     formatDate(dateValue: string): string {

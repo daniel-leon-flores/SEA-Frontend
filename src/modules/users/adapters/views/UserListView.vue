@@ -74,7 +74,7 @@
         :total-pages="pagination.totalPages"
         :current-page-prop="pagination.currentPage"
         :page-size-prop="pagination.pageSize"
-        :loading="loading"
+        :loading="false"
         @update:page="handlePageChange"
         @update:page-size="handlePageSizeChange"
       >
@@ -232,15 +232,7 @@
       @update:dialog="statusInfoDialog = $event"
       :user="userForStatusChange"
       :new-status="newStatusValue"
-      @proceed="openStatusConfirmModal"
-      @cancel="handleStatusChangeCancel"
-    />
-
-    <ConfirmStatusChangeModal
-      :dialog="statusConfirmDialog"
-      @update:dialog="statusConfirmDialog = $event"
-      :user="userForStatusChange"
-      :new-status="newStatusValue"
+      :loading="statusLoading"
       @confirm="handleStatusChangeConfirm"
       @cancel="handleStatusChangeCancel"
     />
@@ -300,9 +292,9 @@ export default {
       createDialog: false,
       updateDialog: false,
       selectedUserForEdit: null,
-      // Modales de cambio de estado (doble confirmación)
+      // Modales de cambio de estado (confirmación única)
       statusInfoDialog: false,
-      statusConfirmDialog: false,
+      statusLoading: false,
       userForStatusChange: null,
       newStatusValue: false,
       // Dialog asignar docente a grupo
@@ -492,18 +484,13 @@ export default {
       this.statusInfoDialog = true
     },
     
-    openStatusConfirmModal() {
-      // Cerrar el modal de información y abrir el de confirmación
-      this.statusInfoDialog = false
-      this.statusConfirmDialog = true
-    },
-    
     async handleStatusChangeConfirm() {
       if (!this.userForStatusChange) return
       
       const userId = this.userForStatusChange.id_user
       const newStatus = this.newStatusValue
       
+      this.statusLoading = true
       try {
         const { UserController } = await import('../user.controller')
         const controller = new UserController()
@@ -514,7 +501,7 @@ export default {
             ? 'Usuario activado exitosamente.'
             : 'Usuario desactivado exitosamente.'
           this.showSnackbar(message, 'success')
-          this.statusConfirmDialog = false
+          this.statusInfoDialog = false
           this.userForStatusChange = null
           this.fetchUsers()
         } else {
@@ -523,13 +510,14 @@ export default {
       } catch (error) {
         console.error('Error changing user status:', error)
         this.showSnackbar('Error inesperado al cambiar el estado.', 'error')
+      } finally {
+        this.statusLoading = false
       }
     },
     
     handleStatusChangeCancel() {
-      // Cerrar ambos modales y limpiar
+      // Cerrar el modal y limpiar
       this.statusInfoDialog = false
-      this.statusConfirmDialog = false
       this.userForStatusChange = null
     },
     
