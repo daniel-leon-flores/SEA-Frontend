@@ -61,7 +61,7 @@
             </v-col>
 
             <v-col cols="12" :md="examStarted && !examSubmitted ? 8 : 12" :lg="examStarted && !examSubmitted ? 9 : 12" class="exam-main pa-4 pa-md-6">
-              <template v-if="examStarted && !examSubmitted">
+              <template v-if="examStarted && !examSubmitted && currentQuestion">
                 <v-card rounded="xl" class="question-card" elevation="2">
                   <div class="question-header pa-5 pa-md-6 d-flex justify-space-between align-start ga-4 flex-wrap">
                     <div class="d-flex align-start ga-4">
@@ -170,7 +170,15 @@
                     <v-btn v-if="currentIndex < totalQuestions - 1" color="primary" variant="flat" append-icon="mdi-arrow-right" @click="nextQuestion">
                       Siguiente
                     </v-btn>
-                    <v-btn v-if="currentIndex === totalQuestions - 1" color="success" variant="flat" prepend-icon="mdi-send" @click="submitExam">
+                    <v-btn
+                      v-if="currentIndex === totalQuestions - 1"
+                      color="success"
+                      variant="flat"
+                      prepend-icon="mdi-send"
+                      :loading="isSubmittingExam"
+                      :disabled="isSubmittingExam"
+                      @click="submitExam"
+                    >
                       Enviar examen
                     </v-btn>
                   </div>
@@ -226,14 +234,84 @@
       </v-card>
     </v-dialog>
 
-    <v-dialog v-model="examSubmitted" max-width="480" persistent>
-      <v-card rounded="xl" class="pa-2">
-        <v-card-title class="text-h6 font-weight-bold">Examen enviado</v-card-title>
-        <v-card-text class="text-body-1 text-medium-emphasis">
-          Tu examen fue enviado correctamente.
+    <!-- ── Pantalla de resultados ────────────────────────────────────────── -->
+    <v-dialog v-model="examSubmitted" max-width="640" persistent scrollable>
+      <v-card rounded="xl">
+        <v-card-title class="text-h6 font-weight-bold pa-5 pb-3 d-flex align-center ga-3">
+          <v-icon color="success">mdi-check-circle</v-icon>
+          Examen enviado
+        </v-card-title>
+
+        <v-divider />
+
+        <v-card-text class="pa-5">
+          <!-- Score principal -->
+          <v-sheet
+            v-if="submitResult?.score_summary"
+            rounded="xl"
+            class="result-score-banner d-flex align-center justify-space-between pa-4 mb-5 flex-wrap ga-3"
+          >
+            <div>
+              <p class="text-body-2 text-medium-emphasis mb-1">Calificación final</p>
+              <p class="text-h4 font-weight-bold mb-0">{{ finalScoreText ?? '--' }}</p>
+            </div>
+            <v-chip
+              :color="submitResult.score_summary.is_passed ? 'success' : 'error'"
+              variant="flat"
+              size="large"
+              class="font-weight-bold"
+            >
+              {{ submitResult.score_summary.is_passed ? 'Aprobado' : 'No aprobado' }}
+            </v-chip>
+          </v-sheet>
+
+          <p v-else class="text-body-1 text-medium-emphasis mb-4">
+            Tu examen fue enviado. Las preguntas abiertas están pendientes de calificación manual.
+          </p>
+
+          <!-- Desglose por pregunta -->
+          <div v-if="submitResult?.graded_answers?.length" class="mb-2">
+            <p class="text-subtitle-2 font-weight-bold mb-3">Resultado por pregunta</p>
+            <v-list density="compact" class="pa-0">
+              <v-list-item
+                v-for="(item, idx) in submitResult.graded_answers"
+                :key="item.question_id"
+                class="result-row px-3 mb-2 rounded-lg"
+                :class="resultRowClass(item)"
+              >
+                <template #prepend>
+                  <span class="result-idx mr-3 font-weight-bold text-caption">{{ String(idx + 1).padStart(2, '0') }}</span>
+                  <v-icon
+                    v-if="item.graded && item.is_correct !== null"
+                    :color="item.is_correct ? 'success' : 'error'"
+                    size="20"
+                  >
+                    {{ item.is_correct ? 'mdi-check-circle' : 'mdi-close-circle' }}
+                  </v-icon>
+                  <v-icon v-else color="warning" size="20">mdi-clock-outline</v-icon>
+                </template>
+
+                <v-list-item-title class="text-body-2">
+                  Pregunta #{{ item.question_id }}
+                  <span v-if="!item.graded" class="text-caption text-medium-emphasis ml-2">(pendiente de calificación manual)</span>
+                </v-list-item-title>
+
+                <template #append>
+                  <span class="text-body-2 font-weight-medium">
+                    {{ item.score !== null && item.score !== undefined ? item.score : '--' }}
+                  </span>
+                </template>
+              </v-list-item>
+            </v-list>
+          </div>
         </v-card-text>
-        <v-card-actions class="justify-end">
-          <v-btn color="primary" variant="flat" @click="goBack">Volver a mis exámenes</v-btn>
+
+        <v-divider />
+
+        <v-card-actions class="justify-end pa-4">
+          <v-btn color="primary" variant="flat" prepend-icon="mdi-arrow-left" @click="goBack">
+            Volver a mis exámenes
+          </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -252,21 +330,76 @@ import { computed, onMounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import CodeMirrorEditor from '../components/CodeMirrorEditor.vue';
 import { useSecureExam } from '../../composables/useSecureExam';
-import { mockExamSession, type MockQuestion } from '../../entities/mock-exam';
 import { ExamController } from '@/modules/exams/adapters/exam.controller';
+import { AnswersController } from '../answers.controller';
 import type { MyAssignment } from '@/modules/exams/entities/my-assignment';
+import type { ExamLinkedQuestion } from '@/modules/exams/entities/exam-linked-question';
+import type { SubmitAnswerItemDto, SubmitExamAnswersResult } from '../../entities/exam-answer';
+
+type StudentQuestionType = 'MULTIPLE_CHOICE' | 'MULTIPLE_SELECTION' | 'OPEN' | 'CODE';
+type StudentDifficulty = 'easy' | 'medium' | 'hard';
+type StudentBloomLevel = 'remember' | 'understand' | 'apply' | 'analyze' | 'evaluate' | 'create';
+
+type StudentAnswer = {
+  id_answer: number;
+  answer_text: string;
+  is_correct: boolean;
+};
+
+type StudentCodeQuestion = {
+  language: string;
+  starter_code: string;
+  test_cases: Array<{
+    input: string;
+    expected: string;
+  }>;
+};
+
+type StudentQuestion = {
+  id_question: number;
+  statement: string;
+  question_type: StudentQuestionType;
+  difficulty: StudentDifficulty;
+  bloom_level: StudentBloomLevel;
+  points: number;
+  answers?: StudentAnswer[];
+  codeQuestion?: StudentCodeQuestion;
+};
+
+type StudentExamSession = {
+  assignmentId: number;
+  examName: string;
+  examTitle: string;
+  subjectName: string;
+  unitLabel: string;
+  groupLabel: string;
+  durationMinutes: number;
+  questions: StudentQuestion[];
+};
 
 const route = useRoute();
 const router = useRouter();
-const session = mockExamSession;
+const session = reactive<StudentExamSession>({
+  assignmentId: 0,
+  examName: 'Examen',
+  examTitle: 'Examen',
+  subjectName: 'Materia',
+  unitLabel: 'Unidad',
+  groupLabel: 'Grupo',
+  durationMinutes: 60,
+  questions: [],
+});
 const controller = new ExamController();
+const answersController = new AnswersController();
 
 const isSecureMode = ref(false);
 const examStarted = ref(false);
 const examSubmitted = ref(false);
 const currentIndex = ref(0);
 const loadingAssignment = ref(false);
+const isSubmittingExam = ref(false);
 const assignmentInfo = ref<MyAssignment | null>(null);
+const submitResult = ref<SubmitExamAnswersResult | null>(null);
 
 const responses = reactive<Record<number, string>>({});
 const openResponses = reactive<Record<number, string>>({});
@@ -276,8 +409,146 @@ const multiResponses = reactive<Record<number, string[]>>({});
 const snackbar = ref({ show: false, message: '', color: 'primary' as 'primary' | 'success' | 'warning' | 'error' });
 
 const totalQuestions = computed(() => session.questions.length);
-const currentQuestion = computed(() => session.questions[currentIndex.value]);
+const currentQuestion = computed(() => session.questions[currentIndex.value] ?? null);
 const currentQuestionNumber = computed(() => currentIndex.value + 1);
+const finalScoreText = computed(() => {
+  const score = submitResult.value?.score_summary?.score;
+  if (score === null || score === undefined) {
+    return null;
+  }
+  const numericScore = typeof score === 'number' ? score : Number(score);
+  if (Number.isNaN(numericScore)) {
+    return null;
+  }
+  return numericScore.toFixed(2);
+});
+
+function normalizeQuestionType(value: string): StudentQuestionType {
+  const normalized = (value || '').toUpperCase();
+  if (normalized === 'MULTIPLE_SELECTION') return 'MULTIPLE_SELECTION';
+  if (normalized === 'OPEN') return 'OPEN';
+  if (normalized === 'CODE') return 'CODE';
+  return 'MULTIPLE_CHOICE';
+}
+
+function normalizeDifficulty(value: string): StudentDifficulty {
+  const normalized = (value || '').toLowerCase();
+  if (normalized === 'easy') return 'easy';
+  if (normalized === 'hard') return 'hard';
+  return 'medium';
+}
+
+function normalizeBloomLevel(value: string): StudentBloomLevel {
+  const normalized = (value || '').toLowerCase();
+  if (normalized === 'remember') return 'remember';
+  if (normalized === 'understand') return 'understand';
+  if (normalized === 'apply') return 'apply';
+  if (normalized === 'analyze') return 'analyze';
+  if (normalized === 'evaluate') return 'evaluate';
+  if (normalized === 'create') return 'create';
+  return 'remember';
+}
+
+function normalizeCodeTestCases(raw: unknown): Array<{ input: string; expected: string }> {
+  if (!Array.isArray(raw)) {
+    return [];
+  }
+
+  return raw
+    .map((item) => {
+      if (typeof item === 'string') {
+        return { input: item, expected: '-' };
+      }
+
+      if (item && typeof item === 'object') {
+        const maybeInput = (item as { input?: unknown }).input;
+        const maybeExpected = (item as { expected?: unknown }).expected;
+
+        return {
+          input: typeof maybeInput === 'string' ? maybeInput : '-',
+          expected: typeof maybeExpected === 'string' ? maybeExpected : '-',
+        };
+      }
+
+      return { input: '-', expected: '-' };
+    })
+    .filter((testCase) => testCase.input !== '-' || testCase.expected !== '-');
+}
+
+function shuffleQuestions(questions: StudentQuestion[]): StudentQuestion[] {
+  const shuffled = [...questions];
+
+  for (let i = shuffled.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+
+  return shuffled;
+}
+
+function initializeResponseState() {
+  session.questions.forEach((question) => {
+    responses[question.id_question] = responses[question.id_question] ?? '';
+    openResponses[question.id_question] = openResponses[question.id_question] ?? '';
+    codeResponses[question.id_question] = codeResponses[question.id_question] ?? question.codeQuestion?.starter_code ?? '';
+    multiResponses[question.id_question] = multiResponses[question.id_question] ?? [];
+  });
+}
+
+function mapQuestion(linkedQuestion: ExamLinkedQuestion): StudentQuestion {
+  const answers = (linkedQuestion.answers ?? []).map((answer, index) => ({
+    id_answer: answer.id_answer ?? index + 1,
+    answer_text: answer.answer_text,
+    is_correct: false,
+  }));
+
+  const codeQuestion = linkedQuestion.code_question
+    ? {
+        language: linkedQuestion.code_question.language || 'python',
+        starter_code: '',
+        test_cases: normalizeCodeTestCases(linkedQuestion.code_question.test_cases),
+      }
+    : undefined;
+
+  return {
+    id_question: linkedQuestion.id_question,
+    statement: linkedQuestion.text,
+    question_type: normalizeQuestionType(linkedQuestion.question_type),
+    difficulty: normalizeDifficulty(linkedQuestion.difficulty),
+    bloom_level: normalizeBloomLevel(linkedQuestion.bloom_level),
+    points: Number(linkedQuestion.points ?? 0),
+    answers,
+    codeQuestion,
+  };
+}
+
+async function loadExamQuestions(examId: number) {
+  try {
+    const examQuestionsResponse = await controller.getExamQuestions(examId);
+
+    if (!examQuestionsResponse.success || !examQuestionsResponse.data?.questions) {
+      showSnackbar(examQuestionsResponse.message || 'No se pudieron obtener las preguntas del examen.', 'warning');
+      session.questions = [];
+      return;
+    }
+
+    const linkedQuestions = examQuestionsResponse.data.questions;
+    if (linkedQuestions.length === 0) {
+      session.questions = [];
+      showSnackbar('Este examen no tiene preguntas asignadas.', 'warning');
+      return;
+    }
+
+    const mappedQuestions = linkedQuestions.map((question) => mapQuestion(question));
+
+    session.questions = shuffleQuestions(mappedQuestions);
+    currentIndex.value = 0;
+    initializeResponseState();
+  } catch {
+    session.questions = [];
+    showSnackbar('Error al cargar las preguntas del examen.', 'warning');
+  }
+}
 
 function showSnackbar(message: string, color: 'primary' | 'success' | 'warning' | 'error' = 'primary') {
   snackbar.value = { show: true, message, color };
@@ -293,16 +564,53 @@ async function exitFullscreenIfNeeded() {
   }
 }
 
-async function submitExam() {
-  if (examSubmitted.value) {
+async function submitExam(forceSubmit = false) {
+  if (examSubmitted.value || isSubmittingExam.value) {
     return;
   }
 
-  await exitFullscreenIfNeeded();
+  if (!session.assignmentId) {
+    showSnackbar('No se encontro la asignacion del examen.', 'error');
+    return;
+  }
 
-  examSubmitted.value = true;
-  examStarted.value = false;
-  showSnackbar('Examen enviado correctamente.', 'success');
+  const answersPayload = buildSubmitAnswersPayload();
+  const unanswered = session.questions.filter((question) => !isAnswered(question.id_question));
+  if (!forceSubmit && unanswered.length > 0) {
+    showSnackbar('Debes responder todas las preguntas antes de enviar el examen.', 'warning');
+    return;
+  }
+
+  if (answersPayload.length === 0) {
+    showSnackbar('No hay respuestas para enviar.', 'warning');
+    return;
+  }
+
+  isSubmittingExam.value = true;
+
+  try {
+    const response = await answersController.submitExamAnswers({
+      exam_assignment_id: session.assignmentId,
+      answers: answersPayload,
+    });
+
+    if (!response.success || !response.data) {
+      showSnackbar(response.message || 'No se pudieron enviar las respuestas del examen.', 'error');
+      return;
+    }
+
+    submitResult.value = response.data;
+
+    await exitFullscreenIfNeeded();
+
+    examSubmitted.value = true;
+    examStarted.value = false;
+    showSnackbar(response.message || 'Examen enviado correctamente.', 'success');
+  } catch {
+    showSnackbar('Error al enviar el examen. Intenta nuevamente.', 'error');
+  } finally {
+    isSubmittingExam.value = false;
+  }
 }
 
 const {
@@ -312,7 +620,7 @@ const {
   closeSecureExamDialog,
   enterFullscreen,
 } = useSecureExam(isSecureMode, () => {
-  void submitExam();
+  void submitExam(true);
 });
 
 function isAnswered(questionId: number) {
@@ -357,8 +665,65 @@ function nextQuestion() {
   }
 }
 
+function buildSubmitAnswersPayload(): SubmitAnswerItemDto[] {
+  return session.questions
+    .map((question) => mapQuestionAnswer(question))
+    .filter((answer): answer is SubmitAnswerItemDto => answer !== null);
+}
+
+function mapQuestionAnswer(question: StudentQuestion): SubmitAnswerItemDto | null {
+  const questionId = question.id_question;
+
+  if (question.question_type === 'MULTIPLE_CHOICE') {
+    const selected = responses[questionId];
+    if (!selected) {
+      return null;
+    }
+    return {
+      question_id: questionId,
+      selected_answer: Number(selected),
+    };
+  }
+
+  if (question.question_type === 'MULTIPLE_SELECTION') {
+    const selectedValues = (multiResponses[questionId] ?? []).map((value) => Number(value));
+    if (selectedValues.length === 0) {
+      return null;
+    }
+    return {
+      question_id: questionId,
+      selected_answers: selectedValues,
+    };
+  }
+
+  if (question.question_type === 'OPEN') {
+    const answerText = (openResponses[questionId] ?? '').trim();
+    if (!answerText) {
+      return null;
+    }
+    return {
+      question_id: questionId,
+      answer_text: answerText,
+    };
+  }
+
+  const codeAnswer = (codeResponses[questionId] ?? '').trim();
+  if (!codeAnswer) {
+    return null;
+  }
+  return {
+    question_id: questionId,
+    code_answer: codeAnswer,
+  };
+}
+
 function runCode() {
   showSnackbar('Ejecución simulada con CodeMirror y Python.', 'primary');
+}
+
+function resultRowClass(item: { graded: boolean; is_correct: boolean | null }) {
+  if (!item.graded) return 'result-row--pending';
+  return item.is_correct ? 'result-row--correct' : 'result-row--wrong';
 }
 
 async function goBack() {
@@ -368,6 +733,11 @@ async function goBack() {
 
 function startExam() {
   if (loadingAssignment.value) {
+    return;
+  }
+
+  if (totalQuestions.value === 0) {
+    showSnackbar('No hay preguntas disponibles para este examen.', 'warning');
     return;
   }
 
@@ -415,6 +785,10 @@ async function loadAssignmentConfig() {
       session.subjectName = found.subject_name;
       session.unitLabel = `Unidad ${found.unit_number}`;
       session.groupLabel = found.group_label;
+
+      await loadExamQuestions(found.exam_id);
+    } else {
+      showSnackbar('No se encontró la asignación del examen.', 'warning');
     }
   } catch {
     showSnackbar('Error al obtener la configuración del examen.', 'warning');
@@ -423,17 +797,17 @@ async function loadAssignmentConfig() {
   }
 }
 
-function difficultyLabel(level: MockQuestion['difficulty']) {
+function difficultyLabel(level: StudentQuestion['difficulty']) {
   const map = { easy: 'FÁCIL', medium: 'MEDIO', hard: 'DIFÍCIL' } as const;
   return map[level];
 }
 
-function difficultyColor(level: MockQuestion['difficulty']) {
+function difficultyColor(level: StudentQuestion['difficulty']) {
   const map = { easy: 'success', medium: 'warning', hard: 'error' } as const;
   return map[level];
 }
 
-function bloomLabel(level: MockQuestion['bloom_level']) {
+function bloomLabel(level: StudentQuestion['bloom_level']) {
   const map = {
     remember: 'RECORDAR',
     understand: 'COMPRENDER',
@@ -445,7 +819,7 @@ function bloomLabel(level: MockQuestion['bloom_level']) {
   return map[level];
 }
 
-function bloomColor(level: MockQuestion['bloom_level']) {
+function bloomColor(level: StudentQuestion['bloom_level']) {
   const map = {
     remember: 'info',
     understand: 'indigo',
@@ -458,13 +832,6 @@ function bloomColor(level: MockQuestion['bloom_level']) {
 }
 
 onMounted(() => {
-  session.questions.forEach((question) => {
-    responses[question.id_question] = responses[question.id_question] ?? '';
-    openResponses[question.id_question] = openResponses[question.id_question] ?? '';
-    codeResponses[question.id_question] = codeResponses[question.id_question] ?? question.codeQuestion?.starter_code ?? '';
-    multiResponses[question.id_question] = multiResponses[question.id_question] ?? [];
-  });
-
   void loadAssignmentConfig();
 });
 </script>
@@ -634,5 +1001,37 @@ onMounted(() => {
   .sidebar-scroll {
     max-height: none;
   }
+}
+
+/* ── Result screen ───────────────────────────── */
+.result-score-banner {
+  background: linear-gradient(135deg, #e6f9f5 0%, #f0fdf7 100%);
+  border: 1px solid rgba(15, 118, 110, 0.18);
+}
+
+.result-row {
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: #fff;
+  min-height: 44px;
+}
+
+.result-row--correct {
+  border-color: rgba(22, 163, 74, 0.25);
+  background: rgba(240, 253, 244, 0.6);
+}
+
+.result-row--wrong {
+  border-color: rgba(220, 38, 38, 0.2);
+  background: rgba(255, 241, 242, 0.5);
+}
+
+.result-row--pending {
+  border-color: rgba(234, 179, 8, 0.25);
+  background: rgba(255, 251, 235, 0.6);
+}
+
+.result-idx {
+  min-width: 24px;
+  color: #64748b;
 }
 </style>

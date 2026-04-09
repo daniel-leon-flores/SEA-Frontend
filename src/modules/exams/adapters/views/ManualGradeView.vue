@@ -1,149 +1,251 @@
 <template>
   <v-container fluid class="grading-shell pa-6 pa-md-8">
-    <v-row justify="center">
-      <v-col cols="12">
-        <v-breadcrumbs :items="breadcrumbItems" class="pa-0 mb-4">
-          <template #divider>
-            <v-icon icon="mdi-chevron-right" />
-          </template>
-        </v-breadcrumbs>
 
-        <div class="mb-6">
-          <h1 class="page-title text-h4 font-weight-bold mb-2">Calificar examen de {{ mockStudent.fullName }}</h1>
-          <p class="page-subtitle text-body-1 text-medium-emphasis mb-0">{{ examTitle }}</p>
-        </div>
+    <!-- Loading full-page -->
+    <div v-if="pageLoading" class="d-flex justify-center align-center" style="min-height: 40vh;">
+      <v-progress-circular indeterminate color="teal-darken-2" size="48" />
+    </div>
 
-        <div class="question-stack">
-          <v-card
-            v-for="(item, index) in gradedQuestions"
-            :key="item.idQuestion"
-            rounded="xl"
-            class="question-card mx-auto mb-5"
-            elevation="1"
-          >
-            <div class="question-head px-4 px-md-5 py-4 d-flex justify-space-between align-start ga-3 flex-wrap">
-              <div class="d-flex align-start ga-3 flex-grow-1">
-                <div class="q-index">{{ index + 1 }}</div>
-                <div class="min-w-0">
-                  <h2 class="text-subtitle-1 text-md-h6 font-weight-bold mb-2 question-title">{{ item.statement }}</h2>
-                  <div class="d-flex flex-wrap ga-2">
-                    <v-chip size="small" variant="tonal" color="primary">{{ questionTypeLabel(item.type) }}</v-chip>
-                    <v-chip :color="difficultyColor(item.difficulty)" size="small" variant="tonal">
-                      {{ difficultyLabel(item.difficulty) }}
-                    </v-chip>
-                    <v-chip :color="bloomColor(item.bloomLevel)" size="small" variant="tonal">
-                      {{ bloomLabel(item.bloomLevel) }}
-                    </v-chip>
-                    <v-chip v-if="item.type === 'CODE'" size="small" variant="flat" color="teal-darken-4">
-                      <v-icon start size="14">mdi-code-tags</v-icon>
-                      python
-                    </v-chip>
+    <!-- Error state -->
+    <v-alert v-else-if="pageError" type="error" variant="tonal" class="mb-4" rounded="lg">
+      {{ pageError }}
+    </v-alert>
+
+    <template v-else>
+      <v-row justify="center">
+        <v-col cols="12">
+          <v-breadcrumbs :items="breadcrumbItems" class="pa-0 mb-4">
+            <template #divider>
+              <v-icon icon="mdi-chevron-right" />
+            </template>
+          </v-breadcrumbs>
+
+          <div class="mb-6">
+            <h1 class="page-title text-h4 font-weight-bold mb-2">Calificar examen</h1>
+            <p class="page-subtitle text-body-1 text-medium-emphasis mb-0">
+              Asignación #{{ assignmentId }} · {{ gradedQuestions.length }} preguntas
+            </p>
+          </div>
+
+          <div v-if="gradedQuestions.length === 0" class="text-center text-medium-emphasis py-10">
+            No hay respuestas registradas para esta asignación.
+          </div>
+
+          <div v-else class="question-stack">
+            <v-card
+              v-for="(item, index) in gradedQuestions"
+              :key="item.id_student_answer"
+              rounded="xl"
+              class="question-card mx-auto mb-5"
+              elevation="1"
+            >
+              <!-- ── Encabezado de la pregunta ── -->
+              <div class="question-head px-3 px-md-4 py-3 d-flex justify-space-between align-start ga-3 flex-wrap">
+                <div class="d-flex align-start ga-3 flex-grow-1">
+                  <div class="q-index">{{ index + 1 }}</div>
+                  <div class="min-w-0">
+                    <h2 class="text-subtitle-1 text-md-h6 font-weight-bold mb-2 question-title">
+                      {{ item.question_statement }}
+                    </h2>
+                    <div class="d-flex flex-wrap ga-2">
+                      <v-chip size="small" variant="tonal" color="primary">
+                        {{ questionTypeLabel(item.question_type) }}
+                      </v-chip>
+                      <v-chip
+                        size="small"
+                        variant="tonal"
+                        :color="difficultyColor(item.question_difficulty)"
+                      >
+                        {{ difficultyLabel(item.question_difficulty) }}
+                      </v-chip>
+                      <v-chip
+                        size="small"
+                        variant="tonal"
+                        :color="bloomColor(item.question_bloom_level)"
+                      >
+                        {{ bloomLabel(item.question_bloom_level) }}
+                      </v-chip>
+                      <v-chip v-if="item.question_type === 'CODE'" size="small" variant="flat" color="teal-darken-4">
+                        <v-icon start size="14">mdi-code-tags</v-icon>
+                        python
+                      </v-chip>
+                    </div>
                   </div>
                 </div>
+
+                <!-- Badge Correcta / Incorrecta / Pendiente -->
+                <div v-if="item.is_correct !== null" class="d-flex align-center ga-1 flex-shrink-0">
+                  <v-icon :color="item.is_correct ? 'success' : 'error'" size="20">
+                    {{ item.is_correct ? 'mdi-check-circle' : 'mdi-close-circle' }}
+                  </v-icon>
+                  <span
+                    class="text-body-2 font-weight-medium"
+                    :class="item.is_correct ? 'text-success' : 'text-error'"
+                  >
+                    {{ item.is_correct ? 'Correcta' : 'Incorrecta' }}
+                  </span>
+                </div>
+                <v-chip v-else color="warning" size="small" variant="tonal">Pendiente</v-chip>
               </div>
 
-            </div>
+              <v-divider />
 
-            <v-divider />
+              <div class="px-3 px-md-4 py-4">
+                <!-- ── Respuesta del alumno ── -->
+                <div class="text-subtitle-2 font-weight-bold mb-3">Respuesta del alumno</div>
 
-            <div class="px-4 px-md-5 py-5">
-              <div class="text-subtitle-2 font-weight-bold mb-3">Respuesta del alumno</div>
+                <!-- MULTIPLE_CHOICE / MULTIPLE_SELECTION -->
+                <template v-if="item.question_type === 'MULTIPLE_CHOICE' || item.question_type === 'MULTIPLE_SELECTION'">
+                  <v-sheet
+                    class="answer-box pa-4 mb-3"
+                    rounded="lg"
+                    border
+                    :class="item.is_correct === true ? 'answer-box--correct' : item.is_correct === false ? 'answer-box--wrong' : ''"
+                  >
+                    <!-- Texto(s) de la opción seleccionada -->
+                    <template v-if="item.question_type === 'MULTIPLE_CHOICE'">
+                      <p class="mb-2 text-body-1">
+                        {{ item.selected_answer_text ?? '(Sin respuesta)' }}
+                      </p>
+                    </template>
+                    <template v-else>
+                      <p
+                        v-for="(text, ti) in item.selected_answers_texts"
+                        :key="ti"
+                        class="mb-1 text-body-1"
+                      >
+                        • {{ text }}
+                      </p>
+                      <p v-if="!item.selected_answers_texts.length" class="mb-0 text-body-1 text-medium-emphasis">
+                        (Sin respuesta)
+                      </p>
+                    </template>
 
-              <template v-if="item.type === 'MULTIPLE_SELECTION' || item.type === 'MULTIPLE_CHOICE'">
-                <v-sheet class="answer-box pa-4" rounded="lg" border>
-                  <p class="mb-0 text-body-1">{{ item.studentAnswerText }}</p>
-                  <div class="mt-3 d-flex align-center ga-2" :class="item.isAutoCorrect ? 'text-success' : 'text-error'">
-                    <v-icon size="18">{{ item.isAutoCorrect ? 'mdi-check-circle' : 'mdi-close-circle' }}</v-icon>
-                    <span class="font-weight-medium">{{ item.isAutoCorrect ? 'Correcta' : 'Incorrecta' }}</span>
-                  </div>
-                </v-sheet>
+                    <!-- Etiqueta correcta/incorrecta dentro del box -->
+                    <div v-if="item.is_correct !== null" class="d-flex align-center ga-1 mt-2">
+                      <v-icon :color="item.is_correct ? 'success' : 'error'" size="16">
+                        {{ item.is_correct ? 'mdi-check-circle' : 'mdi-close-circle' }}
+                      </v-icon>
+                      <span
+                        class="text-caption font-weight-bold"
+                        :class="item.is_correct ? 'text-success' : 'text-error'"
+                      >
+                        {{ item.is_correct ? 'Respuesta correcta' : 'Respuesta incorrecta' }}
+                      </span>
+                    </div>
+                  </v-sheet>
 
-                <template v-if="!item.isAutoCorrect">
-                  <div class="text-subtitle-2 font-weight-bold mt-5 mb-3">Respuesta correcta</div>
+                  <!-- Respuesta correcta (solo cuando el alumno se equivocó) -->
+                  <template v-if="item.is_correct === false">
+                    <div class="text-subtitle-2 font-weight-bold mb-2 text-success">
+                      <v-icon size="16" color="success" class="me-1">mdi-check-circle</v-icon>
+                      Respuesta correcta
+                    </div>
+                    <v-sheet class="answer-box answer-box--correct pa-4" rounded="lg" border>
+                      <template v-if="item.question_type === 'MULTIPLE_CHOICE'">
+                        <p class="mb-0 text-body-1">{{ item.correct_answer_text ?? '—' }}</p>
+                      </template>
+                      <template v-else>
+                        <p
+                          v-for="(text, ci) in item.correct_answers_texts"
+                          :key="ci"
+                          class="mb-1 text-body-1"
+                        >
+                          • {{ text }}
+                        </p>
+                      </template>
+                    </v-sheet>
+                  </template>
+                </template>
+
+                <!-- OPEN -->
+                <template v-else-if="item.question_type === 'OPEN'">
                   <v-sheet class="answer-box pa-4" rounded="lg" border>
-                    <p class="mb-0 text-body-1">{{ item.correctAnswerText }}</p>
+                    <p class="mb-0 text-body-1 answer-text-pre">
+                      {{ item.answer_text ?? '(Sin respuesta)' }}
+                    </p>
                   </v-sheet>
                 </template>
-              </template>
 
-              <template v-else-if="item.type === 'OPEN'">
-                <v-sheet class="answer-box pa-4" rounded="lg" border>
-                  <p class="mb-0 text-body-1">{{ item.studentAnswerText }}</p>
-                </v-sheet>
-              </template>
+                <!-- CODE -->
+                <template v-else-if="item.question_type === 'CODE'">
+                  <CodeMirrorEditor :model-value="item.code_answer ?? ''" :readonly="true" />
+                </template>
 
-              <template v-else-if="item.type === 'CODE'">
-                <CodeMirrorEditor v-model="item.studentCode" />
+                <v-divider class="my-5" />
 
-                <div class="d-flex justify-end mt-4">
-                  <v-btn color="teal-darken-2" prepend-icon="mdi-play" @click="runTeacherCode(item.idQuestion)">
-                    Ejecutar código
-                  </v-btn>
+                <!-- ── Puntaje ── -->
+                <div class="d-flex align-center ga-3 flex-wrap">
+                  <span class="text-subtitle-1 font-weight-bold">Puntaje</span>
+                  <v-text-field
+                    v-model.number="item.teacherScore"
+                    type="number"
+                    density="comfortable"
+                    variant="outlined"
+                    hide-details
+                    class="score-input"
+                    :min="0"
+                    :max="item.question_points"
+                    :disabled="isSaving"
+                    @update:model-value="normalizeScore(item)"
+                  />
+                  <span class="text-subtitle-1">/ {{ item.question_points }}</span>
+
+                  <v-spacer />
+
+                  <v-switch
+                    v-model="item.teacherIsCorrect"
+                    :label="item.teacherIsCorrect ? 'Correcta' : 'Incorrecta'"
+                    color="success"
+                    hide-details
+                    density="comfortable"
+                    :disabled="isSaving"
+                  />
+                </div>
+              </div>
+            </v-card>
+
+            <!-- ── Panel final con botón único ── -->
+            <v-card
+              rounded="xl"
+              class="final-card mx-auto pa-4 pa-md-5"
+              elevation="1"
+            >
+              <div class="d-flex justify-space-between align-center flex-wrap ga-4">
+                <div>
+                  <p class="text-subtitle-1 font-weight-bold mb-1">Calificación acumulada</p>
+                  <p class="text-h5 font-weight-bold mb-1">{{ totalScore }} / {{ maxScore }}</p>
+                  <p class="text-body-2 text-medium-emphasis mb-0">{{ finalPercentage }}%</p>
                 </div>
 
-                <v-card v-if="item.execution" class="mt-4 execution-card" rounded="lg" elevation="0" variant="tonal">
-                  <v-card-text>
-                    <div class="text-subtitle-2 font-weight-bold mb-3">Resultado de ejecución</div>
-                    <v-list density="compact" class="pa-0">
-                      <v-list-item
-                        v-for="(test, tIndex) in item.execution.tests"
-                        :key="`${item.idQuestion}-${tIndex}`"
-                        class="px-0"
-                      >
-                        <template #prepend>
-                          <v-icon :color="test.passed ? 'success' : 'error'" size="18">
-                            {{ test.passed ? 'mdi-check-circle' : 'mdi-close-circle' }}
-                          </v-icon>
-                        </template>
-                        <v-list-item-title class="text-body-2">{{ test.input }}</v-list-item-title>
-                        <v-list-item-subtitle>
-                          Esperado: {{ test.expected }} | Obtenido: {{ test.actual }}
-                        </v-list-item-subtitle>
-                      </v-list-item>
-                    </v-list>
-                  </v-card-text>
-                </v-card>
-              </template>
+                <div class="d-flex flex-column align-end ga-2">
+                  <v-chip
+                    v-if="assignmentFinalScore !== null"
+                    :color="assignmentIsPassed ? 'success' : 'error'"
+                    variant="flat"
+                    size="large"
+                    class="font-weight-bold"
+                  >
+                    Guardado: {{ assignmentFinalScore }} · {{ assignmentIsPassed ? 'Aprobado' : 'No aprobado' }}
+                  </v-chip>
 
-              <v-divider class="my-5" />
-
-              <div class="d-flex align-center ga-3 flex-wrap">
-                <span class="text-h6 font-weight-bold">Puntaje</span>
-                <v-text-field
-                  v-model.number="item.teacherScore"
-                  type="number"
-                  density="comfortable"
-                  variant="outlined"
-                  hide-details
-                  class="score-input"
-                  :min="0"
-                  :max="item.maxPoints"
-                  @update:model-value="normalizeScore(item)"
-                />
-                <span class="text-h6">/ {{ item.maxPoints }}</span>
-
+                  <v-btn
+                    color="teal-darken-2"
+                    size="large"
+                    :loading="isSaving"
+                    @click="saveAllGrades"
+                  >
+                    Guardar calificaciones
+                  </v-btn>
+                </div>
               </div>
-            </div>
-          </v-card>
-        </div>
-
-        <v-card rounded="xl" class="final-card mx-auto pa-5 pa-md-6 mt-2" elevation="1">
-          <div class="d-flex justify-space-between align-center flex-wrap ga-4">
-            <div>
-              <p class="text-h5 font-weight-bold mb-2">Calificación final</p>
-              <p class="text-h3 font-weight-black mb-1">{{ totalScore }}/{{ maxScore }}</p>
-              <p class="text-body-1 text-medium-emphasis mb-0">{{ finalPercentage }}%</p>
-            </div>
-
-            <v-btn color="teal-darken-2" size="x-large" prepend-icon="mdi-send" @click="saveGrade">
-              Enviar calificación
-            </v-btn>
+            </v-card>
           </div>
-        </v-card>
-      </v-col>
-    </v-row>
+        </v-col>
+      </v-row>
+    </template>
 
-    <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="2500" location="bottom right">
+    <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000" location="bottom right">
       {{ snackbar.message }}
       <template #actions>
         <v-btn variant="text" @click="snackbar.show = false">Cerrar</v-btn>
@@ -153,47 +255,36 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import CodeMirrorEditor from '@/modules/answers/adapters/components/CodeMirrorEditor.vue';
+import { AnswersController } from '@/modules/answers/adapters/answers.controller';
+import type { StudentAnswerRecord } from '@/modules/answers/entities/exam-answer';
 
-type QuestionType = 'MULTIPLE_SELECTION' | 'OPEN' | 'CODE' | 'MULTIPLE_CHOICE';
-type DifficultyLevel = 'easy' | 'medium' | 'hard';
+type QuestionType = 'MULTIPLE_CHOICE' | 'MULTIPLE_SELECTION' | 'OPEN' | 'CODE';
+type Difficulty = 'easy' | 'medium' | 'hard';
 type BloomLevel = 'remember' | 'understand' | 'apply' | 'analyze' | 'evaluate' | 'create';
 
-type ExecutionTest = {
-  input: string;
-  expected: string;
-  actual: string;
-  passed: boolean;
-};
-
-type GradeQuestion = {
-  idQuestion: number;
-  type: QuestionType;
-  statement: string;
-  difficulty: DifficultyLevel;
-  bloomLevel: BloomLevel;
-  maxPoints: number;
+type GradeRow = StudentAnswerRecord & {
   teacherScore: number;
-  isAutoCorrect: boolean;
-  studentAnswerText?: string;
-  correctAnswerText?: string;
-  studentCode: string;
-  execution?: {
-    tests: ExecutionTest[];
-  };
+  teacherIsCorrect: boolean;
 };
 
 const route = useRoute();
-const examId = computed(() => String(route.params.examId || '1'));
+const assignmentId = computed(() => Number(route.params.assignmentId));
+const examId = computed(() => Number(route.params.examId));
 
-const mockStudent = {
-  fullName: 'Alice Johnson',
-  examName: 'JavaScript Fundamentals',
-};
+const controller = new AnswersController();
 
-const examTitle = computed(() => mockStudent.examName);
+const pageLoading = ref(false);
+const pageError = ref('');
+const isSaving = ref(false);
+
+const snackbar = ref({ show: false, message: '', color: 'success' as 'success' | 'warning' | 'error' });
+const gradedQuestions = reactive<GradeRow[]>([]);
+
+const assignmentFinalScore = ref<string | number | null>(null);
+const assignmentIsPassed = ref<boolean | null>(null);
 
 const breadcrumbItems = computed(() => [
   { title: 'Exámenes', disabled: false, href: '/exams' },
@@ -201,177 +292,151 @@ const breadcrumbItems = computed(() => [
   { title: 'Calificar examen', disabled: true },
 ]);
 
-const gradedQuestions = reactive<GradeQuestion[]>([
-  {
-    idQuestion: 14,
-    type: 'MULTIPLE_SELECTION',
-    statement: '¿Cuáles son formas válidas de declarar una variable en JavaScript? (Selecciona todas las correctas)',
-    difficulty: 'easy',
-    bloomLevel: 'understand',
-    maxPoints: 15,
-    teacherScore: 15,
-    isAutoCorrect: true,
-    studentAnswerText: 'var myVar = 5;, let myVar = 5;, const myVar = 5;',
-    correctAnswerText: 'var myVar = 5;, let myVar = 5;, const myVar = 5;',
-    studentCode: '',
-  },
-  {
-    idQuestion: 28,
-    type: 'OPEN',
-    statement: 'Explica la diferencia entre los operadores == y === en JavaScript. Incluye un ejemplo.',
-    difficulty: 'medium',
-    bloomLevel: 'analyze',
-    maxPoints: 20,
-    teacherScore: 0,
-    isAutoCorrect: false,
-    studentAnswerText:
-      "El operador == convierte tipos antes de comparar, mientras que === compara valor y tipo. Ejemplo: 5 == '5' es true y 5 === '5' es false.",
-    studentCode: '',
-  },
-  {
-    idQuestion: 40,
-    type: 'CODE',
-    statement: 'Escribe una función llamada reverse_string que reciba una cadena y retorne la cadena invertida.',
-    difficulty: 'medium',
-    bloomLevel: 'apply',
-    maxPoints: 25,
-    teacherScore: 0,
-    isAutoCorrect: false,
-    studentCode: 'def reverse_string(texto):\n    return texto[::-1]',
-  },
-  {
-    idQuestion: 2,
-    type: 'MULTIPLE_CHOICE',
-    statement: '¿Qué devuelve typeof null en JavaScript?',
-    difficulty: 'easy',
-    bloomLevel: 'remember',
-    maxPoints: 10,
-    teacherScore: 10,
-    isAutoCorrect: true,
-    studentAnswerText: '"object"',
-    correctAnswerText: '"object"',
-    studentCode: '',
-  },
-  {
-    idQuestion: 3,
-    type: 'MULTIPLE_CHOICE',
-    statement: '¿Cuál NO es un tipo primitivo en JavaScript?',
-    difficulty: 'easy',
-    bloomLevel: 'remember',
-    maxPoints: 10,
-    teacherScore: 0,
-    isAutoCorrect: false,
-    studentAnswerText: 'String',
-    correctAnswerText: 'Object',
-    studentCode: '',
-  },
-]);
-
-const snackbar = ref({ show: false, message: '', color: 'success' as 'success' | 'warning' | 'error' });
-
-const maxScore = computed(() => gradedQuestions.reduce((sum, q) => sum + q.maxPoints, 0));
-const totalScore = computed(() => gradedQuestions.reduce((sum, q) => sum + (Number(q.teacherScore) || 0), 0));
+const maxScore = computed(() => gradedQuestions.reduce((s, q) => s + q.question_points, 0));
+const totalScore = computed(() =>
+  gradedQuestions.reduce((s, q) => s + (Number(q.teacherScore) || 0), 0),
+);
 const finalPercentage = computed(() => {
   if (!maxScore.value) return 0;
   return Math.round((totalScore.value / maxScore.value) * 100);
 });
 
-function questionTypeLabel(type: QuestionType) {
+function questionTypeLabel(type: QuestionType): string {
   const map: Record<QuestionType, string> = {
+    MULTIPLE_CHOICE: 'Opción única',
     MULTIPLE_SELECTION: 'Selección múltiple',
     OPEN: 'Abierta',
     CODE: 'Código',
-    MULTIPLE_CHOICE: 'Opción única',
   };
   return map[type];
 }
 
-function difficultyLabel(level: DifficultyLevel) {
-  const map: Record<DifficultyLevel, string> = {
-    easy: 'FÁCIL',
-    medium: 'MEDIO',
-    hard: 'DIFÍCIL',
-  };
-  return map[level];
+function difficultyLabel(level: Difficulty): string {
+  const map: Record<Difficulty, string> = { easy: 'Fácil', medium: 'Medio', hard: 'Difícil' };
+  return map[level] ?? level;
 }
 
-function difficultyColor(level: DifficultyLevel) {
-  const map: Record<DifficultyLevel, string> = {
-    easy: 'success',
-    medium: 'warning',
-    hard: 'error',
-  };
-  return map[level];
+function difficultyColor(level: Difficulty): string {
+  const map: Record<Difficulty, string> = { easy: 'success', medium: 'warning', hard: 'error' };
+  return map[level] ?? 'grey';
 }
 
-function bloomLabel(level: BloomLevel) {
+function bloomLabel(level: BloomLevel): string {
   const map: Record<BloomLevel, string> = {
-    remember: 'RECORDAR',
-    understand: 'COMPRENDER',
-    apply: 'APLICAR',
-    analyze: 'ANALIZAR',
-    evaluate: 'EVALUAR',
-    create: 'CREAR',
+    remember: 'Recordar',
+    understand: 'Comprender',
+    apply: 'Aplicar',
+    analyze: 'Analizar',
+    evaluate: 'Evaluar',
+    create: 'Crear',
   };
-  return map[level];
+  return map[level] ?? level;
 }
 
-function bloomColor(level: BloomLevel) {
+function bloomColor(level: BloomLevel): string {
   const map: Record<BloomLevel, string> = {
-    remember: 'info',
+    remember: 'blue-grey',
     understand: 'indigo',
     apply: 'purple',
     analyze: 'teal',
-    evaluate: 'amber',
+    evaluate: 'amber-darken-2',
     create: 'pink',
   };
-  return map[level];
+  return map[level] ?? 'grey';
 }
 
-function normalizeScore(item: GradeQuestion) {
+function normalizeScore(item: GradeRow) {
   const score = Number(item.teacherScore);
-  if (Number.isNaN(score)) {
-    item.teacherScore = 0;
-    return;
-  }
-  if (score < 0) {
-    item.teacherScore = 0;
-    return;
-  }
-  if (score > item.maxPoints) {
-    item.teacherScore = item.maxPoints;
-  }
+  if (Number.isNaN(score)) { item.teacherScore = 0; return; }
+  if (score < 0) { item.teacherScore = 0; return; }
+  if (score > item.question_points) item.teacherScore = item.question_points;
 }
 
-function runTeacherCode(questionId: number) {
-  const target = gradedQuestions.find((q) => q.idQuestion === questionId && q.type === 'CODE');
-  if (!target) {
-    return;
-  }
-
-  const normalized = target.studentCode.toLowerCase();
-  const looksValid = normalized.includes('def reverse_string') && (normalized.includes('[::-1]') || normalized.includes('reversed('));
-
-  const tests: ExecutionTest[] = [
-    { input: 'reverse_string("hola")', expected: 'aloh', actual: looksValid ? 'aloh' : 'hola', passed: looksValid },
-    { input: 'reverse_string("Python")', expected: 'nohtyP', actual: looksValid ? 'nohtyP' : 'Python', passed: looksValid },
-    { input: 'reverse_string("")', expected: '', actual: '', passed: true },
-  ];
-
-  target.execution = { tests };
-  target.isAutoCorrect = tests.every((t) => t.passed);
-  target.teacherScore = target.isAutoCorrect ? target.maxPoints : Math.round(target.maxPoints * 0.4);
-
-  snackbar.value = {
-    show: true,
-    message: target.isAutoCorrect ? 'Ejecución completada: todos los casos pasaron.' : 'Ejecución completada: hay casos fallidos.',
-    color: target.isAutoCorrect ? 'success' : 'warning',
+function mapToGradeRow(record: StudentAnswerRecord): GradeRow {
+  return {
+    ...record,
+    teacherScore: record.score !== null ? Number(record.score) : 0,
+    teacherIsCorrect: record.is_correct ?? false,
   };
 }
 
-function saveGrade() {
-  snackbar.value = { show: true, message: 'Calificación guardada (mock).', color: 'success' };
+async function saveAllGrades() {
+  isSaving.value = true;
+  let lastSummary: { score: string | number; is_passed: boolean } | null = null;
+  let errorsCount = 0;
+
+  for (const item of gradedQuestions) {
+    try {
+      const response = await controller.manualGradeAnswer({
+        student_answer_id: item.id_student_answer,
+        score: item.teacherScore,
+        is_correct: item.teacherIsCorrect,
+      });
+
+      if (!response.success || !response.data) {
+        errorsCount++;
+        continue;
+      }
+
+      const updated = response.data.student_answer;
+      item.is_correct = updated.is_correct;
+      item.score = updated.score;
+      item.teacherScore = updated.score !== null ? Number(updated.score) : item.teacherScore;
+      item.teacherIsCorrect = updated.is_correct ?? item.teacherIsCorrect;
+      lastSummary = response.data.assignment_summary;
+    } catch {
+      errorsCount++;
+    }
+  }
+
+  if (lastSummary) {
+    assignmentFinalScore.value = lastSummary.score;
+    assignmentIsPassed.value = lastSummary.is_passed;
+  }
+
+  if (errorsCount === 0) {
+    showSnackbar('Todas las calificaciones guardadas correctamente.', 'success');
+  } else if (errorsCount < gradedQuestions.length) {
+    showSnackbar(`${errorsCount} calificación(es) no se pudieron guardar.`, 'warning');
+  } else {
+    showSnackbar('No se pudieron guardar las calificaciones.', 'error');
+  }
+
+  isSaving.value = false;
 }
+
+function showSnackbar(message: string, color: 'success' | 'warning' | 'error' = 'success') {
+  snackbar.value = { show: true, message, color };
+}
+
+async function loadAnswers() {
+  if (!assignmentId.value || Number.isNaN(assignmentId.value)) {
+    pageError.value = 'ID de asignación inválido.';
+    return;
+  }
+
+  pageLoading.value = true;
+  pageError.value = '';
+
+  try {
+    const response = await controller.getAssignmentAnswers(assignmentId.value);
+
+    if (!response.success || !response.data) {
+      pageError.value = response.message || 'No se pudieron obtener las respuestas.';
+      return;
+    }
+
+    gradedQuestions.splice(0, gradedQuestions.length, ...response.data.answers.map(mapToGradeRow));
+  } catch {
+    pageError.value = 'Error de conexión al cargar las respuestas.';
+  } finally {
+    pageLoading.value = false;
+  }
+}
+
+onMounted(() => {
+  void loadAnswers();
+});
 </script>
 
 <style scoped>
@@ -388,7 +453,7 @@ function saveGrade() {
 
 .question-card {
   width: 100%;
-  max-width: 980px;
+  max-width: 760px;
   border: 1px solid rgba(148, 163, 184, 0.16);
   background: #fff;
 }
@@ -398,15 +463,15 @@ function saveGrade() {
 }
 
 .q-index {
-  width: 38px;
-  height: 38px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   display: grid;
   place-items: center;
   background: #e5f3ef;
   color: #0f766e;
   font-weight: 800;
-  font-size: 1.15rem;
+  font-size: 1rem;
   flex: 0 0 auto;
 }
 
@@ -419,9 +484,19 @@ function saveGrade() {
   background: #f8fcfd;
 }
 
-.execution-card {
-  background: #f8fcfd;
-  border: 1px solid #d7e7ea;
+.answer-box--correct {
+  border-color: #86efac !important;
+  background: #f0fdf4 !important;
+}
+
+.answer-box--wrong {
+  border-color: #fca5a5 !important;
+  background: #fff5f5 !important;
+}
+
+.answer-text-pre {
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .score-input {
@@ -430,7 +505,7 @@ function saveGrade() {
 
 .final-card {
   width: 100%;
-  max-width: 980px;
+  max-width: 760px;
   border: 1px solid rgba(148, 163, 184, 0.16);
   background: #ffffff;
 }
