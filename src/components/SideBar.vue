@@ -104,7 +104,7 @@
               :title="item.title"
               :active="isItemActive(item)"
               active-color="white"
-              @click="$router.push(item.to)"
+              :to="item.to"
             />
 
             <template v-if="quickActions.length">
@@ -119,7 +119,7 @@
                 :title="item.title"
                 :active="isItemActive(item)"
                 active-color="white"
-                @click="$router.push(item.to)"
+                :to="item.to"
               />
             </template>
           </v-list>

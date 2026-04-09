@@ -2,7 +2,7 @@
   <v-app>
     <router-view v-slot="{ Component, route }">
       <transition :name="route.meta.transition || 'fade'" mode="out-in">
-        <component :is="Component" :key="route.path" />
+        <component :is="Component" :key="route.matched[0]?.path ?? route.path" />
       </transition>
     </router-view>
   </v-app>
