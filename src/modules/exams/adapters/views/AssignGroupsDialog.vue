@@ -10,16 +10,19 @@
       <v-divider />
 
       <v-card-text class="pa-4">
-        <!-- Already assigned groups -->
+        <!-- Already assigned groups (closable = unassign) -->
         <div v-if="assignedGroups.length > 0" class="mb-4">
-          <p class="text-body-2 font-weight-medium mb-2">Grupos ya asignados:</p>
+          <p class="text-body-2 font-weight-medium mb-2">Grupos asignados:</p>
           <div class="d-flex flex-wrap gap-2">
             <v-chip
               v-for="ag in assignedGroups"
               :key="ag.group_id"
+              closable
               color="primary"
               variant="tonal"
               size="small"
+              :disabled="submitting"
+              @click:close="removeAssignedGroup(ag.group_id)"
             >
               <v-icon start size="14">mdi-check-circle</v-icon>
               {{ formatGroupLabel(ag.academic_level, ag.group_label) }}
@@ -93,7 +96,7 @@
         </v-row>
 
         <!-- Validation messages -->
-        <v-alert v-if="selectedGroups.length === 0 && !loadingGroups" type="info" variant="tonal" density="compact" class="mt-2">
+        <v-alert v-if="assignedGroups.length === 0 && selectedGroups.length === 0 && !loadingGroups" type="info" variant="tonal" density="compact" class="mt-2">
           Seleccione al menos un grupo para asignar.
         </v-alert>
       </v-card-text>
@@ -109,7 +112,7 @@
           variant="elevated"
           color="primary"
           :loading="submitting"
-          :disabled="submitting || selectedGroups.length === 0 || !availableFrom || !availableTo"
+          :disabled="submitting || (assignedGroups.length === 0 && selectedGroups.length === 0) || !availableFrom || !availableTo"
           @click="handleAssign"
         >
           Asignar grupos
@@ -163,7 +166,7 @@ const availableGroupItems = computed(() =>
 );
 
 function buildGroupChipLabel(g: AcademicGroup): string {
-  return `${g.academic_level}${g.group_letter} - ${g.period_info}`;
+  return `${g.academic_level}${g.group_letter} - (${g.generation_year})`;
 }
 
 const rules = {
@@ -189,6 +192,10 @@ function addGroup(id: number | null) {
 
 function removeGroup(id: number) {
   selectedGroups.value = selectedGroups.value.filter(g => g.id_group !== id);
+}
+
+function removeAssignedGroup(id: number) {
+  assignedGroups.value = assignedGroups.value.filter(g => g.group_id !== id);
 }
 
 function toDateTimeLocal(isoString: string): string {
@@ -244,7 +251,7 @@ function close() {
 }
 
 async function handleAssign() {
-  if (selectedGroups.value.length === 0 || !availableFrom.value || !availableTo.value) return;
+  if ((assignedGroups.value.length === 0 && selectedGroups.value.length === 0) || !availableFrom.value || !availableTo.value) return;
 
   const fromDate = new Date(availableFrom.value);
   const toDate = new Date(availableTo.value);
@@ -261,7 +268,10 @@ async function handleAssign() {
   try {
     const res = await controller.assignExamToGroups({
       exam_id: examId.value,
-      group_ids: selectedGroups.value.map(g => g.id_group),
+      group_ids: [
+        ...assignedGroups.value.map(g => g.group_id),
+        ...selectedGroups.value.map(g => g.id_group),
+      ],
       available_from: fromDate.toISOString(),
       available_to: toDate.toISOString(),
     });

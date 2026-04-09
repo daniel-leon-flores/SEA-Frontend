@@ -1,12 +1,11 @@
 import { ApiResponse } from '@/kernel/types';
 import { QuestionBank, QuestionListPayload } from '../entities/question-bank';
-import { QuestionRepository } from '../use-cases/ports/question.repository';
+import { QuestionRepository ,UploadReport} from '../use-cases/ports/question.repository';
 import { QuestionStorageGateway } from './question.storage.gateway';
 import { GetQuestionsInteractor } from '../use-cases/get-questions.interactor';
 import { CreateQuestionDto, UpdateQuestionDto } from '../entities/create-question.dto';
 import { CreateQuestionInteractor } from '../use-cases/create-question.interactor';
 import { GetQuestionsDto } from '../entities/get-questions.dto';
-import { UploadReport } from '../use-cases/ports/question.repository';
 
 export class QuestionController {
   private repository(): QuestionRepository {
