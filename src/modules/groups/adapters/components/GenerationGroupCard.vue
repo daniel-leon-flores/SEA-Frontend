@@ -20,7 +20,7 @@
       <span>Nivel {{ group.academic_level }}</span>
     </div>
 
-    <div class="d-flex align-center ga-2 text-medium-emphasis mb-5">
+    <div class="d-flex align-center ga-2 text-medium-emphasis mb-3">
       <v-icon size="18" color="#64748b">mdi-account-group</v-icon>
       <span>{{ studentsCount }} alumnos</span>
     </div>
@@ -28,12 +28,24 @@
     <v-btn
       variant="outlined"
       block
-      class="mb-4 add-students-btn"
+      class="mb-3 add-students-btn"
       rounded="lg"
-      @click="$emit('add-students')"
+      @click="$emit('view-students')"
     >
-      <v-icon start size="18">mdi-account-plus-outline</v-icon>
-      Agregar alumnos
+      <v-icon start size="18">mdi-account-group-outline</v-icon>
+      Ver alumnos
+    </v-btn>
+
+    <v-btn
+      variant="tonal"
+      color="#0f766e"
+      block
+      class="mb-4 assign-teacher-btn"
+      rounded="lg"
+      @click="$emit('assign-teacher')"
+    >
+      <v-icon start size="18">mdi-account-tie-outline</v-icon>
+      Gestionar docentes
     </v-btn>
 
     <v-divider class="mb-4" />
@@ -51,9 +63,13 @@
       </div>
 
       <div class="d-flex align-center ga-1">
-        <v-btn icon variant="text" size="small" @click="$emit('view')">
-          <v-icon>mdi-eye-outline</v-icon>
-        </v-btn>
+        <v-tooltip text="Ver docentes asignados" location="top">
+          <template #activator="{ props: tipProps }">
+            <v-btn icon variant="text" size="small" v-bind="tipProps" @click="$emit('view-details')">
+              <v-icon>mdi-eye-outline</v-icon>
+            </v-btn>
+          </template>
+        </v-tooltip>
         <v-btn icon variant="text" size="small" @click="$emit('edit')">
           <v-icon>mdi-pencil-outline</v-icon>
         </v-btn>
@@ -71,9 +87,10 @@ defineProps<{
 }>();
 
 defineEmits<{
-  (e: 'view'): void;
+  (e: 'view-details'): void;
+  (e: 'view-students'): void;
   (e: 'edit'): void;
-  (e: 'add-students'): void;
+  (e: 'assign-teacher'): void;
   (e: 'toggle-status', value: boolean): void;
 }>();
 </script>
@@ -118,8 +135,39 @@ defineEmits<{
   font-weight: 600;
 }
 
+.teacher-row {
+  min-height: 40px;
+}
+
+.assignments-list {
+  max-height: 80px;
+  overflow-y: auto;
+}
+
+.teacher-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.subject-chip {
+  font-size: 11px;
+  color: #0f766e;
+  font-weight: 500;
+}
+
+.no-teacher {
+  color: #94a3b8;
+  font-size: 13px;
+}
+
 .add-students-btn {
   border-style: dashed;
+  font-size: 14px;
+  min-height: 38px;
+}
+
+.assign-teacher-btn {
   font-size: 14px;
   min-height: 38px;
 }

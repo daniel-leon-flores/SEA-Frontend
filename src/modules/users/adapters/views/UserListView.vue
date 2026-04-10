@@ -147,6 +147,13 @@
                   <v-list-item-title>Editar usuario</v-list-item-title>
                 </v-list-item>
 
+                <v-list-item v-if="row.role === 'teacher'" @click="openAssignGroupsDialog(row)">
+                  <template #prepend>
+                    <v-icon color="primary">mdi-account-group-outline</v-icon>
+                  </template>
+                  <v-list-item-title>Asignar a grupo</v-list-item-title>
+                </v-list-item>
+
                 <v-divider class="my-1" />
 
                 <v-list-item @click="openStatusInfoModal(row)">
@@ -238,6 +245,14 @@
       @cancel="handleStatusChangeCancel"
     />
 
+    <!-- Dialog asignar docente a grupo -->
+    <AssignTeacherGroupsDialog
+      :model-value="assignGroupsDialog"
+      :teacher="selectedTeacherForGroups"
+      @update:model-value="assignGroupsDialog = $event"
+      @assigned="handleTeacherGroupsAssigned"
+    />
+
     <!-- Snackbar para notificaciones -->
     <v-snackbar
       v-model="snackbar.show"
@@ -258,6 +273,7 @@ import UpdateUserModal from '../components/UpdateUserModal.vue'
 import UserDetailModal from '../components/UserDetailModal.vue'
 import StatusChangeInfoModal from '../components/StatusChangeInfoModal.vue'
 import ConfirmStatusChangeModal from '../components/ConfirmStatusChangeModal.vue'
+import AssignTeacherGroupsDialog from '../components/AssignTeacherGroupsDialog.vue'
 
 export default {
   name: 'UserListView',
@@ -268,7 +284,8 @@ export default {
     UpdateUserModal,
     UserDetailModal,
     StatusChangeInfoModal,
-    ConfirmStatusChangeModal
+    ConfirmStatusChangeModal,
+    AssignTeacherGroupsDialog,
   },
   data() {
     return {
@@ -288,6 +305,9 @@ export default {
       statusConfirmDialog: false,
       userForStatusChange: null,
       newStatusValue: false,
+      // Dialog asignar docente a grupo
+      assignGroupsDialog: false,
+      selectedTeacherForGroups: null,
       pagination: {
         count: 0,
         totalPages: 1,
@@ -515,7 +535,18 @@ export default {
     
     viewUserDetail(user) {
       this.$router.push({ name: 'UserDetail', params: { id: user.id_user } })
-    }
+    },
+
+    openAssignGroupsDialog(user) {
+      this.selectedTeacherForGroups = user
+      this.assignGroupsDialog = true
+    },
+
+    handleTeacherGroupsAssigned() {
+      this.showSnackbar('Asignación de grupos actualizada exitosamente.', 'success')
+      this.assignGroupsDialog = false
+      this.selectedTeacherForGroups = null
+    },
   }
 }
 </script>

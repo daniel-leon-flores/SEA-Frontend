@@ -1,6 +1,6 @@
 import { ApiResponse, PaginationDto } from "@/kernel/types";
 import { User } from "../entities/user";
-import { UserRepository } from "../use-cases/ports/user.repository";
+import { UserRepository, EligibleGroup } from "../use-cases/ports/user.repository";
 import { handleRequest } from "@/config/http-client.gateway";
 import { CreateUserDto } from "../entities/create-user.dto";
 import { UpdateUserDto } from "../entities/update-user.dto";
@@ -36,7 +36,6 @@ export class UserStorageGateway implements UserRepository {
     
     const queryString = params.toString();
     const url = `/api/users/${queryString ? '?' + queryString : ''}`;
-    
     return handleRequest<User[]>('get', url);
   }
 
@@ -54,13 +53,20 @@ export class UserStorageGateway implements UserRepository {
 
   async updateUserStatus(id: number, status: boolean): Promise<ApiResponse<{ id_user: number; status: boolean }>> {
     return handleRequest<{ id_user: number; status: boolean }, { status: boolean }>(
-      'patch', 
-      `/api/users/${id}/status/`, 
+      'patch',
+      `/api/users/${id}/status/`,
       { status }
     );
   }
 
   async deleteUser(id: number): Promise<ApiResponse<boolean>> {
     return handleRequest<boolean>('delete', `/api/users/${id}/`);
+  }
+
+  async getEligibleGroups(userId: number): Promise<ApiResponse<{ results: EligibleGroup[] }>> {
+    return handleRequest<{ results: EligibleGroup[] }>(
+      'get',
+      `/api/users/${userId}/eligible-groups/`
+    );
   }
 }

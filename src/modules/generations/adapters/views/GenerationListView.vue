@@ -72,7 +72,7 @@
           <v-window-item value="info">
             <v-row>
               <v-col cols="12">
-                <label class="field-label">Año de generación</label>
+                <label class="field-label">Año de generación
                 <v-text-field
                   v-model.number="form.year"
                   type="number"
@@ -84,10 +84,11 @@
                   rounded="lg"
                   density="comfortable"
                 />
+                </label>
               </v-col>
 
               <v-col cols="12" md="6">
-                <label class="field-label">Cantidad de cuatrimestres</label>
+                <label class="field-label">Cantidad de cuatrimestres
                 <v-text-field
                   v-model.number="form.total_levels"
                   type="number"
@@ -98,6 +99,7 @@
                   rounded="lg"
                   density="comfortable"
                 />
+                </label>
               </v-col>
 
               <v-col cols="12">
@@ -135,7 +137,7 @@
 
               <v-row>
                 <v-col cols="12" md="5">
-                  <label class="field-label">Nombre del grupo</label>
+                  <label class="field-label">Nombre del grupo
                   <v-text-field
                     v-model="group.group_letter"
                     hide-details
@@ -145,10 +147,11 @@
                     placeholder="A"
                     @update:model-value="group.group_letter = normalizeLetter(group.group_letter)"
                   />
+                  </label>
                 </v-col>
 
                 <v-col cols="12" md="5">
-                  <label class="field-label">Nivel académico actual</label>
+                  <label class="field-label">Nivel académico actual
                   <v-text-field
                     :model-value="detectedAcademicLevel"
                     hide-details
@@ -157,6 +160,7 @@
                     density="comfortable"
                     readonly
                   />
+                  </label>
                 </v-col>
 
                 <v-col cols="12" md="2" class="d-flex align-center">
@@ -342,8 +346,8 @@ const addGroup = () => {
   let nextLetter = '';
   if (groups.length > 0) {
     const lastLetter = groups[groups.length - 1].group_letter;
-    if (/^[A-Z]$/.test(lastLetter) && lastLetter.charCodeAt(0) < 90) {
-      nextLetter = String.fromCharCode(lastLetter.charCodeAt(0) + 1);
+    if (/^[A-Z]$/.test(lastLetter) && lastLetter.codePointAt(0)! < 90) {
+      nextLetter = String.fromCodePoint(lastLetter.codePointAt(0)! + 1);
     }
   }
   form.value.groups.push({
@@ -437,8 +441,8 @@ const saveGeneration = async () => {
   await router.push(`/generations/${generationId}/groups`);
 };
 
-const goToGroups = (idGeneration: number) => {
-  void router.push(`/generations/${idGeneration}/groups`);
+const goToGroups = async (idGeneration: number) => {
+  await router.push(`/generations/${idGeneration}/groups`);
 };
 
 const toggleGenerationStatus = async (generation: Generation, value: boolean) => {

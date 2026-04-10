@@ -32,6 +32,7 @@
           <th
             v-for="col in columns"
             :key="col.key"
+            scope="col"
             class="font-weight-bold text-center"
             :style="{ minWidth: col.minWidth || '100px' }"
           >

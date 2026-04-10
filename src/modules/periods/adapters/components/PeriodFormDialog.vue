@@ -19,7 +19,7 @@
         <v-form ref="formRef" v-model="formValid" @submit.prevent="submit">
           <v-row>
             <v-col cols="12" md="6">
-              <label class="field-label">Año</label>
+              <label class="field-label">Año
               <v-text-field
                 v-model.number="form.year"
                 type="number"
@@ -31,9 +31,10 @@
                 density="comfortable"
                 :rules="[rules.year]"
               />
+              </label>
             </v-col>
             <v-col cols="12" md="6">
-              <label class="field-label">Nombre del periodo</label>
+              <label class="field-label">Nombre del periodo
               <v-select
                 v-model="form.period_name"
                 :items="periodNameItems"
@@ -43,9 +44,10 @@
                 density="comfortable"
                 :rules="[rules.requiredSelect]"
               />
+              </label>
             </v-col>
             <v-col cols="12" md="6">
-              <label class="field-label">Fecha de inicio</label>
+              <label class="field-label">Fecha de inicio
               <v-menu v-model="menuStart" :close-on-content-click="false" location="bottom">
                 <template #activator="{ props: menuProps }">
                   <v-text-field
@@ -73,12 +75,13 @@
                   @update:model-value="onPickStart"
                 />
               </v-menu>
+              </label>
               <p v-if="canPickDates" class="hint-text mt-1">
                 Solo días de <strong>{{ startMonthLabel }}</strong> ({{ form.year }})
               </p>
             </v-col>
             <v-col cols="12" md="6">
-              <label class="field-label">Fecha de fin</label>
+              <label class="field-label">Fecha de fin
               <v-menu v-model="menuEnd" :close-on-content-click="false" location="bottom">
                 <template #activator="{ props: menuProps }">
                   <v-text-field
@@ -106,6 +109,7 @@
                   @update:model-value="onPickEnd"
                 />
               </v-menu>
+              </label>
               <p v-if="canPickDates" class="hint-text mt-1">
                 Solo días de <strong>{{ endMonthLabel }}</strong> ({{ form.year }})
               </p>

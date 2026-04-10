@@ -5,9 +5,12 @@
     <div class="d-flex align-start justify-space-between mb-8 flex-wrap ga-4">
       <div>
         <h1 class="page-title">Materias</h1>
-        <p class="page-subtitle">Gestiona el catálogo de materias por nivel y unidades</p>
+        <p class="page-subtitle">
+          {{ isTeacher ? 'Materias que impartes' : 'Gestiona el catálogo de materias por nivel y unidades' }}
+        </p>
       </div>
       <v-btn
+        v-if="!isTeacher"
         color="success"
         size="default"
         rounded="lg"
@@ -19,7 +22,7 @@
       </v-btn>
     </div>
 
-    <v-row class="mb-6" align="center">
+    <v-row v-if="!isTeacher" class="mb-6" align="center">
       <v-col cols="12" sm="6" md="4">
         <v-select
           v-model="filterLevel"
@@ -58,9 +61,12 @@
           :subject="s"
           subtitle="Materia académica"
           :status-loading="statusTogglingId === s.id_subject"
+          :show-groups-btn="isTeacher"
+          :has-groups="isTeacher ? subjectIdsWithGroups.has(s.id_subject) : undefined"
           @view="openDetail(s)"
           @edit="openEdit(s)"
           @toggle-status="onToggleStatus(s, $event)"
+          @view-groups="goToTeacherGroups(s)"
         />
       </v-col>
     </v-row>
@@ -69,23 +75,24 @@
       No hay materias registradas con los filtros seleccionados.
     </v-alert>
 
-    <div v-if="!loading && pagination.totalPages > 1" class="d-flex justify-center mt-6">
+    <div v-if="!loading && paginationData.totalPages > 1" class="d-flex justify-center mt-6">
       <v-pagination
-        v-model="pagination.currentPage"
-        :length="pagination.totalPages"
+        v-model="paginationData.currentPage"
+        :length="paginationData.totalPages"
         rounded="circle"
         density="comfortable"
         @update:model-value="handlePageChange"
       />
     </div>
 
-    <p v-if="!loading && pagination.count > 0" class="pagination-caption text-center mt-2">
-      Mostrando {{ subjects.length }} de {{ pagination.count }} materias
+    <p v-if="!loading && paginationData.count > 0" class="pagination-caption text-center mt-2">
+      Mostrando {{ subjects.length }} de {{ paginationData.count }} materias
     </p>
 
-    <SubjectFormDialog v-model="formDialog" :subject="subjectToEdit" @saved="onFormSaved" />
-
-    <SubjectDetailDialog v-model="detailDialog" :subject="detailSubject" />
+    <template v-if="!isTeacher">
+      <SubjectFormDialog v-model="formDialog" :subject="subjectToEdit" @saved="onFormSaved" />
+      <SubjectDetailDialog v-model="detailDialog" :subject="detailSubject" />
+    </template>
 
     <v-snackbar v-model="snackbar.show" :color="snackbar.color" :timeout="3200" location="top right">
       {{ snackbar.message }}
@@ -94,24 +101,37 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import Loader from '@/components/Loader.vue';
 import SubjectFormDialog from '../components/SubjectFormDialog.vue';
 import SubjectCard from '../components/SubjectCard.vue';
 import SubjectDetailDialog from '../components/SubjectDetailDialog.vue';
 import { useSubjects } from '../../composables/useSubjects';
+import { useTeacherSubjects } from '../../composables/useTeacherSubjects';
 import type { Subject } from '../../entities/subject';
 
+const router = useRouter();
+
+const role = localStorage.getItem('sea_selectedRole') ?? '';
+const isTeacher = computed(() => role === 'TEACHER');
+
+// Use different data source depending on role
+const adminComposable = useSubjects();
+const teacherComposable = useTeacherSubjects();
+
+const loading = computed(() => isTeacher.value ? teacherComposable.loading.value : adminComposable.loading.value);
+const subjects = computed(() => isTeacher.value ? teacherComposable.subjects.value : adminComposable.subjects.value);
+const paginationData = computed(() => isTeacher.value ? teacherComposable.pagination.value : adminComposable.pagination.value);
+const subjectIdsWithGroups = computed(() => teacherComposable.subjectIdsWithGroups.value);
+
 const {
-  loading,
-  subjects,
-  pagination,
   filterLevel,
   filterStatus,
   fetchSubjects,
   handlePageChange: pageChange,
   setSubjectStatus,
-} = useSubjects();
+} = adminComposable;
 
 const levelFilterItems = [
   { label: 'Todos los niveles', value: null },
@@ -155,6 +175,10 @@ function openDetail(s: Subject) {
   detailDialog.value = true;
 }
 
+function goToTeacherGroups(s: Subject) {
+  router.push({ name: 'TeacherSubjectGroups', params: { subjectId: s.id_subject } });
+}
+
 function onFormSaved() {
   showSnackbar(subjectToEdit.value ? 'Materia actualizada correctamente.' : 'Materia registrada correctamente.');
   fetchSubjects();
@@ -176,7 +200,7 @@ async function onToggleStatus(subject: Subject, value: boolean) {
 }
 
 async function onFiltersChanged() {
-  pagination.value.currentPage = 1;
+  adminComposable.pagination.value.currentPage = 1;
   await fetchSubjects();
 }
 
@@ -184,8 +208,12 @@ function handlePageChange(p: number) {
   pageChange(p);
 }
 
-onMounted(() => {
-  void fetchSubjects();
+onMounted(async () => {
+  if (isTeacher.value) {
+    await teacherComposable.fetchSubjects();
+  } else {
+    await fetchSubjects();
+  }
 });
 </script>
 

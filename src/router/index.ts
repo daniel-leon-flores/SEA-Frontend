@@ -44,6 +44,18 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true },
     children: [
       childRoute('my-exams',    'MyExams',          () => import('@/modules/exams/adapters/views/StudentExamListView.vue'),                R_STUDENT),
+      {
+        path: 'my-exams/:assignmentId/answer',
+        name: 'AnswerExam',
+        component: () => import('@/modules/answers/adapters/views/StudentExamAnswerView.vue'),
+        meta: { roles: R_STUDENT, hideSidebar: true },
+      } as RouteRecordRaw,
+      {
+        path: 'my-exams/:assignmentId/review',
+        name: 'ReviewExam',
+        component: () => import('@/modules/answers/adapters/views/StudentExamReviewView.vue'),
+        meta: { roles: R_STUDENT },
+      } as RouteRecordRaw,
       childRoute('exams',       'ManageExams',       () => import('@/modules/exams/adapters/views/ExamListView.vue'),                        R_TEACHER_ADMIN),
       childRoute('exams/:id/grades', 'ExamGrades',  () => import('@/modules/exams/adapters/views/ExamGradesView.vue'),                     R_TEACHER_ADMIN),
       childRoute('exams/:examId/assignments/:assignmentId/grade', 'ManualGrade', () => import('@/modules/exams/adapters/views/ManualGradeView.vue'), R_TEACHER_ADMIN),
@@ -51,6 +63,8 @@ const routes: RouteRecordRaw[] = [
       childRoute('generations', 'Generations',       () => import('@/modules/generations/adapters/views/GenerationListView.vue'),           R_ADMIN),
       childRoute('generations/:id/groups', 'GenerationGroups', () => import('@/modules/groups/adapters/views/GenerationGroupsView.vue'),    R_ADMIN),
       childRoute('subjects',    'Subjects',          () => import('@/modules/subjects/adapters/views/SubjectListView.vue'),                 R_TEACHER_ADMIN),
+      childRoute('subjects/:subjectId/groups', 'TeacherSubjectGroups', () => import('@/modules/subjects/adapters/views/TeacherSubjectGroupsView.vue'), R_TEACHER_ADMIN),
+      childRoute('subjects/:subjectId/groups/:groupId/students', 'TeacherGroupStudents', () => import('@/modules/subjects/adapters/views/TeacherGroupStudentsView.vue'), R_TEACHER_ADMIN),
       childRoute('users',       'Users',             () => import('@/modules/users/adapters/views/UserListView.vue'),                       R_ADMIN),
       childRoute('users/:id',   'UserDetail',        () => import('@/modules/users/adapters/views/UserDetailView.vue'),                     R_ADMIN),
       childRoute('generations/:generationId/groups/:groupId/students', 'GroupStudents', () => import('@/modules/users/adapters/views/GroupStudentsView.vue'), R_ADMIN),

@@ -13,6 +13,7 @@
             <th
               v-for="column in columns"
               :key="column.key"
+              scope="col"
               class="font-semibold text-center sticky-header"
               :style="{ width: column.width || 'auto', minWidth: column.minWidth || 'auto' }"
             >

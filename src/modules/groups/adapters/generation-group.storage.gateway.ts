@@ -1,7 +1,7 @@
 import { ApiResponse, PaginatedData } from '@/kernel/types';
 import { handleRequest } from '@/config/http-client.gateway';
 import { GenerationGroupRepository } from '../use-cases/ports/generation-group.repository';
-import { GenerationGroup } from '../entities/generation-group';
+import { GenerationGroup, AvailableTeacher, CreateAssignmentDto, GroupTeacherAssignment } from '../entities/generation-group';
 import { CreateGenerationGroupDto } from '../entities/create-generation-group.dto';
 import { UpdateGenerationGroupDto } from '../entities/update-generation-group.dto';
 
@@ -36,5 +36,27 @@ export class GenerationGroupStorageGateway implements GenerationGroupRepository 
 
   async deleteGenerationGroup(id: number): Promise<ApiResponse<{ id_group: number; status: boolean }>> {
     return handleRequest<{ id_group: number; status: boolean }>('delete', `/api/academic/groups/${id}/`);
+  }
+
+  async createAssignment(groupId: number, payload: CreateAssignmentDto): Promise<ApiResponse<GroupTeacherAssignment>> {
+    return handleRequest<GroupTeacherAssignment, CreateAssignmentDto>(
+      'post',
+      `/api/academic/groups/${groupId}/assignments/`,
+      payload
+    );
+  }
+
+  async deleteAssignment(groupId: number, assignmentId: number): Promise<ApiResponse<{ id_assignment: number }>> {
+    return handleRequest<{ id_assignment: number }>(
+      'delete',
+      `/api/academic/groups/${groupId}/assignments/${assignmentId}/`
+    );
+  }
+
+  async getAvailableTeachers(groupId: number, subjectId: number): Promise<ApiResponse<{ results: AvailableTeacher[] }>> {
+    return handleRequest<{ results: AvailableTeacher[] }>(
+      'get',
+      `/api/academic/groups/${groupId}/available-teachers/?subject_id=${subjectId}`
+    );
   }
 }
