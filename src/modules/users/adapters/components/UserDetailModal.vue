@@ -15,25 +15,53 @@
         <v-row>
           <!-- Solo mostrar grupo si NO es admin -->
           <template v-if="user.role !== 'admin'">
-            <v-col cols="12" v-if="user.group">
-              <div class="mb-3">
-                <p class="text-caption text-grey-darken-1 mb-2">Grupo asignado</p>
-                <v-chip color="info" variant="tonal" size="large">
-                  <v-icon start>mdi-account-group</v-icon>
-                  {{ user.group.group_letter }} - Nivel {{ user.group.academic_level }}
-                </v-chip>
-              </div>
-            </v-col>
+            <!-- Para docentes: mostrar materias que imparte -->
+            <template v-if="user.role === 'teacher'">
+              <v-col cols="12">
+                <div class="mb-3">
+                  <p class="text-caption text-grey-darken-1 mb-2">Materias que imparte</p>
+                  <div v-if="user.subjects && user.subjects.length > 0" class="d-flex flex-wrap ga-2">
+                    <v-chip
+                      v-for="subject in user.subjects"
+                      :key="subject.id_subject"
+                      color="teal"
+                      variant="tonal"
+                      size="small"
+                    >
+                      <v-icon start size="14">mdi-book-open-variant</v-icon>
+                      {{ subject.name }}
+                    </v-chip>
+                  </div>
+                  <v-alert v-else type="info" variant="tonal" density="compact">
+                    Este docente no tiene materias asignadas
+                  </v-alert>
+                </div>
+              </v-col>
+              <v-col cols="12">
+                <v-divider class="my-2" />
+              </v-col>
+            </template>
 
-            <v-col cols="12" v-else>
-              <v-alert type="info" variant="tonal" density="compact">
-                Este usuario no tiene un grupo asignado
-              </v-alert>
-            </v-col>
-
-            <v-col cols="12">
-              <v-divider class="my-2" />
-            </v-col>
+            <!-- Para estudiantes: mostrar grupo asignado -->
+            <template v-if="user.role === 'student'">
+              <v-col cols="12" v-if="user.group">
+                <div class="mb-3">
+                  <p class="text-caption text-grey-darken-1 mb-2">Grupo asignado</p>
+                  <v-chip color="info" variant="tonal" size="large">
+                    <v-icon start>mdi-account-group</v-icon>
+                    {{ user.group.group_letter }} - Nivel {{ user.group.academic_level }}
+                  </v-chip>
+                </div>
+              </v-col>
+              <v-col cols="12" v-else>
+                <v-alert type="info" variant="tonal" density="compact">
+                  Este usuario no tiene un grupo asignado
+                </v-alert>
+              </v-col>
+              <v-col cols="12">
+                <v-divider class="my-2" />
+              </v-col>
+            </template>
           </template>
 
           <v-col cols="12">

@@ -28,10 +28,11 @@
         <GenerationGroupCard
           :group="group"
           :students-count="group.students_count ?? 0"
-          @view="goToGroupStudentsView(group)"
+          @view-students="goToGroupStudentsView(group)"
+          @view-details="openGroupDetailsDialog(group)"
           @edit="openEditGroupModal(group)"
           @toggle-status="toggleGroupStatus(group, $event)"
-          @add-students="goToGroupStudentsView(group, true)"
+          @assign-teacher="openAssignTeacherDialog(group)"
         />
       </v-col>
     </v-row>
@@ -69,9 +70,10 @@
 
         <v-row>
           <v-col cols="12" md="6">
-            <label class="field-label">Nombre del grupo</label>
+            <span class="field-label">Nombre del grupo</span>
             <v-text-field
               v-model="groupForm.group_letter"
+              aria-label="Nombre del grupo"
               hide-details
               variant="solo-filled"
               rounded="lg"
@@ -82,9 +84,10 @@
           </v-col>
 
           <v-col cols="12" md="6">
-            <label class="field-label">Nivel académico actual</label>
+            <span class="field-label">Nivel académico actual</span>
             <v-text-field
               :model-value="detectedAcademicLevel"
+              aria-label="Nivel académico actual"
               hide-details
               variant="solo-filled"
               rounded="lg"
@@ -113,6 +116,52 @@
       </v-card>
     </v-dialog>
 
+    <!-- Group details dialog (teachers per subject) -->
+    <v-dialog v-model="showGroupDetailsDialog" max-width="480">
+      <v-card rounded="xl" elevation="0" class="dialog-card">
+        <div class="d-flex align-center justify-space-between mb-4">
+          <div class="d-flex align-center ga-3">
+            <div class="detail-icon">
+              <v-icon color="#0f766e" size="22">mdi-account-group</v-icon>
+            </div>
+            <div>
+              <h3 class="detail-title">Docentes asignados</h3>
+              <p class="detail-subtitle">Grupo {{ detailGroup ? detailGroup.group_letter : '' }} &middot; Nivel {{ detailGroup ? detailGroup.academic_level : '' }}</p>
+            </div>
+          </div>
+          <v-btn icon variant="text" @click="showGroupDetailsDialog = false"><v-icon>mdi-close</v-icon></v-btn>
+        </div>
+        <div v-if="detailGroup && detailGroup.assignments && detailGroup.assignments.length > 0" class="detail-list">
+          <div v-for="a in detailGroup.assignments" :key="a.id_assignment" class="detail-row">
+            <div class="d-flex align-center ga-3">
+              <div class="teacher-icon-wrap">
+                <v-icon size="16" color="#0f766e">mdi-account-tie</v-icon>
+              </div>
+              <div>
+                <p class="detail-teacher">{{ a.teacher.full_name }}</p>
+                <p class="detail-subject">{{ a.subject.name }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <v-alert v-else type="info" variant="tonal" density="compact" rounded="lg">
+          Este grupo no tiene docentes asignados.
+        </v-alert>
+        <div class="d-flex justify-end mt-4">
+          <v-btn variant="outlined" rounded="lg" @click="showGroupDetailsDialog = false">Cerrar</v-btn>
+        </div>
+      </v-card>
+    </v-dialog>
+
+    <AssignTeacherDialog
+      v-model="showAssignTeacherDialog"
+      :group-id="assignTeacherGroupId"
+      :group-letter="assignTeacherGroupLetter"
+      :academic-level="assignTeacherGroupLevel"
+      :assignments="assignTeacherAssignments"
+      @changed="handleTeacherAssigned"
+    />
+
     <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="2600">
       {{ snackbar.message }}
     </v-snackbar>
@@ -123,13 +172,14 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import GenerationGroupCard from '../components/GenerationGroupCard.vue';
+import AssignTeacherDialog from '../components/AssignTeacherDialog.vue';
 import Loader from '@/components/Loader.vue';
 import { GenerationController } from '@/modules/generations/adapters/generation.controller';
 import { Generation } from '@/modules/generations/entities/generation';
 import { getGenerationGroupsInteractor, createGenerationGroupInteractor, updateGenerationGroupInteractor, setGenerationGroupStatusInteractor } from '../generation-group.controller';
 import { CreateGenerationGroupDto } from '../../entities/create-generation-group.dto';
 import { UpdateGenerationGroupDto } from '../../entities/update-generation-group.dto';
-import type { GenerationGroup } from '../../entities/generation-group';
+import type { GenerationGroup, GroupTeacherAssignment } from '../../entities/generation-group';
 import { calculateAcademicLevel } from '../../utils/academic-level';
 
 const route = useRoute();
@@ -151,6 +201,13 @@ const groups = ref<GenerationGroup[]>([]);
 
 const showGroupModal = ref(false);
 const groupEditId = ref<number | null>(null);
+
+// ---- Assign teacher dialog state ----
+const showAssignTeacherDialog = ref(false);
+const assignTeacherGroupId = ref<number>(0);
+const assignTeacherGroupLetter = ref<string>('');
+const assignTeacherGroupLevel = ref<number>(1);
+const assignTeacherAssignments = ref<GroupTeacherAssignment[]>([]);
 
 const snackbar = ref({
   show: false,
@@ -220,11 +277,11 @@ const loadGroups = async () => {
 };
 
 const goBack = () => {
-  void router.push('/generations');
+  router.push('/generations');
 };
 
 const goToGroupStudentsView = (group: GenerationGroup, openAddModal: boolean = false) => {
-  void router.push({
+  router.push({
     name: 'GroupStudents',
     params: {
       generationId,
@@ -240,6 +297,23 @@ const goToGroupStudentsView = (group: GenerationGroup, openAddModal: boolean = f
 const openCreateGroupModal = () => {
   resetGroupForm();
   showGroupModal.value = true;
+};
+
+// ---- Group details dialog state ----
+const showGroupDetailsDialog = ref(false);
+const detailGroup = ref<GenerationGroup | null>(null);
+
+const openGroupDetailsDialog = (group: GenerationGroup) => {
+  detailGroup.value = group;
+  showGroupDetailsDialog.value = true;
+};
+
+const openAssignTeacherDialog = (group: GenerationGroup) => {
+  assignTeacherGroupId.value = group.id_group;
+  assignTeacherGroupLetter.value = group.group_letter;
+  assignTeacherGroupLevel.value = group.academic_level;
+  assignTeacherAssignments.value = group.assignments ?? [];
+  showAssignTeacherDialog.value = true;
 };
 
 const openEditGroupModal = (group: GenerationGroup) => {
@@ -308,6 +382,11 @@ const toggleGroupStatus = async (group: GenerationGroup, value: boolean) => {
     return;
   }
   showToast('Estatus del grupo actualizado.');
+  await loadGroups();
+};
+
+const handleTeacherAssigned = async () => {
+  showToast('Docente actualizado correctamente.');
   await loadGroups();
 };
 
@@ -419,5 +498,73 @@ watch(detectedAcademicLevel, (level) => {
   .page-subtitle {
     font-size: 16px;
   }
+}
+
+/* Group details dialog */
+.dialog-card {
+  padding: 24px;
+  border: 1px solid #e2e8f0;
+}
+
+.detail-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #f0fdf4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid #d1fae5;
+}
+
+.detail-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.detail-subtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin: 2px 0 0;
+}
+
+.detail-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.detail-row {
+  padding: 12px 14px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fafcff;
+}
+
+.teacher-icon-wrap {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: #f0fdf4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.detail-teacher {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.detail-subject {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: #0f766e;
+  font-weight: 500;
 }
 </style>
