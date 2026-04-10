@@ -20,6 +20,7 @@ export type MyAssignment = {
   is_available: boolean;
   is_expired: boolean;
   can_start: boolean;
+  can_review: boolean;
 };
 
 export interface GetMyAssignmentsDto {

@@ -44,6 +44,18 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true },
     children: [
       childRoute('my-exams',    'MyExams',          () => import('@/modules/exams/adapters/views/StudentExamListView.vue'),                R_STUDENT),
+      {
+        path: 'my-exams/:assignmentId/answer',
+        name: 'AnswerExam',
+        component: () => import('@/modules/answers/adapters/views/StudentExamAnswerView.vue'),
+        meta: { roles: R_STUDENT, hideSidebar: true },
+      } as RouteRecordRaw,
+      {
+        path: 'my-exams/:assignmentId/review',
+        name: 'ReviewExam',
+        component: () => import('@/modules/answers/adapters/views/StudentExamReviewView.vue'),
+        meta: { roles: R_STUDENT },
+      } as RouteRecordRaw,
       childRoute('exams',       'ManageExams',       () => import('@/modules/exams/adapters/views/ExamListView.vue'),                        R_TEACHER_ADMIN),
       childRoute('exams/:id/grades', 'ExamGrades',  () => import('@/modules/exams/adapters/views/ExamGradesView.vue'),                     R_TEACHER_ADMIN),
       childRoute('exams/:examId/assignments/:assignmentId/grade', 'ManualGrade', () => import('@/modules/exams/adapters/views/ManualGradeView.vue'), R_TEACHER_ADMIN),

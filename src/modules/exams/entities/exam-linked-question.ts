@@ -4,9 +4,19 @@ export type ExamLinkedQuestion = {
   id_exam: number;
   id_question: number;
   text: string;
+  image_url?: string | null;
   question_type: string;
   difficulty: string;
   bloom_level: string;
+  points?: number;
+  answers?: Array<{
+    id_answer: number;
+    answer_text: string;
+  }>;
+  code_question?: {
+    language: string;
+    test_cases: unknown[];
+  } | null;
 };
 
 export type ExamQuestionsResponse = {
