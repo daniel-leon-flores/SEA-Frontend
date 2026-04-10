@@ -6,7 +6,7 @@ import { CreateUserDto } from "../entities/create-user.dto";
 import { UpdateUserDto } from "../entities/update-user.dto";
 
 export class UserStorageGateway implements UserRepository {
-  async getUsers(pagination: PaginationDto, role?: string, status?: string): Promise<ApiResponse<User[]>> {
+  async getUsers(pagination: PaginationDto, role?: string, status?: string, group?: number): Promise<ApiResponse<User[]>> {
     // Construir los query params para la paginación del backend
     const params = new URLSearchParams();
     
@@ -24,6 +24,10 @@ export class UserStorageGateway implements UserRepository {
     
     if (status) {
       params.append('status', status);
+    }
+
+    if (group) {
+      params.append('group', group.toString());
     }
     
     if (pagination.filter) {
