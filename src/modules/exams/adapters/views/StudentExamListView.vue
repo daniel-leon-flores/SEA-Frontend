@@ -202,25 +202,25 @@ function onTabChange() {
   loadAssignments();
 }
 
-function startExam(item: MyAssignment) {
+async function startExam(item: MyAssignment) {
   if (!item.can_start) {
     showSnackbar('Este examen no se puede iniciar en este momento.', 'warning');
     return;
   }
 
-  void router.push({
+  await router.push({
     name: 'AnswerExam',
     params: { assignmentId: String(item.id_assignment) },
   });
 }
 
-function viewAnswers(item: MyAssignment) {
+async function viewAnswers(item: MyAssignment) {
   if (!item.can_review) {
     showSnackbar('Podrás ver tus respuestas cuando termine el periodo del examen.', 'warning');
     return;
   }
 
-  void router.push({
+  await router.push({
     name: 'ReviewExam',
     params: { assignmentId: String(item.id_assignment) },
   });

@@ -41,7 +41,7 @@ const props = defineProps<{
 }>();
 
 defineEmits<{
-  (e: 'update:modelValue', v: boolean): void;
+  'update:modelValue': [v: boolean];
 }>();
 
 const sortedUnits = computed(() =>

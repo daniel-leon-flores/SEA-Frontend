@@ -282,7 +282,7 @@ export default {
   async mounted() {
     const idParam = this.$route.params.id;
     this.examId = Number(idParam);
-    if (!this.examId || isNaN(this.examId)) {
+    if (!this.examId || Number.isNaN(this.examId)) {
       this.errorMsg = 'ID de examen no válido';
       return;
     }
