@@ -220,8 +220,8 @@ const rules = {
     return true;
   },
   scoreRange: (v: string) => {
-    const num = parseFloat(v);
-    if (isNaN(num)) return 'Debe ser un número válido';
+    const num = Number.parseFloat(v);
+    if (Number.isNaN(num)) return 'Debe ser un número válido';
     if (num < MIN_SCORE || num > MAX_SCORE) return `Debe estar entre ${MIN_SCORE} y ${MAX_SCORE}`;
     return true;
   },
@@ -378,7 +378,7 @@ async function handleSubmit() {
       unit_number: form.value.unit_number as number,
       difficulty_level: form.value.difficulty_level as 'easy' | 'medium' | 'hard',
       secure_mode: form.value.secure_mode,
-      minimum_score: parseFloat(form.value.minimum_score).toFixed(2),
+      minimum_score: Number.parseFloat(form.value.minimum_score).toFixed(2),
     };
 
     const res = isEditing.value && editingExamId.value

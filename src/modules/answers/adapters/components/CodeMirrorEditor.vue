@@ -23,7 +23,7 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{
-  (event: 'update:modelValue', value: string): void;
+  'update:modelValue': [value: string];
 }>();
 
 const editorHost = ref<HTMLDivElement | null>(null);
@@ -75,16 +75,15 @@ onMounted(() => {
 
 watch(
   () => props.modelValue,
-  (value) => {
+  (value = '') => {
     if (!editorView) {
       return;
     }
 
-    const nextValue = value ?? '';
     const currentValue = editorView.state.doc.toString();
-    if (nextValue !== currentValue) {
+    if (value !== currentValue) {
       editorView.dispatch({
-        changes: { from: 0, to: currentValue.length, insert: nextValue || props.placeholder },
+        changes: { from: 0, to: currentValue.length, insert: value || props.placeholder },
       });
     }
   },

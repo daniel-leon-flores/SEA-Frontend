@@ -154,8 +154,8 @@ async function loadAnswers() {
   }
 }
 
-function goBack() {
-  void router.push({ name: 'MyExams' });
+async function goBack() {
+  await router.push({ name: 'MyExams' });
 }
 
 onMounted(() => {

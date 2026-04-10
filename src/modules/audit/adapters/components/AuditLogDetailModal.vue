@@ -54,9 +54,9 @@
         <v-table v-else density="comfortable" class="detail-table" fixed-header>
           <thead>
             <tr>
-              <th class="text-left">Campo</th>
-              <th v-if="!isCreationOperation" class="text-left">Valor anterior</th>
-              <th class="text-left">Valor nuevo</th>
+              <th scope="col" class="text-left">Campo</th>
+              <th v-if="!isCreationOperation" scope="col" class="text-left">Valor anterior</th>
+              <th scope="col" class="text-left">Valor nuevo</th>
             </tr>
           </thead>
           <tbody>
@@ -94,7 +94,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (event: 'update:dialog', value: boolean): void;
+  'update:dialog': [value: boolean];
 }>();
 
 type ChangeRow = {
@@ -146,15 +146,7 @@ const isPasswordUpdateOnly = computed(() => {
 });
 
 const changeRows = computed<ChangeRow[]>(() => {
-  const rowsWithoutSensitive = rawRows.value.filter((row) => !isSensitiveField(row.field));
-
-  // En creación de usuario, no mostrar nunca el campo de contraseña.
-  if (isCreationOperation.value) {
-    return rowsWithoutSensitive;
-  }
-
-  // En actualización de contraseña, ocultar detalle sensible y priorizar alerta.
-  return rowsWithoutSensitive;
+  return rawRows.value.filter((row) => !isSensitiveField(row.field));
 });
 
 function isSensitiveField(fieldName?: string): boolean {

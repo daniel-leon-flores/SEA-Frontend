@@ -674,7 +674,7 @@ function mapQuestionAnswer(question: StudentQuestion): SubmitAnswerItemDto | nul
   }
 
   if (question.question_type === 'MULTIPLE_SELECTION') {
-    const selectedValues = (multiResponses[questionId] ?? []).map((value) => Number(value));
+    const selectedValues = (multiResponses[questionId] ?? []).map(Number);
     if (selectedValues.length === 0) {
       return null;
     }
@@ -712,7 +712,7 @@ function resultRowClass(item: { graded: boolean; is_correct: boolean | null }) {
 
 async function goBack() {
   await exitFullscreenIfNeeded();
-  void router.push({ name: 'MyExams' });
+  await router.push({ name: 'MyExams' });
 }
 
 function startExam() {
@@ -947,7 +947,7 @@ onMounted(() => {
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: #0f8b7b;
+  background: #087868;
   color: white;
   font-weight: 800;
   font-size: 18px;

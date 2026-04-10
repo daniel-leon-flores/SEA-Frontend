@@ -1,7 +1,7 @@
 <template>
   <Transition name="loader-fade">
     <div v-if="visible" class="loader-overlay" :class="{ 'loader-overlay--absolute': !fullscreen }">
-      <div class="loader-content" role="status" aria-live="polite">
+      <output class="loader-content" aria-live="polite">
 
         <svg class="wave-loader" viewBox="0 0 120 30">
           <defs>
@@ -25,7 +25,7 @@
 
         <p class="loader-message">{{ message }}</p>
 
-      </div>
+      </output>
     </div>
   </Transition>
 </template>

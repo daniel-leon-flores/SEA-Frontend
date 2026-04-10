@@ -35,7 +35,7 @@
 
         <v-row>
           <v-col cols="12" md="6">
-            <label class="field-label">Nombre</label>
+            <label class="field-label">Nombre
             <v-text-field
               v-model="studentForm.firstName"
               hide-details
@@ -44,10 +44,11 @@
               density="comfortable"
               placeholder="Nombre"
             />
+            </label>
           </v-col>
 
           <v-col cols="12" md="6">
-            <label class="field-label">Apellidos</label>
+            <label class="field-label">Apellidos
             <v-text-field
               v-model="studentForm.lastName"
               hide-details
@@ -56,10 +57,11 @@
               density="comfortable"
               placeholder="Apellidos"
             />
+            </label>
           </v-col>
 
           <v-col cols="12">
-            <label class="field-label">Fecha de nacimiento</label>
+            <label class="field-label">Fecha de nacimiento
             <v-text-field
               v-model="studentForm.birthDate"
               type="date"
@@ -68,6 +70,7 @@
               rounded="lg"
               density="comfortable"
             />
+            </label>
           </v-col>
         </v-row>
 
@@ -124,8 +127,8 @@ const resetForm = () => {
   };
 };
 
-const goBackToGroups = () => {
-  void router.push(`/generations/${generationId}/groups`);
+const goBackToGroups = async () => {
+  await router.push(`/generations/${generationId}/groups`);
 };
 
 const openAddStudentModal = () => {

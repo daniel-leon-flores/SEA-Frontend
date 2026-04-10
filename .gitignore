@@ -20,6 +20,7 @@ dist-ssr
 
 # Sonar
 .scannerwork/
+SonarQube-vulnerabilities.md
 
 # Editor directories and files
 .vscode/*

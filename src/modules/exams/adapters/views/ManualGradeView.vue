@@ -389,7 +389,7 @@ function normalizeScore(item: GradeRow) {
 function mapToGradeRow(record: StudentAnswerRecord): GradeRow {
   return {
     ...record,
-    teacherScore: record.score !== null ? Number(record.score) : 0,
+    teacherScore: record.score === null ? 0 : Number(record.score),
     teacherIsCorrect: record.is_correct ?? false,
   };
 }
@@ -416,7 +416,7 @@ async function saveAllGrades() {
       const updated = response.data.student_answer;
       item.is_correct = updated.is_correct;
       item.score = updated.score;
-      item.teacherScore = updated.score !== null ? Number(updated.score) : item.teacherScore;
+      item.teacherScore = updated.score === null ? item.teacherScore : Number(updated.score);
       item.teacherIsCorrect = updated.is_correct ?? item.teacherIsCorrect;
       lastSummary = response.data.assignment_summary;
     } catch {

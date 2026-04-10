@@ -6,6 +6,7 @@
           <th
             v-for="column in columns"
             :key="column.key"
+            scope="col"
             class="font-semibold text-center"
             :style="{ width: column.width || 'auto', minWidth: column.minWidth || 'auto' }"
           >
@@ -112,7 +113,7 @@ export default defineComponent({
     },
 
     totalRecordsComputed(): number {
-      return this.totalRecords !== null ? this.totalRecords : this.data.length
+      return this.totalRecords === null ? this.data.length : this.totalRecords
     },
 
     computedTotalPages(): number {
@@ -158,12 +159,12 @@ export default defineComponent({
 }
 
 .custom-pagination .v-pagination__item:hover {
-  background-color: #069574aa !important;
+  background-color: #057a63 !important;
   color: white !important;
 }
 
 .custom-pagination .v-pagination__item--is-active {
-  background-color: #069574 !important;
+  background-color: #057a63 !important;
   color: white !important;
 }
 </style>

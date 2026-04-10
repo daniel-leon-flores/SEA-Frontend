@@ -702,30 +702,36 @@ export default {
         fail('points', 'Los puntos deben ser un número mayor o igual a 1.');
       }
 
-      const qtype = this.form.question_type;
-      if (qtype === 'MULTIPLE_CHOICE' || qtype === 'MULTIPLE_SELECTION') {
-        const filled = this.form.answer_options.filter((o) => o.text.trim());
-        if (filled.length < 2) {
-          fail('answer_options', 'Ingrese al menos 2 opciones con texto.');
-        }
-        if (filled.length > 4) {
-          fail('answer_options', 'Como máximo puede haber 4 opciones.');
-        }
-        if (qtype === 'MULTIPLE_SELECTION' && filled.length >= 2 && !filled.some((o) => o.is_correct)) {
-          fail('answer_options', 'Marque al menos una respuesta correcta.');
-        }
-      }
-      if (qtype === 'CODE') {
-        const lines = this.codeTestsRaw
-          .split('\n')
-          .map((l) => l.trim())
-          .filter(Boolean);
-        if (!lines.length) {
-          fail('code_tests', 'Indique al menos un caso de prueba (test_cases).');
-        }
-      }
+      this.validateAnswerOptions(fail);
+      this.validateCodeTests(fail);
 
       return ok;
+    },
+    validateAnswerOptions(fail: (key: keyof FormErrorsState, msg: string) => void) {
+      const qtype = this.form.question_type;
+      if (qtype !== 'MULTIPLE_CHOICE' && qtype !== 'MULTIPLE_SELECTION') return;
+
+      const filled = this.form.answer_options.filter((o) => o.text.trim());
+      if (filled.length < 2) {
+        fail('answer_options', 'Ingrese al menos 2 opciones con texto.');
+      }
+      if (filled.length > 4) {
+        fail('answer_options', 'Como máximo puede haber 4 opciones.');
+      }
+      if (qtype === 'MULTIPLE_SELECTION' && filled.length >= 2 && !filled.some((o) => o.is_correct)) {
+        fail('answer_options', 'Marque al menos una respuesta correcta.');
+      }
+    },
+    validateCodeTests(fail: (key: keyof FormErrorsState, msg: string) => void) {
+      if (this.form.question_type !== 'CODE') return;
+
+      const lines = this.codeTestsRaw
+        .split('\n')
+        .map((l) => l.trim())
+        .filter(Boolean);
+      if (!lines.length) {
+        fail('code_tests', 'Indique al menos un caso de prueba (test_cases).');
+      }
     },
     async loadSubjects() {
       const res = await subjectService.list({ page: 1, page_size: 200, status: true });
@@ -845,7 +851,7 @@ export default {
 
     setSingleCorrectAnswer(idx: number | string | null) {
       if (idx === null || idx === undefined) return;
-      const n = typeof idx === 'string' ? parseInt(idx, 10) : idx;
+      const n = typeof idx === 'string' ? Number.parseInt(idx, 10) : idx;
       if (Number.isNaN(n)) return;
       this.form.answer_options.forEach((o, i) => {
         o.is_correct = i === n;
@@ -941,12 +947,12 @@ export default {
       this.downloadingTemplate = true;
       try {
         const blob = await controller.downloadTemplateBlob();
-        const url = window.URL.createObjectURL(blob);
+        const url = globalThis.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
         a.download = 'plantilla_preguntas.xlsx';
         a.click();
-        window.URL.revokeObjectURL(url);
+        globalThis.URL.revokeObjectURL(url);
         this.showSnackbar('Plantilla descargada');
       } catch {
         this.showSnackbar('Error al descargar plantilla', 'error');
