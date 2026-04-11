@@ -113,7 +113,7 @@ useVantaBirds(vantaRef, {
 
 const rules = {
   required: (v: string) => !!v || 'Campo requerido',
-  email: (v: string) => /.+@.+\..+/.test(v) || 'Correo electrónico inválido',
+  email: (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) || 'Correo electrónico inválido',
 };
 
 function togglePassword() {

@@ -159,7 +159,7 @@ export default {
       ],
       rules: {
         required: (v) => (v !== null && v !== undefined && v !== '') || 'Campo requerido',
-        email: (v) => /.+@.+\..+/.test(v) || 'Correo inválido'
+        email: (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) || 'Correo inválido'
       }
     }
   },

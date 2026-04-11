@@ -246,7 +246,7 @@ const passwordFormRef = ref<any>(null);
 // Rules
 const rules = {
   required: (v: string) => !!v || 'Campo requerido',
-  email: (v: string) => /.+@.+\..+/.test(v) || 'Correo electrónico inválido',
+  email: (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) || 'Correo electrónico inválido',
   minLength: (v: string) => v.length >= 8 || 'Mínimo 8 caracteres',
   passwordMatch: (v: string) => v === newPassword.value || 'Las contraseñas no coinciden',
 };

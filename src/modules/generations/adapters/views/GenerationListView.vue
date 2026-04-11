@@ -88,8 +88,9 @@
           <v-window-item value="info">
             <v-row>
               <v-col cols="12">
-                <label class="field-label">Año de generación
+                <label class="field-label" for="generation-year">Año de generación</label>
                 <v-text-field
+                  id="generation-year"
                   v-model.number="form.year"
                   type="number"
                   :max="currentYear"
@@ -100,12 +101,12 @@
                   rounded="lg"
                   density="comfortable"
                 />
-                </label>
               </v-col>
 
               <v-col cols="12" md="6">
-                <label class="field-label">Cantidad de cuatrimestres
+                <label class="field-label" for="total-levels">Cantidad de cuatrimestres</label>
                 <v-text-field
+                  id="total-levels"
                   v-model.number="form.total_levels"
                   type="number"
                   min="1"
@@ -115,7 +116,6 @@
                   rounded="lg"
                   density="comfortable"
                 />
-                </label>
               </v-col>
 
               <v-col cols="12">
@@ -153,8 +153,9 @@
 
               <v-row>
                 <v-col cols="12" md="5">
-                  <label class="field-label">Nombre del grupo
+                  <label class="field-label" :for="`group-letter-${group.uid}`">Nombre del grupo</label>
                   <v-text-field
+                    :id="`group-letter-${group.uid}`"
                     v-model="group.group_letter"
                     hide-details
                     variant="solo-filled"
@@ -163,12 +164,12 @@
                     placeholder="A"
                     @update:model-value="group.group_letter = normalizeLetter(group.group_letter)"
                   />
-                  </label>
                 </v-col>
 
                 <v-col cols="12" md="5">
-                  <label class="field-label">Nivel académico actual
+                  <label class="field-label" :for="`academic-level-${group.uid}`">Nivel académico actual</label>
                   <v-text-field
+                    :id="`academic-level-${group.uid}`"
                     :model-value="detectedAcademicLevel"
                     hide-details
                     variant="solo-filled"
@@ -176,7 +177,6 @@
                     density="comfortable"
                     readonly
                   />
-                  </label>
                 </v-col>
 
                 <v-col cols="12" md="2" class="d-flex align-center">
@@ -279,7 +279,12 @@ const showToast = (message: string, color: string = 'success') => {
 
 const normalizeLetter = (value: string): string => value.trim().toUpperCase();
 
-const nextUid = (): number => Date.now() + Math.floor(Math.random() * 1000);
+// Contador seguro para generar UIDs únicos
+let uidCounter = 0;
+const nextUid = (): number => {
+  uidCounter += 1;
+  return Date.now() + uidCounter;
+};
 
 const getYearValidationMessage = (year: number): string => {
   if (!year || year < 1900) {
