@@ -8,6 +8,6 @@ export class GetGenerationsInteractor implements UseCase<GetGenerationsDto, ApiR
   constructor(private readonly repository: GenerationRepository) {}
 
   async execute(payload?: GetGenerationsDto): Promise<ApiResponse<PaginatedData<Generation>>> {
-    return this.repository.getGenerations(payload?.idGeneration, payload?.status, payload?.page, payload?.pageSize);
+    return this.repository.getGenerations(payload?.idGeneration, payload?.year, payload?.status, payload?.page, payload?.pageSize);
   }
 }

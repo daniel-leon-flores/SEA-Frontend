@@ -17,6 +17,22 @@
       </v-btn>
     </div>
 
+    <v-row class="mb-6" align="center">
+      <v-col cols="12" md="4">
+        <v-text-field
+          v-model="searchQuery"
+          label="Buscar por letra de grupo"
+          prepend-inner-icon="mdi-magnify"
+          variant="outlined"
+          density="comfortable"
+          clearable
+          hide-details
+          bg-color="white"
+          @update:model-value="onSearchChange"
+        />
+      </v-col>
+    </v-row>
+
     <v-row>
       <v-col
         v-for="group in groups"
@@ -192,6 +208,7 @@ const generationTotalLevels = ref<number>(11);
 
 const loading = ref(true);
 const saving = ref(false);
+const searchQuery = ref('');
 const currentPage = ref(1);
 const pageSize = ref(9);
 const totalPages = ref(1);
@@ -253,11 +270,21 @@ const loadGenerationInfo = async () => {
   generationTotalLevels.value = generation?.total_levels ?? 11;
 };
 
+let searchTimer: ReturnType<typeof setTimeout> | null = null;
+const onSearchChange = () => {
+  if (searchTimer) clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    currentPage.value = 1;
+    loadGroups();
+  }, 500);
+};
+
 const loadGroups = async () => {
   loading.value = true;
   try {
     const response = await getGenerationGroupsInteractor.execute({
       idGeneration: generationId,
+      groupLetter: searchQuery.value || undefined,
       page: currentPage.value,
       pageSize: pageSize.value,
     });

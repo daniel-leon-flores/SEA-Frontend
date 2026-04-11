@@ -9,6 +9,7 @@ export function useSubjects() {
   const subjects = ref<Subject[]>([]);
   const filterLevel = ref<number | null>(null);
   const filterStatus = ref<string | null>(null);
+  const searchQuery = ref<string>('');
 
   const pagination = ref({
     count: 0,
@@ -37,6 +38,7 @@ export function useSubjects() {
         },
         academic_level: filterLevel.value ?? undefined,
         status: statusFilterToBool(),
+        name: searchQuery.value || undefined,
       });
 
       if (res.success && res.data?.results) {
@@ -96,6 +98,7 @@ export function useSubjects() {
     pagination,
     filterLevel,
     filterStatus,
+    searchQuery,
     isEmpty,
     fetchSubjects,
     handlePageChange,

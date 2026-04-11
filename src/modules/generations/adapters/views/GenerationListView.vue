@@ -12,6 +12,22 @@
       </v-btn>
     </div>
 
+    <v-row class="mb-6" align="center">
+      <v-col cols="12" md="4">
+        <v-text-field
+          v-model="searchQuery"
+          label="Buscar por año"
+          prepend-inner-icon="mdi-magnify"
+          variant="outlined"
+          density="comfortable"
+          clearable
+          hide-details
+          bg-color="white"
+          @update:model-value="onSearchChange"
+        />
+      </v-col>
+    </v-row>
+
     <v-row>
       <v-col
         v-for="generation in generations"
@@ -228,6 +244,7 @@ const loading = ref(false);
 const saving = ref(false);
 const generations = ref<Generation[]>([]);
 const groupsCount = ref<Record<number, number>>({});
+const searchQuery = ref('');
 const currentPage = ref(1);
 const pageSize = ref(9);
 const totalPages = ref(1);
@@ -292,9 +309,19 @@ const resetForm = () => {
   editGenerationId.value = null;
 };
 
+let searchTimer: ReturnType<typeof setTimeout> | null = null;
+const onSearchChange = () => {
+  if (searchTimer) clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    currentPage.value = 1;
+    loadGenerations();
+  }, 500);
+};
+
 const loadGenerations = async () => {
   loading.value = true;
-  const response = await controller.getGenerations(undefined, undefined, currentPage.value, pageSize.value);
+  const yearFilter = searchQuery.value ? Number(searchQuery.value) : undefined;
+  const response = await controller.getGenerations(undefined, yearFilter, undefined, currentPage.value, pageSize.value);
   if (!response.success || !response.data) {
     showToast(response.message || 'No se pudieron cargar las generaciones.', 'error');
     loading.value = false;
