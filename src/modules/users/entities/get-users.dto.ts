@@ -4,4 +4,5 @@ export interface GetUsersDto {
   pagination: PaginationDto;
   role?: string;
   status?: string;
+  group?: number;
 }

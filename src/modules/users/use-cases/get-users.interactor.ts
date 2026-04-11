@@ -11,6 +11,6 @@ export class GetUsersInteractor implements UseCase<GetUsersDto, ApiResponse<User
     if (!payload) {
       throw new Error("Missing payload for GetUsersInteractor");
     }
-    return this.userRepository.getUsers(payload.pagination, payload.role, payload.status);
+    return this.userRepository.getUsers(payload.pagination, payload.role, payload.status, payload.group);
   }
 }

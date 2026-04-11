@@ -6,13 +6,34 @@ import { CreateUserDto } from "../entities/create-user.dto";
 import { UpdateUserDto } from "../entities/update-user.dto";
 
 export class UserStorageGateway implements UserRepository {
-  async getUsers(pagination: PaginationDto, role?: string, status?: string): Promise<ApiResponse<User[]>> {
+  async getUsers(pagination: PaginationDto, role?: string, status?: string, group?: number): Promise<ApiResponse<User[]>> {
+    // Construir los query params para la paginación del backend
     const params = new URLSearchParams();
-    if (pagination.page) params.append('page', pagination.page.toString());
-    if (pagination.limit) params.append('page_size', pagination.limit.toString());
-    if (role) params.append('role', role);
-    if (status) params.append('status', status);
-    if (pagination.filter) params.append('search', pagination.filter);
+    
+    if (pagination.page) {
+      params.append('page', pagination.page.toString());
+    }
+    
+    if (pagination.limit) {
+      params.append('page_size', pagination.limit.toString());
+    }
+    
+    if (role) {
+      params.append('role', role);
+    }
+    
+    if (status) {
+      params.append('status', status);
+    }
+
+    if (group) {
+      params.append('group', group.toString());
+    }
+    
+    if (pagination.filter) {
+      params.append('search', pagination.filter);
+    }
+    
     const queryString = params.toString();
     const url = `/api/users/${queryString ? '?' + queryString : ''}`;
     return handleRequest<User[]>('get', url);

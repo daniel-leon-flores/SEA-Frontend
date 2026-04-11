@@ -20,7 +20,7 @@ export type EligibleGroup = {
 };
 
 export interface UserRepository {
-  getUsers(pagination: PaginationDto, role?: string, status?: string): Promise<ApiResponse<User[]>>;
+  getUsers(pagination: PaginationDto, role?: string, status?: string, group?: number): Promise<ApiResponse<User[]>>;
   getUserById(id: number): Promise<ApiResponse<User>>;
   createUser(user: CreateUserDto): Promise<ApiResponse<User>>;
   updateUser(id: number, user: UpdateUserDto): Promise<ApiResponse<User>>;
