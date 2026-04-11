@@ -12,6 +12,22 @@
       </v-btn>
     </div>
 
+    <v-row class="mb-6" align="center">
+      <v-col cols="12" md="4">
+        <v-text-field
+          v-model="searchQuery"
+          label="Buscar por año"
+          prepend-inner-icon="mdi-magnify"
+          variant="outlined"
+          density="comfortable"
+          clearable
+          hide-details
+          bg-color="white"
+          @update:model-value="onSearchChange"
+        />
+      </v-col>
+    </v-row>
+
     <v-row>
       <v-col
         v-for="generation in generations"
@@ -72,8 +88,9 @@
           <v-window-item value="info">
             <v-row>
               <v-col cols="12">
-                <label class="field-label">Año de generación
+                <label class="field-label" for="generation-year">Año de generación</label>
                 <v-text-field
+                  id="generation-year"
                   v-model.number="form.year"
                   type="number"
                   :max="currentYear"
@@ -84,12 +101,12 @@
                   rounded="lg"
                   density="comfortable"
                 />
-                </label>
               </v-col>
 
               <v-col cols="12" md="6">
-                <label class="field-label">Cantidad de cuatrimestres
+                <label class="field-label" for="total-levels">Cantidad de cuatrimestres</label>
                 <v-text-field
+                  id="total-levels"
                   v-model.number="form.total_levels"
                   type="number"
                   min="1"
@@ -99,7 +116,6 @@
                   rounded="lg"
                   density="comfortable"
                 />
-                </label>
               </v-col>
 
               <v-col cols="12">
@@ -137,8 +153,9 @@
 
               <v-row>
                 <v-col cols="12" md="5">
-                  <label class="field-label">Nombre del grupo
+                  <label class="field-label" :for="`group-letter-${group.uid}`">Nombre del grupo</label>
                   <v-text-field
+                    :id="`group-letter-${group.uid}`"
                     v-model="group.group_letter"
                     hide-details
                     variant="solo-filled"
@@ -147,12 +164,12 @@
                     placeholder="A"
                     @update:model-value="group.group_letter = normalizeLetter(group.group_letter)"
                   />
-                  </label>
                 </v-col>
 
                 <v-col cols="12" md="5">
-                  <label class="field-label">Nivel académico actual
+                  <label class="field-label" :for="`academic-level-${group.uid}`">Nivel académico actual</label>
                   <v-text-field
+                    :id="`academic-level-${group.uid}`"
                     :model-value="detectedAcademicLevel"
                     hide-details
                     variant="solo-filled"
@@ -160,7 +177,6 @@
                     density="comfortable"
                     readonly
                   />
-                  </label>
                 </v-col>
 
                 <v-col cols="12" md="2" class="d-flex align-center">
@@ -228,6 +244,7 @@ const loading = ref(false);
 const saving = ref(false);
 const generations = ref<Generation[]>([]);
 const groupsCount = ref<Record<number, number>>({});
+const searchQuery = ref('');
 const currentPage = ref(1);
 const pageSize = ref(9);
 const totalPages = ref(1);
@@ -262,7 +279,12 @@ const showToast = (message: string, color: string = 'success') => {
 
 const normalizeLetter = (value: string): string => value.trim().toUpperCase();
 
-const nextUid = (): number => Date.now() + Math.floor(Math.random() * 1000);
+// Contador seguro para generar UIDs únicos
+let uidCounter = 0;
+const nextUid = (): number => {
+  uidCounter += 1;
+  return Date.now() + uidCounter;
+};
 
 const getYearValidationMessage = (year: number): string => {
   if (!year || year < 1900) {
@@ -292,9 +314,19 @@ const resetForm = () => {
   editGenerationId.value = null;
 };
 
+let searchTimer: ReturnType<typeof setTimeout> | null = null;
+const onSearchChange = () => {
+  if (searchTimer) clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    currentPage.value = 1;
+    loadGenerations();
+  }, 500);
+};
+
 const loadGenerations = async () => {
   loading.value = true;
-  const response = await controller.getGenerations(undefined, undefined, currentPage.value, pageSize.value);
+  const yearFilter = searchQuery.value ? Number(searchQuery.value) : undefined;
+  const response = await controller.getGenerations(undefined, yearFilter, undefined, currentPage.value, pageSize.value);
   if (!response.success || !response.data) {
     showToast(response.message || 'No se pudieron cargar las generaciones.', 'error');
     loading.value = false;

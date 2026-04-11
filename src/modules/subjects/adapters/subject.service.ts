@@ -9,6 +9,7 @@ export type ListSubjectsQuery = {
   page_size?: number;
   academic_level?: number;
   status?: boolean;
+  name?: string;
 };
 
 export type SubjectStatusBody = { id_subject: number; status: boolean };
@@ -23,6 +24,7 @@ export const subjectService = {
     if (query.page_size != null) params.set('page_size', String(query.page_size));
     if (query.academic_level != null) params.set('academic_level', String(query.academic_level));
     if (query.status !== undefined) params.set('status', String(query.status));
+    if (query.name) params.set('name', query.name);
     const qs = params.toString();
     const endpoint = qs ? `/api/academic/subjects/?${qs}` : '/api/academic/subjects/';
     return handleRequest<SubjectListPayload>('get', endpoint);

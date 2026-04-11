@@ -17,8 +17,8 @@ export class GenerationController {
     this.repository = new GenerationStorageGateway();
   }
 
-  getGenerations(idGeneration?: number, status?: boolean, page?: number, pageSize?: number): Promise<ApiResponse<PaginatedData<Generation>>> {
-    return new GetGenerationsInteractor(this.repository).execute({ idGeneration, status, page, pageSize });
+  getGenerations(idGeneration?: number, year?: number, status?: boolean, page?: number, pageSize?: number): Promise<ApiResponse<PaginatedData<Generation>>> {
+    return new GetGenerationsInteractor(this.repository).execute({ idGeneration, year, status, page, pageSize });
   }
 
   createGeneration(payload: CreateGenerationDto): Promise<ApiResponse<Generation>> {

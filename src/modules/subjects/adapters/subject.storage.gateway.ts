@@ -8,12 +8,13 @@ import { subjectService } from './subject.service';
 
 export class SubjectStorageGateway implements SubjectRepository {
   async getSubjects(payload: GetSubjectsDto): Promise<ApiResponse<SubjectListPayload>> {
-    const { pagination, academic_level, status } = payload;
+    const { pagination, academic_level, status, name } = payload;
     return subjectService.list({
       page: pagination.page,
       page_size: pagination.limit,
       academic_level: academic_level ?? undefined,
       status: status ?? undefined,
+      name: name ?? undefined,
     });
   }
 

@@ -23,6 +23,19 @@
     </div>
 
     <v-row v-if="!isTeacher" class="mb-6" align="center">
+      <v-col cols="12" md="4">
+        <v-text-field
+          v-model="searchQuery"
+          label="Buscar por nombre"
+          prepend-inner-icon="mdi-magnify"
+          variant="outlined"
+          density="comfortable"
+          clearable
+          hide-details
+          bg-color="white"
+          @update:model-value="onFiltersChanged"
+        />
+      </v-col>
       <v-col cols="12" sm="6" md="4">
         <v-select
           v-model="filterLevel"
@@ -51,6 +64,22 @@
           hide-details
           bg-color="white"
           @update:model-value="onFiltersChanged"
+        />
+      </v-col>
+    </v-row>
+
+    <v-row v-if="isTeacher" class="mb-6" align="center">
+      <v-col cols="12" md="4">
+        <v-text-field
+          v-model="teacherSearchQuery"
+          label="Buscar por nombre"
+          prepend-inner-icon="mdi-magnify"
+          variant="outlined"
+          density="comfortable"
+          clearable
+          hide-details
+          bg-color="white"
+          @update:model-value="onTeacherSearchChange"
         />
       </v-col>
     </v-row>
@@ -128,10 +157,17 @@ const subjectIdsWithGroups = computed(() => teacherComposable.subjectIdsWithGrou
 const {
   filterLevel,
   filterStatus,
+  searchQuery,
   fetchSubjects,
   handlePageChange: pageChange,
   setSubjectStatus,
 } = adminComposable;
+
+const {
+  searchQuery: teacherSearchQuery,
+  fetchSubjects: teacherFetchSubjects,
+  handlePageChange: teacherPageChange,
+} = teacherComposable;
 
 const levelFilterItems = [
   { label: 'Todos los niveles', value: null },
@@ -199,18 +235,35 @@ async function onToggleStatus(subject: Subject, value: boolean) {
   }
 }
 
+let searchTimer: ReturnType<typeof setTimeout> | null = null;
+
 async function onFiltersChanged() {
-  adminComposable.pagination.value.currentPage = 1;
-  await fetchSubjects();
+  if (searchTimer) clearTimeout(searchTimer);
+  searchTimer = setTimeout(async () => {
+    adminComposable.pagination.value.currentPage = 1;
+    await fetchSubjects();
+  }, 500);
+}
+
+async function onTeacherSearchChange() {
+  if (searchTimer) clearTimeout(searchTimer);
+  searchTimer = setTimeout(async () => {
+    teacherComposable.pagination.value.currentPage = 1;
+    await teacherFetchSubjects();
+  }, 500);
 }
 
 function handlePageChange(p: number) {
-  pageChange(p);
+  if (isTeacher.value) {
+    teacherPageChange(p);
+  } else {
+    pageChange(p);
+  }
 }
 
 onMounted(async () => {
   if (isTeacher.value) {
-    await teacherComposable.fetchSubjects();
+    await teacherFetchSubjects();
   } else {
     await fetchSubjects();
   }

@@ -6,4 +6,6 @@ export interface GetSubjectsDto {
   academic_level?: number;
   /** Omit = no filter; true/false = filter by status */
   status?: boolean | null;
+  /** Filter by name (partial match, case-insensitive) */
+  name?: string;
 }

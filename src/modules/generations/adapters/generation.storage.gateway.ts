@@ -6,9 +6,10 @@ import { CreateGenerationDto } from '../entities/create-generation.dto';
 import { UpdateGenerationDto } from '../entities/update-generation.dto';
 
 export class GenerationStorageGateway implements GenerationRepository {
-  async getGenerations(idGeneration?: number, status?: boolean, page?: number, pageSize?: number): Promise<ApiResponse<PaginatedData<Generation>>> {
+  async getGenerations(idGeneration?: number, year?: number, status?: boolean, page?: number, pageSize?: number): Promise<ApiResponse<PaginatedData<Generation>>> {
     const params = new URLSearchParams();
     if (idGeneration !== undefined) params.set('id_generation', String(idGeneration));
+    if (year !== undefined) params.set('year', String(year));
     if (status !== undefined) params.set('status', String(status));
     if (page !== undefined) params.set('page', String(page));
     if (pageSize !== undefined) params.set('page_size', String(pageSize));

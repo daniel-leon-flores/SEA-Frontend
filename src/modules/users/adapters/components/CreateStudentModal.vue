@@ -106,7 +106,7 @@ export default {
       serverErrors: {},
       rules: {
         required: (v) => (v !== null && v !== undefined && v !== '') || 'Campo requerido',
-        email: (v) => /.+@.+\..+/.test(v) || 'Correo inválido'
+        email: (v) => /^[^\s@]{1,64}@[^\s@]{1,253}\.[^\s@]{2,63}$/.test(v) || 'Correo inválido'
       }
     }
   },
