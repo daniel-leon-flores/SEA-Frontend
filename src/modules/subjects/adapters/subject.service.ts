@@ -30,6 +30,23 @@ export const subjectService = {
     return handleRequest<SubjectListPayload>('get', endpoint);
   },
 
+  /**
+   * Materias visibles para el usuario autenticado: todas si es admin, solo asignadas si es docente.
+   * GET /api/academic/subjects/my-subjects/
+   */
+  listMySubjects(query: ListSubjectsQuery): Promise<ApiResponse<SubjectListPayload>> {
+    const params = new URLSearchParams();
+    if (query.page != null) params.set('page', String(query.page));
+    if (query.page_size != null) params.set('page_size', String(query.page_size));
+    if (query.status !== undefined) params.set('status', String(query.status));
+    if (query.name) params.set('name', query.name);
+    const qs = params.toString();
+    const endpoint = qs
+      ? `/api/academic/subjects/my-subjects/?${qs}`
+      : '/api/academic/subjects/my-subjects/';
+    return handleRequest<SubjectListPayload>('get', endpoint);
+  },
+
   getById(id: number): Promise<ApiResponse<Subject>> {
     return handleRequest<Subject>('get', `/api/academic/subjects/${id}/`);
   },
