@@ -13,7 +13,11 @@ const MULTIPLIER = 43;
 export function encodeId(id: number): string {
   const scrambled = (id * MULTIPLIER + OFFSET) ^ 0x5a3c;
   const raw = scrambled.toString(36);
-  return btoa(raw).replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/, '');
+  const b64 = btoa(raw).replaceAll('+', '-').replaceAll('/', '_');
+  // Eliminamos el padding '=' sin regex para evitar backtracking (ReDoS).
+  // btoa() produce a lo más 2 '=' de relleno, siempre al final.
+  const padStart = b64.indexOf('=');
+  return padStart === -1 ? b64 : b64.slice(0, padStart);
 }
 
 /**
