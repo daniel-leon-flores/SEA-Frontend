@@ -157,6 +157,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { encodeId } from '@/kernel/url-cipher';
 import Loader from '@/components/Loader.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import { ExamController } from '../exam.controller';
@@ -210,7 +211,7 @@ async function startExam(item: MyAssignment) {
 
   await router.push({
     name: 'AnswerExam',
-    params: { assignmentId: String(item.id_assignment) },
+    params: { assignmentId: encodeId(item.id_assignment) },
   });
 }
 
@@ -222,7 +223,7 @@ async function viewAnswers(item: MyAssignment) {
 
   await router.push({
     name: 'ReviewExam',
-    params: { assignmentId: String(item.id_assignment) },
+    params: { assignmentId: encodeId(item.id_assignment) },
   });
 }
 

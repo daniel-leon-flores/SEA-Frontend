@@ -278,6 +278,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { encodeId, decodeId } from '@/kernel/url-cipher';
 import CodeMirrorEditor from '@/modules/answers/adapters/components/CodeMirrorEditor.vue';
 import Loader from '@/components/Loader.vue';
 import { AnswersController } from '@/modules/answers/adapters/answers.controller';
@@ -295,8 +296,8 @@ type GradeRow = StudentAnswerRecord & {
 
 const route = useRoute();
 const router = useRouter();
-const assignmentId = computed(() => Number(route.params.assignmentId));
-const examId = computed(() => Number(route.params.examId));
+const assignmentId = computed(() => decodeId(route.params.assignmentId as string));
+const examId = computed(() => decodeId(route.params.examId as string));
 
 const answersController = new AnswersController();
 const examController = new ExamController();
@@ -316,7 +317,7 @@ const studentName = ref('Alumno');
 
 const breadcrumbItems = computed(() => [
   { title: 'Exámenes', disabled: false, href: '/exams' },
-  { title: 'Calificaciones', disabled: false, href: `/exams/${examId.value}/grades` },
+  { title: 'Calificaciones', disabled: false, href: `/exams/${encodeId(examId.value)}/grades` },
   { title: 'Calificar examen', disabled: true },
 ]);
 
@@ -331,7 +332,7 @@ const finalPercentage = computed(() => {
 
 const gradesRoute = computed(() => ({
   name: 'ExamGrades',
-  params: { id: String(examId.value) },
+  params: { id: encodeId(examId.value) },
 }));
 
 function questionTypeLabel(type: QuestionType): string {

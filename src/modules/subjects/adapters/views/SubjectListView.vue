@@ -12,9 +12,9 @@
       <v-btn
         v-if="!isTeacher"
         color="success"
-        size="default"
+        size="large"
         rounded="lg"
-        class="action-btn register-btn text-uppercase"
+        class="text-none"
         prepend-icon="mdi-plus"
         @click="openCreate"
       >
@@ -32,7 +32,6 @@
           density="comfortable"
           clearable
           hide-details
-          bg-color="white"
           @update:model-value="onFiltersChanged"
         />
       </v-col>
@@ -47,7 +46,6 @@
           density="comfortable"
           clearable
           hide-details
-          bg-color="white"
           @update:model-value="onFiltersChanged"
         />
       </v-col>
@@ -62,7 +60,6 @@
           density="comfortable"
           clearable
           hide-details
-          bg-color="white"
           @update:model-value="onFiltersChanged"
         />
       </v-col>
@@ -78,7 +75,6 @@
           density="comfortable"
           clearable
           hide-details
-          bg-color="white"
           @update:model-value="onTeacherSearchChange"
         />
       </v-col>
@@ -134,6 +130,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { encodeId } from '@/kernel/url-cipher';
 import Loader from '@/components/Loader.vue';
 import ConfirmDialog from '@/components/ConfirmDialog.vue';
 import SubjectFormDialog from '../components/SubjectFormDialog.vue';
@@ -216,7 +213,7 @@ function openDetail(s: Subject) {
 }
 
 function goToTeacherGroups(s: Subject) {
-  router.push({ name: 'TeacherSubjectGroups', params: { subjectId: s.id_subject } });
+  router.push({ name: 'TeacherSubjectGroups', params: { subjectId: encodeId(s.id_subject) } });
 }
 
 function onFormSaved() {

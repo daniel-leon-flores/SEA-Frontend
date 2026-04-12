@@ -168,6 +168,7 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { encodeId, decodeId } from '@/kernel/url-cipher';
 import Loader from '@/components/Loader.vue';
 import PaginatedTable from '@/components/PaginatedTable.vue';
 import ConfirmDialog from '@/components/ConfirmDialog.vue';
@@ -179,8 +180,8 @@ import type { User } from '../../entities/user';
 const route = useRoute();
 const router = useRouter();
 
-const generationId = Number(route.params.generationId);
-const groupId = Number(route.params.groupId);
+const generationId = decodeId(route.params.generationId as string);
+const groupId = decodeId(route.params.groupId as string);
 const groupName = computed(() => (route.query.groupName as string) || 'Nombre del grupo');
 
 // Estado
@@ -222,7 +223,7 @@ const filterStatusItems = [
 
 const breadcrumbItems = computed(() => [
   { title: 'Generaciones', disabled: false, href: '/generations' },
-  { title: 'Grupos', disabled: false, href: `/generations/${generationId}/groups` },
+  { title: 'Grupos', disabled: false, href: `/generations/${encodeId(generationId)}/groups` },
   { title: groupName.value ? `Grupo ${groupName.value}` : 'Grupo', disabled: true },
 ]);
 
@@ -287,7 +288,7 @@ const loadStudents = async () => {
 };
 
 const goBackToGroups = () => {
-  router.push(`/generations/${generationId}/groups`)
+  router.push(`/generations/${encodeId(generationId)}/groups`)
     .catch(err => {
       console.error(err);
     });

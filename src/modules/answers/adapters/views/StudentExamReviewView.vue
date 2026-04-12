@@ -104,6 +104,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { decodeId } from '@/kernel/url-cipher';
 import Loader from '@/components/Loader.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import { AnswersController } from '../answers.controller';
@@ -129,7 +130,7 @@ function questionTypeLabel(type: StudentAnswerRecord['question_type']) {
 }
 
 async function loadAnswers() {
-  const assignmentId = Number(route.params.assignmentId);
+  const assignmentId = decodeId(route.params.assignmentId as string);
   if (!assignmentId || Number.isNaN(assignmentId)) {
     errorMsg.value = 'ID de asignación inválido.';
     return;

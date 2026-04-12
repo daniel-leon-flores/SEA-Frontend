@@ -141,13 +141,15 @@
 
     <div class="d-flex justify-end mt-4">
       <v-btn
-        color="#069574"
-        variant="flat"
+        color="success"
+        size="large"
+        rounded="lg"
+        class="text-none"
         prepend-icon="mdi-magnify"
         :disabled="!canGenerate"
         @click="emit('generate', { ...localFilters })"
       >
-        Generar Reporte
+        Generar reporte
       </v-btn>
     </div>
   </v-card>

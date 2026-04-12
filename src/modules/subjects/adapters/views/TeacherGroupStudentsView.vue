@@ -65,6 +65,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
+import { encodeId, decodeId } from '@/kernel/url-cipher';
 import Loader from '@/components/Loader.vue';
 import PaginatedTable from '@/components/PaginatedTable.vue';
 import { handleRequest } from '@/config/http-client.gateway';
@@ -86,8 +87,8 @@ type PaginationMeta = {
 
 const route = useRoute();
 
-const subjectId = Number(route.params.subjectId);
-const groupId = Number(route.params.groupId);
+const subjectId = decodeId(route.params.subjectId as string);
+const groupId = decodeId(route.params.groupId as string);
 const subjectName = ref((route.query.subjectName as string) ?? '');
 const groupLetter = ref((route.query.groupLetter as string) ?? '');
 
@@ -99,7 +100,7 @@ const pagination = ref<PaginationMeta>({ count: 0, page: 1, page_size: 10, total
 
 const breadcrumbItems = computed(() => [
   { title: 'Materias', href: '/subjects', disabled: false },
-  { title: subjectName.value || 'Materia', href: `/subjects/${subjectId}/groups`, disabled: false },
+  { title: subjectName.value || 'Materia', href: `/subjects/${encodeId(subjectId)}/groups`, disabled: false },
   { title: `Grupo ${groupLetter.value}`, disabled: true },
   { title: 'Alumnos', disabled: true },
 ]);
@@ -120,6 +121,7 @@ const paginationInfo = computed(() => {
 });
 
 const fetchStudents = async (page = 1) => {
+  if (!groupId || !Number.isFinite(groupId)) return;
   loading.value = true;
   try {
     const res = await handleRequest<{ results: StudentRow[]; pagination: PaginationMeta }>(

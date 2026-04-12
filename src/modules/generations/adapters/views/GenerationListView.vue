@@ -7,7 +7,7 @@
         <h1 class="page-title">Generaciones</h1>
         <p class="page-subtitle">Gestiona las generaciones académicas y sus grupos</p>
       </div>
-      <v-btn color="success" size="default" rounded="lg" class="action-btn" prepend-icon="mdi-plus" @click="openCreateModal">
+      <v-btn color="success" size="large" rounded="lg" class="text-none" prepend-icon="mdi-plus" @click="openCreateModal">
         Registrar generación
       </v-btn>
     </div>
@@ -22,7 +22,6 @@
           density="comfortable"
           clearable
           hide-details
-          bg-color="white"
           @update:model-value="onSearchChange"
         />
       </v-col>
@@ -217,6 +216,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
+import { encodeId } from '@/kernel/url-cipher';
 import GenerationCard from '../components/GenerationCard.vue';
 import ConfirmDialog from '@/components/ConfirmDialog.vue';
 import Loader from '@/components/Loader.vue';
@@ -460,7 +460,7 @@ const saveGeneration = async () => {
       showToast(groupResponse.message || 'La generación se creó, pero falló el registro de grupos.', 'warning');
       showModal.value = false;
       await loadGenerations();
-      await router.push(`/generations/${generationId}/groups`);
+      await router.push(`/generations/${encodeId(generationId)}/groups`);
       return;
     }
   }
@@ -469,11 +469,11 @@ const saveGeneration = async () => {
   showToast('Generación y grupos registrados correctamente.');
   showModal.value = false;
   await loadGenerations();
-  await router.push(`/generations/${generationId}/groups`);
+  await router.push(`/generations/${encodeId(generationId)}/groups`);
 };
 
 const goToGroups = async (idGeneration: number) => {
-  await router.push(`/generations/${idGeneration}/groups`);
+  await router.push(`/generations/${encodeId(idGeneration)}/groups`);
 };
 
 const toggleGenerationStatus = async (generation: Generation, value: boolean) => {

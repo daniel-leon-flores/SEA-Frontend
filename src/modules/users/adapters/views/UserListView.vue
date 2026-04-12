@@ -260,6 +260,7 @@
 <script lang="ts">
 import PaginatedTable from '@/components/PaginatedTable.vue'
 import Loader from '@/components/Loader.vue'
+import { encodeId } from '@/kernel/url-cipher'
 import CreateUserModal from '../components/CreateUserModal.vue'
 import UpdateUserModal from '../components/UpdateUserModal.vue'
 import UserDetailModal from '../components/UserDetailModal.vue'
@@ -522,7 +523,7 @@ export default {
     },
     
     viewUserDetail(user) {
-      this.$router.push({ name: 'UserDetail', params: { id: user.id_user } })
+      this.$router.push({ name: 'UserDetail', params: { id: encodeId(user.id_user) } })
     },
 
     openAssignGroupsDialog(user) {

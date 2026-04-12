@@ -248,6 +248,7 @@ import Loader from '@/components/Loader.vue';
 import ConfirmDialog from '@/components/ConfirmDialog.vue';
 import ExamFormDialog from './ExamFormDialog.vue';
 import AssignGroupsDialog from './AssignGroupsDialog.vue';
+import { encodeId } from '@/kernel/url-cipher';
 import { ExamController } from '../exam.controller';
 import type { Exam } from '../../entities/exam';
 import {
@@ -473,7 +474,7 @@ export default {
     },
 
     viewGrades(exam: Exam) {
-      this.$router.push({ name: 'ExamGrades', params: { id: String(exam.id_exam) } });
+      this.$router.push({ name: 'ExamGrades', params: { id: encodeId(exam.id_exam) } });
     },
   },
 };

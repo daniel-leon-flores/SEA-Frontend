@@ -29,7 +29,6 @@
           density="comfortable"
           clearable
           hide-details
-          bg-color="white"
           @update:model-value="onSearchChange"
         />
       </v-col>
@@ -189,6 +188,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { encodeId, decodeId } from '@/kernel/url-cipher';
 import GenerationGroupCard from '../components/GenerationGroupCard.vue';
 import AssignTeacherDialog from '../components/AssignTeacherDialog.vue';
 import Loader from '@/components/Loader.vue';
@@ -205,7 +205,7 @@ const route = useRoute();
 const router = useRouter();
 const controller = new GenerationController();
 
-const generationId = Number(route.params.id);
+const generationId = decodeId(route.params.id as string);
 const generationYear = ref<number | null>(null);
 
 const breadcrumbItems = computed(() => [
@@ -315,12 +315,13 @@ const goBack = () => {
   router.push('/generations');
 };
 
+
 const goToGroupStudentsView = (group: GenerationGroup, openAddModal: boolean = false) => {
   router.push({
     name: 'GroupStudents',
     params: {
-      generationId,
-      groupId: group.id_group,
+      generationId: encodeId(generationId),
+      groupId: encodeId(group.id_group),
     },
     query: {
       groupName: group.group_letter,
