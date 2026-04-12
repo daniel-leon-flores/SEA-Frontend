@@ -478,10 +478,6 @@ const API_ENVELOPE_KEYS = new Set([
   'errors',
 ]);
 
-/**
- * Obtiene el dict de errores por campo: `res.errors`, `error.details`, o claves de primer nivel
- * (p. ej. `{ image_url: ["..."] }` cuando DRF no envía la clave `errors`).
- */
 function extractFieldErrorsFromApiResponse(res: ApiResponse): Record<string, unknown> | undefined {
   if (res.errors && typeof res.errors === 'object' && !Array.isArray(res.errors)) {
     return res.errors as Record<string, unknown>;
@@ -778,7 +774,7 @@ export default {
       }
     },
     async loadSubjects() {
-      const res = await subjectService.list({ page: 1, page_size: 200, status: true });
+      const res = await subjectService.listMySubjects({ page: 1, page_size: 200, status: true });
       if (res.success && res.data?.results) {
         this.subjectItems = res.data.results.map((s) => ({
           title: s.name,
