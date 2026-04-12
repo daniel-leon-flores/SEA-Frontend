@@ -1,25 +1,16 @@
 <template>
-  <v-dialog :model-value="modelValue" max-width="620" persistent @update:model-value="$emit('update:modelValue', $event)">
-    <v-card class="dialog-card" rounded="xl" elevation="0">
-      <!-- Header -->
-      <div class="d-flex align-center justify-space-between mb-5">
-        <div class="d-flex align-center ga-3">
-          <div class="dialog-icon">
-            <v-icon color="#0f766e">mdi-account-tie</v-icon>
-          </div>
-          <div>
-            <h2 class="dialog-title">Asignar docentes</h2>
-            <p class="dialog-subtitle">Grupo {{ groupLetter }} · Nivel {{ academicLevel }}</p>
-          </div>
-        </div>
-        <v-btn icon variant="text" @click="close">
-          <v-icon>mdi-close</v-icon>
-        </v-btn>
-      </div>
+  <v-dialog :model-value="modelValue" max-width="600" persistent @update:model-value="$emit('update:modelValue', $event)">
+    <v-card style="position: relative;">
+      <v-progress-linear v-if="loadingSubjects" indeterminate color="primary" />
+      <v-card-title class="text-h6 pa-4 d-flex align-center">
+        <v-icon start color="primary">mdi-account-tie</v-icon>
+        Asignar docentes
+        <span class="text-body-2 text-grey-darken-1 ml-2">Grupo {{ groupLetter }} · Nivel {{ academicLevel }}</span>
+      </v-card-title>
+      <v-divider />
 
-      <div v-if="loadingSubjects" class="d-flex justify-center py-6">
-        <v-progress-circular indeterminate color="#0f766e" size="32" />
-      </div>
+      <v-card-text class="pa-4">
+      <div v-if="loadingSubjects" style="min-height: 80px;" />
 
       <div v-else-if="subjects.length === 0" class="mb-2">
         <v-alert type="info" variant="tonal" rounded="lg" density="compact">
@@ -73,29 +64,27 @@
         </div>
       </div>
 
-      <v-divider class="my-5" />
-      <div class="d-flex justify-end">
-        <v-btn variant="outlined" rounded="lg" @click="close">Cerrar</v-btn>
-      </div>
+      </v-card-text>
+      <v-divider />
+      <v-card-actions class="pa-4">
+        <v-spacer />
+        <v-btn variant="text" color="grey" @click="close">Cerrar</v-btn>
+      </v-card-actions>
     </v-card>
   </v-dialog>
 
   <!-- Teacher picker sub-dialog -->
-  <v-dialog v-model="teacherPickerOpen" max-width="460" persistent>
-    <v-card class="dialog-card" rounded="xl" elevation="0">
-      <div class="d-flex align-center justify-space-between mb-4">
-        <div>
-          <h3 class="dialog-title" style="font-size:17px;">Seleccionar docente</h3>
-          <p v-if="pickingSubject" class="dialog-subtitle">{{ pickingSubject.name }}</p>
-        </div>
-        <v-btn icon variant="text" @click="teacherPickerOpen = false">
-          <v-icon>mdi-close</v-icon>
-        </v-btn>
-      </div>
-
-      <div v-if="loadingTeachers" class="d-flex justify-center py-5">
-        <v-progress-circular indeterminate color="#0f766e" size="28" />
-      </div>
+  <v-dialog v-model="teacherPickerOpen" max-width="600" persistent>
+    <v-card style="position: relative;">
+      <v-progress-linear v-if="loadingTeachers" indeterminate color="primary" />
+      <v-card-title class="text-h6 pa-4 d-flex align-center">
+        <v-icon start color="primary">mdi-account-tie</v-icon>
+        Seleccionar docente
+        <span v-if="pickingSubject" class="text-body-2 text-grey-darken-1 ml-2">{{ pickingSubject.name }}</span>
+      </v-card-title>
+      <v-divider />
+      <v-card-text class="pa-4">
+      <div v-if="loadingTeachers" style="min-height: 80px;" />
       <v-alert
         v-else-if="availableTeachers.length === 0"
         type="info"
@@ -127,18 +116,21 @@
         </div>
       </div>
 
-      <div class="d-flex justify-end ga-3">
-        <v-btn variant="outlined" rounded="lg" @click="teacherPickerOpen = false">Cancelar</v-btn>
+      </v-card-text>
+      <v-divider />
+      <v-card-actions class="pa-4">
+        <v-spacer />
+        <v-btn variant="text" color="grey" @click="teacherPickerOpen = false">Cancelar</v-btn>
         <v-btn
+          variant="elevated"
           color="success"
-          rounded="lg"
           :disabled="selectedTeacherId === null"
           :loading="savingAssignment"
           @click="confirmAssignment"
         >
           Confirmar
         </v-btn>
-      </div>
+      </v-card-actions>
     </v-card>
   </v-dialog>
 </template>

@@ -1,5 +1,5 @@
 <template>
-  <v-container fluid class="pa-8">
+  <v-container fluid class="pa-8" style="background: #f9fbff; min-height: 100vh;">
     <Loader :visible="loading" message="Cargando grupos..." />
 
     <!-- Breadcrumb -->
@@ -58,6 +58,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { encodeId, decodeId } from '@/kernel/url-cipher';
 import Loader from '@/components/Loader.vue';
 import { handleRequest } from '@/config/http-client.gateway';
 
@@ -76,7 +77,7 @@ type SubjectInfo = { id_subject: number; name: string };
 const route = useRoute();
 const router = useRouter();
 
-const subjectId = Number(route.params.subjectId);
+const subjectId = decodeId(route.params.subjectId as string);
 
 const loading = ref(false);
 const groups = ref<TeacherGroup[]>([]);
@@ -117,7 +118,7 @@ const fetchGroups = async () => {
 const goToStudents = (g: TeacherGroup) => {
   router.push({
     name: 'TeacherGroupStudents',
-    params: { subjectId, groupId: g.id_group },
+    params: { subjectId: encodeId(subjectId), groupId: encodeId(g.id_group) },
     query: { subjectName: subjectName.value, groupLetter: g.group_letter },
   });
 };

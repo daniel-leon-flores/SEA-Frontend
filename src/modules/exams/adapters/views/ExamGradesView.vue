@@ -1,5 +1,5 @@
 <template>
-  <v-container fluid class="pa-8">
+  <v-container fluid class="pa-8" style="background: #f9fbff; min-height: 100vh;">
     <Loader :visible="pageLoading" message="Cargando calificaciones..." />
 
     <!-- Breadcrumbs -->
@@ -193,6 +193,7 @@
 import PaginatedTable from '@/components/PaginatedTable.vue';
 import Loader from '@/components/Loader.vue';
 import EmptyState from '@/components/EmptyState.vue';
+import { encodeId, decodeId } from '@/kernel/url-cipher';
 import { ExamController } from '../exam.controller';
 import type { ExamGroupAssignment, GroupStats, GroupStudent } from '../../entities/assign-exam.dto';
 import {
@@ -281,7 +282,7 @@ export default {
   },
   async mounted() {
     const idParam = this.$route.params.id;
-    this.examId = Number(idParam);
+    this.examId = decodeId(idParam as string);
     if (!this.examId || Number.isNaN(this.examId)) {
       this.errorMsg = 'ID de examen no válido';
       return;
@@ -429,8 +430,8 @@ export default {
       this.$router.push({
         name: 'ManualGrade',
         params: {
-          examId: String(this.examId),
-          assignmentId: String(student.assignment_id),
+          examId: encodeId(this.examId),
+          assignmentId: encodeId(student.assignment_id),
         },
         query: {
           studentName: student.full_name,

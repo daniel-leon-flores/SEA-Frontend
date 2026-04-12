@@ -1,7 +1,7 @@
 <template>
   <v-dialog v-model="visible" max-width="700" persistent>
     <v-card style="position: relative;">
-      <Loader :visible="loadingGroups" :fullscreen="false" message="Cargando datos..." />
+      <v-progress-linear v-if="loadingGroups" indeterminate color="primary" />
       <v-card-title class="text-h6 pa-4 d-flex align-center">
         <v-icon start color="primary">mdi-account-group</v-icon>
         Asignar grupos al examen
@@ -124,7 +124,6 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import Loader from '@/components/Loader.vue';
 import { ExamController } from '../exam.controller';
 import type { AcademicGroup, ExamGroupAssignment } from '../../entities/assign-exam.dto';
 import { formatGroupLabel } from '../../entities/exam-constants';

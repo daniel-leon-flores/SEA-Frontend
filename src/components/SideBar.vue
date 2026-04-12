@@ -34,7 +34,9 @@
           </v-avatar>
           <div class="ml-3">
             <div class="text-h6 font-weight-bold" style="color: white;">SEA</div>
-            <div style="color: #9fb5b8; font-size: 0.85rem;">Exámenes Académicos</div>
+            <div style="color: #9fb5b8; font-size: 0.85rem;">Exámenes Autogestionados
+              
+            </div>
           </div>
         </div>
         <v-avatar v-else size="40" class="logo-avatar" style="cursor:pointer;">

@@ -1,12 +1,7 @@
 <template>
   <div class="table-container">
-    <!-- Loader mientras se cargan los datos -->
-    <div v-if="loading" class="d-flex justify-center align-center py-8">
-      <v-progress-circular indeterminate color="primary" size="64" />
-    </div>
-
     <!-- Tabla con scroll vertical y sticky headers -->
-    <div v-else class="table-scroll-wrapper">
+    <div class="table-scroll-wrapper">
       <v-table density="comfortable" fixed-header class="sticky-table">
         <thead>
           <tr>

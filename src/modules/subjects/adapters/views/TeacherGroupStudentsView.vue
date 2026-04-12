@@ -1,5 +1,5 @@
 <template>
-  <v-container fluid class="pa-8">
+  <v-container fluid class="pa-8" style="background: #f9fbff; min-height: 100vh;">
     <Loader :visible="loading" message="Cargando alumnos..." />
 
     <!-- Breadcrumb -->
@@ -21,37 +21,53 @@
       No hay alumnos en este grupo.
     </v-alert>
 
-    <v-card v-else elevation="0" rounded="xl" class="students-table-card">
-      <v-data-table
-        :headers="headers"
-        :items="students"
-        :loading="loading"
-        item-value="id_user"
-        hide-default-footer
-        class="students-table"
+    <v-card v-else elevation="2" class="mb-4">
+      <PaginatedTable
+        :columns="columns"
+        :data="students"
+        :total-records="pagination.count"
+        :total-pages="pagination.total_pages"
+        :current-page-prop="currentPage"
+        :page-size-prop="pageSize"
+        :loading="false"
       />
     </v-card>
 
-    <div v-if="!loading && pagination.total_pages > 1" class="d-flex justify-center mt-4">
-      <v-pagination
-        v-model="currentPage"
-        :length="pagination.total_pages"
-        rounded="circle"
-        density="comfortable"
-        @update:model-value="handlePageChange"
-      />
-    </div>
-
-    <p v-if="!loading && pagination.count > 0" class="pagination-caption text-center mt-2">
-      Mostrando {{ students.length }} de {{ pagination.count }} alumno{{ pagination.count !== 1 ? 's' : '' }}
-    </p>
+    <v-row v-if="!loading && pagination.count > 0" class="align-center mt-2">
+      <v-col cols="12" md="3">
+        <v-select
+          label="Registros por página"
+          v-model="pageSize"
+          :items="PAGE_SIZE_OPTIONS"
+          variant="outlined"
+          density="compact"
+          hide-details
+          @update:model-value="handlePageSizeChange"
+        />
+      </v-col>
+      <v-col cols="12" md="6" class="d-flex justify-center">
+        <v-pagination
+          v-model="currentPage"
+          :length="pagination.total_pages"
+          :total-visible="7"
+          rounded="circle"
+          density="comfortable"
+          @update:model-value="handlePageChange"
+        />
+      </v-col>
+      <v-col cols="12" md="3" class="text-end">
+        <p class="text-caption text-grey-darken-1">{{ paginationInfo }}</p>
+      </v-col>
+    </v-row>
   </v-container>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
+import { encodeId, decodeId } from '@/kernel/url-cipher';
 import Loader from '@/components/Loader.vue';
+import PaginatedTable from '@/components/PaginatedTable.vue';
 import { handleRequest } from '@/config/http-client.gateway';
 
 type StudentRow = {
@@ -71,8 +87,8 @@ type PaginationMeta = {
 
 const route = useRoute();
 
-const subjectId = Number(route.params.subjectId);
-const groupId = Number(route.params.groupId);
+const subjectId = decodeId(route.params.subjectId as string);
+const groupId = decodeId(route.params.groupId as string);
 const subjectName = ref((route.query.subjectName as string) ?? '');
 const groupLetter = ref((route.query.groupLetter as string) ?? '');
 
@@ -84,18 +100,28 @@ const pagination = ref<PaginationMeta>({ count: 0, page: 1, page_size: 10, total
 
 const breadcrumbItems = computed(() => [
   { title: 'Materias', href: '/subjects', disabled: false },
-  { title: subjectName.value || 'Materia', href: `/subjects/${subjectId}/groups`, disabled: false },
+  { title: subjectName.value || 'Materia', href: `/subjects/${encodeId(subjectId)}/groups`, disabled: false },
   { title: `Grupo ${groupLetter.value}`, disabled: true },
   { title: 'Alumnos', disabled: true },
 ]);
 
-const headers = [
-  { title: 'Nombre completo', key: 'full_name' },
-  { title: 'Matrícula', key: 'matricula' },
-  { title: 'Correo', key: 'email' },
+const PAGE_SIZE_OPTIONS = [5, 10, 15, 25];
+
+const columns = [
+  { label: 'Nombre completo', key: 'full_name', width: '200px', minWidth: '160px' },
+  { label: 'Matrícula', key: 'matricula', width: '140px', minWidth: '120px' },
+  { label: 'Correo', key: 'email', width: '220px', minWidth: '180px' },
 ];
 
+const paginationInfo = computed(() => {
+  if (pagination.value.count === 0) return '0 registros';
+  const start = (currentPage.value - 1) * pageSize.value + 1;
+  const end = Math.min(currentPage.value * pageSize.value, pagination.value.count);
+  return `Mostrando ${start}-${end} de ${pagination.value.count} registros`;
+});
+
 const fetchStudents = async (page = 1) => {
+  if (!groupId || !Number.isFinite(groupId)) return;
   loading.value = true;
   try {
     const res = await handleRequest<{ results: StudentRow[]; pagination: PaginationMeta }>(
@@ -117,31 +143,25 @@ const handlePageChange = (page: number) => {
   void fetchStudents(page);
 };
 
+const handlePageSizeChange = (size: number) => {
+  pageSize.value = size;
+  currentPage.value = 1;
+  void fetchStudents(1);
+};
+
 onMounted(() => {
   void fetchStudents(1);
 });
 </script>
 
 <style scoped>
-.students-table-card {
-  border: 1px solid #e2e8f0;
-  overflow: hidden;
-}
-
-.students-table {
-  background: #ffffff;
-}
-
 .page-title {
-  color: #0f172a;
+  color: #1a1a1a;
+  line-height: 1.2;
 }
 
 .page-subtitle {
-  color: #64748b;
-}
-
-.pagination-caption {
-  font-size: 13px;
-  color: #64748b;
+  color: #666;
+  line-height: 1.5;
 }
 </style>

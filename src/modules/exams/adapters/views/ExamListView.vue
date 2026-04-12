@@ -1,5 +1,5 @@
 <template>
-  <v-container fluid class="pa-8">
+  <v-container fluid class="pa-8" style="background: #f9fbff; min-height: 100vh;">
     <Loader :visible="loading" message="Cargando exámenes..." />
 
     <!-- Header -->
@@ -20,7 +20,7 @@
             :disabled="loading"
             @click="openCreateDialog"
           >
-            Crear examen
+            Registrar examen
           </v-btn>
         </template>
       </v-tooltip>
@@ -86,7 +86,7 @@
         :total-pages="pagination.totalPages"
         :current-page-prop="pagination.currentPage"
         :page-size-prop="pagination.pageSize"
-        :loading="tableLoading"
+        :loading="false"
         @update:page="handlePageChange"
         @update:page-size="handlePageSizeChange"
       >
@@ -248,6 +248,7 @@ import Loader from '@/components/Loader.vue';
 import ConfirmDialog from '@/components/ConfirmDialog.vue';
 import ExamFormDialog from './ExamFormDialog.vue';
 import AssignGroupsDialog from './AssignGroupsDialog.vue';
+import { encodeId } from '@/kernel/url-cipher';
 import { ExamController } from '../exam.controller';
 import type { Exam } from '../../entities/exam';
 import {
@@ -473,7 +474,7 @@ export default {
     },
 
     viewGrades(exam: Exam) {
-      this.$router.push({ name: 'ExamGrades', params: { id: String(exam.id_exam) } });
+      this.$router.push({ name: 'ExamGrades', params: { id: encodeId(exam.id_exam) } });
     },
   },
 };

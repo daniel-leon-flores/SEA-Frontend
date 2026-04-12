@@ -2,16 +2,14 @@
   <v-container fluid class="grading-shell pa-6 pa-md-8">
 
     <!-- Loading full-page -->
-    <div v-if="pageLoading" class="d-flex justify-center align-center" style="min-height: 40vh;">
-      <v-progress-circular indeterminate color="teal-darken-2" size="48" />
-    </div>
+    <Loader :visible="pageLoading" message="Cargando calificaciones..." />
 
     <!-- Error state -->
-    <v-alert v-else-if="pageError" type="error" variant="tonal" class="mb-4" rounded="lg">
+    <v-alert v-if="!pageLoading && pageError" type="error" variant="tonal" class="mb-4" rounded="lg">
       {{ pageError }}
     </v-alert>
 
-    <template v-else>
+    <template v-if="!pageLoading && !pageError">
       <v-row justify="center">
         <v-col cols="12">
           <v-breadcrumbs :items="breadcrumbItems" class="pa-0 mb-4">
@@ -280,7 +278,9 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { encodeId, decodeId } from '@/kernel/url-cipher';
 import CodeMirrorEditor from '@/modules/answers/adapters/components/CodeMirrorEditor.vue';
+import Loader from '@/components/Loader.vue';
 import { AnswersController } from '@/modules/answers/adapters/answers.controller';
 import { ExamController } from '../exam.controller';
 import type { StudentAnswerRecord } from '@/modules/answers/entities/exam-answer';
@@ -296,8 +296,8 @@ type GradeRow = StudentAnswerRecord & {
 
 const route = useRoute();
 const router = useRouter();
-const assignmentId = computed(() => Number(route.params.assignmentId));
-const examId = computed(() => Number(route.params.examId));
+const assignmentId = computed(() => decodeId(route.params.assignmentId as string));
+const examId = computed(() => decodeId(route.params.examId as string));
 
 const answersController = new AnswersController();
 const examController = new ExamController();
@@ -317,7 +317,7 @@ const studentName = ref('Alumno');
 
 const breadcrumbItems = computed(() => [
   { title: 'Exámenes', disabled: false, href: '/exams' },
-  { title: 'Calificaciones', disabled: false, href: `/exams/${examId.value}/grades` },
+  { title: 'Calificaciones', disabled: false, href: `/exams/${encodeId(examId.value)}/grades` },
   { title: 'Calificar examen', disabled: true },
 ]);
 
@@ -332,7 +332,7 @@ const finalPercentage = computed(() => {
 
 const gradesRoute = computed(() => ({
   name: 'ExamGrades',
-  params: { id: String(examId.value) },
+  params: { id: encodeId(examId.value) },
 }));
 
 function questionTypeLabel(type: QuestionType): string {

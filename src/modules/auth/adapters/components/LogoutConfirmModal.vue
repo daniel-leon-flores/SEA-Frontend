@@ -1,49 +1,26 @@
 <template>
-  <v-dialog v-model="dialogModel" max-width="450" persistent>
-    <v-card rounded="lg">
-      <v-card-title class="d-flex align-center justify-space-between pa-5 bg-primary">
-        <div class="d-flex align-center ga-3">
-          <v-icon color="white" size="28">mdi-logout-variant</v-icon>
-          <span class="text-h6 text-white">Cerrar sesión</span>
-        </div>
+  <v-dialog v-model="dialogModel" max-width="600" persistent>
+    <v-card style="position: relative;">
+      <v-card-title class="text-h6 pa-4 d-flex align-center">
+        <v-icon start color="error">mdi-logout-variant</v-icon>
+        Cerrar sesión
       </v-card-title>
-
-      <v-card-text class="pa-6">
-        <div class="text-center mb-4">
-          <v-icon color="warning" size="64">
-            mdi-alert-circle-outline
-          </v-icon>
-        </div>
-        
-        <p class="text-body-1 text-center mb-2">
+      <v-divider />
+      <v-card-text class="pa-4">
+        <p class="text-body-1 mb-2">
           ¿Estás seguro de que deseas cerrar sesión?
         </p>
-        
-        <p class="text-body-2 text-center text-grey-darken-1">
+        <p class="text-body-2 text-grey-darken-1">
           Tras esta acción deberás iniciar sesión nuevamente para acceder al sistema.
         </p>
-
-        <v-alert type="info" variant="tonal" density="compact" class="mt-4">
-          Asegúrate de guardar cualquier cambio antes de continuar.
-        </v-alert>
       </v-card-text>
-
       <v-divider />
-
       <v-card-actions class="pa-4">
         <v-spacer />
-        <v-btn 
-          variant="text" 
-          @click="cancel"
-        >
+        <v-btn variant="text" color="grey" @click="cancel">
           Cancelar
         </v-btn>
-        <v-btn
-          color="primary"
-          variant="elevated"
-          @click="confirm"
-        >
-          <v-icon start>mdi-logout</v-icon>
+        <v-btn variant="elevated" color="error" @click="confirm">
           Cerrar sesión
         </v-btn>
       </v-card-actions>
