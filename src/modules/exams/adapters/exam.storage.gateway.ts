@@ -72,6 +72,10 @@ export class ExamStorageGateway implements ExamRepository {
     return handleRequest<PaginatedData<AcademicGroup>>('get', `/api/academic/groups/${buildQueryString({ page, page_size: pageSize })}`);
   }
 
+  async getAssignableGroups(): Promise<ApiResponse<AcademicGroup[]>> {
+    return handleRequest<AcademicGroup[]>('get', '/api/academic/groups/my-groups/');
+  }
+
   async getMySubjects(): Promise<ApiResponse<{ results: Subject[] }>> {
     return handleRequest<{ results: Subject[] }>('get', '/api/academic/subjects/my-subjects/');
   }

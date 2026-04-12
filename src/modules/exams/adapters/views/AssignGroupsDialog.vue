@@ -209,7 +209,7 @@ async function loadData(eId: number) {
   try {
     const [assignRes, groupsRes] = await Promise.all([
       controller.getExamAssignments(eId),
-      controller.getAcademicGroups(1, 200),
+      controller.getAssignableGroups(),
     ]);
 
     if (assignRes.success && assignRes.data) {
@@ -221,7 +221,7 @@ async function loadData(eId: number) {
     }
 
     if (groupsRes.success && groupsRes.data) {
-      allGroups.value = groupsRes.data.results || [];
+      allGroups.value = Array.isArray(groupsRes.data) ? groupsRes.data : [];
     }
   } finally {
     loadingGroups.value = false;
