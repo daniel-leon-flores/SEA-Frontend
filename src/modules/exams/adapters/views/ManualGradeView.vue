@@ -2,16 +2,14 @@
   <v-container fluid class="grading-shell pa-6 pa-md-8">
 
     <!-- Loading full-page -->
-    <div v-if="pageLoading" class="d-flex justify-center align-center" style="min-height: 40vh;">
-      <v-progress-circular indeterminate color="teal-darken-2" size="48" />
-    </div>
+    <Loader :visible="pageLoading" message="Cargando calificaciones..." />
 
     <!-- Error state -->
-    <v-alert v-else-if="pageError" type="error" variant="tonal" class="mb-4" rounded="lg">
+    <v-alert v-if="!pageLoading && pageError" type="error" variant="tonal" class="mb-4" rounded="lg">
       {{ pageError }}
     </v-alert>
 
-    <template v-else>
+    <template v-if="!pageLoading && !pageError">
       <v-row justify="center">
         <v-col cols="12">
           <v-breadcrumbs :items="breadcrumbItems" class="pa-0 mb-4">
@@ -281,6 +279,7 @@
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import CodeMirrorEditor from '@/modules/answers/adapters/components/CodeMirrorEditor.vue';
+import Loader from '@/components/Loader.vue';
 import { AnswersController } from '@/modules/answers/adapters/answers.controller';
 import { ExamController } from '../exam.controller';
 import type { StudentAnswerRecord } from '@/modules/answers/entities/exam-answer';

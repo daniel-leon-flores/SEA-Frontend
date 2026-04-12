@@ -1,11 +1,10 @@
 <template>
-  <v-container fluid class="pa-8">
+  <v-container fluid class="pa-8" style="background: #f9fbff; min-height: 100vh;">
     <Loader :visible="loading" message="Cargando bitácora..." />
-
-    <HeaderSession title="Bitácora" />
 
     <div class="d-flex align-start justify-space-between mb-8 flex-wrap ga-4">
       <div>
+        <h1 class="page-title text-h4 font-weight-bold mb-2">Bitácora</h1>
         <p class="page-subtitle text-body-1 text-grey-darken-1">
           Consulta el historial de cambios registrados en el sistema.
         </p>
@@ -138,7 +137,6 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import HeaderSession from '@/components/HeaderSession.vue';
 import Loader from '@/components/Loader.vue';
 import PaginatedTable from '@/components/PaginatedTable.vue';
 import AuditLogDetailModal from '@/modules/audit/adapters/components/AuditLogDetailModal.vue';
@@ -150,7 +148,6 @@ type OperationFilter = 'Creación' | 'Actualización' | 'Eliminación' | null;
 export default defineComponent({
   name: 'auditLogView',
   components: {
-    HeaderSession,
     Loader,
     PaginatedTable,
     AuditLogDetailModal,

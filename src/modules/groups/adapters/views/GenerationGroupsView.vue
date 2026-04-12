@@ -2,18 +2,20 @@
   <v-container fluid class="groups-page pa-8">
     <Loader :visible="loading" message="Cargando grupos..." />
 
+    <!-- Breadcrumbs -->
+    <v-breadcrumbs :items="breadcrumbItems" class="pa-0 mb-4">
+      <template #divider>
+        <v-icon icon="mdi-chevron-right" />
+      </template>
+    </v-breadcrumbs>
+
     <div class="d-flex align-start justify-space-between mb-8 flex-wrap ga-4">
-      <div class="d-flex align-start ga-4">
-        <v-btn icon variant="text" class="mt-2" @click="goBack">
-          <v-icon size="30">mdi-arrow-left</v-icon>
-        </v-btn>
-        <div>
-          <h1 class="page-title">Generación {{ generationYear || generationId }}</h1>
-          <p class="page-subtitle">Administra los grupos de la generación seleccionada</p>
-        </div>
+      <div>
+        <h1 class="page-title text-h4 font-weight-bold mb-2">Generación {{ generationYear || generationId }}</h1>
+        <p class="page-subtitle text-body-1 text-grey-darken-1">Administra los grupos de la generación seleccionada</p>
       </div>
-      <v-btn color="success" size="default" rounded="lg" class="action-btn" prepend-icon="mdi-plus" @click="openCreateGroupModal">
-        Agregar grupo
+      <v-btn color="success" size="large" rounded="lg" class="text-none" prepend-icon="mdi-plus" @click="openCreateGroupModal">
+        Registrar grupo
       </v-btn>
     </div>
 
@@ -70,102 +72,100 @@
       Mostrando {{ groups.length }} de {{ totalItems }} grupos
     </p>
 
-    <v-dialog v-model="showGroupModal" max-width="500" persistent>
-      <v-card class="modal-card" rounded="xl" elevation="0">
-        <div class="d-flex align-center justify-space-between mb-5">
-          <div class="d-flex align-center ga-3">
-            <div class="modal-icon">
-              <v-icon color="#0f766e">mdi-account-group-outline</v-icon>
-            </div>
-            <h2 class="modal-title">{{ groupEditId ? 'Editar grupo' : 'Agregar grupo' }}</h2>
-          </div>
-          <v-btn icon variant="text" @click="closeGroupModal">
-            <v-icon>mdi-close</v-icon>
-          </v-btn>
-        </div>
+    <v-dialog v-model="showGroupModal" max-width="600" persistent>
+      <v-card style="position: relative;">
+        <v-card-title class="text-h6 pa-4 d-flex align-center">
+          <v-icon start :color="groupEditId ? 'primary' : 'success'">
+            {{ groupEditId ? 'mdi-pencil-outline' : 'mdi-account-group-outline' }}
+          </v-icon>
+          {{ groupEditId ? 'Editar grupo' : 'Agregar grupo' }}
+        </v-card-title>
+        <v-divider />
 
-        <v-row>
-          <v-col cols="12" md="6">
-            <span class="field-label">Nombre del grupo</span>
-            <v-text-field
-              v-model="groupForm.group_letter"
-              aria-label="Nombre del grupo"
-              hide-details
-              variant="solo-filled"
-              rounded="lg"
-              density="comfortable"
-              placeholder="A"
-              @update:model-value="groupForm.group_letter = normalizeLetter(groupForm.group_letter)"
-            />
-          </v-col>
+        <v-card-text class="pa-4">
+          <v-row dense>
+            <v-col cols="12" sm="6">
+              <v-text-field
+                v-model="groupForm.group_letter"
+                label="Nombre del grupo"
+                hide-details
+                variant="outlined"
+                density="comfortable"
+                placeholder="A"
+                @update:model-value="groupForm.group_letter = normalizeLetter(groupForm.group_letter)"
+              />
+            </v-col>
 
-          <v-col cols="12" md="6">
-            <span class="field-label">Nivel académico actual</span>
-            <v-text-field
-              :model-value="detectedAcademicLevel"
-              aria-label="Nivel académico actual"
-              hide-details
-              variant="solo-filled"
-              rounded="lg"
-              density="comfortable"
-              readonly
-            />
-          </v-col>
+            <v-col cols="12" sm="6">
+              <v-text-field
+                :model-value="detectedAcademicLevel"
+                label="Nivel académico actual"
+                hide-details
+                variant="outlined"
+                density="comfortable"
+                readonly
+              />
+            </v-col>
 
-          <v-col cols="12">
-            <div class="status-box d-flex align-center justify-space-between">
-              <div>
-                <p class="status-title">Estatus activo</p>
-                <p class="status-subtitle">Controla la disponibilidad del grupo</p>
+            <v-col cols="12">
+              <div class="d-flex align-center justify-space-between rounded-lg pa-3 mt-2" style="background: rgba(6, 50, 68, 0.06)">
+                <div>
+                  <div class="text-body-2 font-weight-medium">Estado activo</div>
+                  <div class="text-caption text-medium-emphasis">Controla la disponibilidad del grupo</div>
+                </div>
+                <v-switch v-model="groupForm.status" hide-details color="success" density="comfortable" />
               </div>
-              <v-switch v-model="groupForm.status" hide-details color="success" density="comfortable" />
-            </div>
-          </v-col>
-        </v-row>
+            </v-col>
+          </v-row>
+        </v-card-text>
 
-        <v-divider class="my-6" />
+        <v-divider />
 
-        <div class="d-flex justify-end ga-3">
-          <v-btn variant="outlined" rounded="lg" @click="closeGroupModal">Cancelar</v-btn>
-          <v-btn color="success" rounded="lg" :loading="saving" @click="saveGroup">Guardar grupo</v-btn>
-        </div>
+        <v-card-actions class="pa-4">
+          <v-spacer />
+          <v-btn variant="text" color="grey" @click="closeGroupModal">Cancelar</v-btn>
+          <v-btn
+            variant="elevated"
+            :color="groupEditId ? 'primary' : 'success'"
+            :loading="saving"
+            @click="saveGroup"
+          >
+            {{ groupEditId ? 'Guardar cambios' : 'Guardar grupo' }}
+          </v-btn>
+        </v-card-actions>
       </v-card>
     </v-dialog>
 
     <!-- Group details dialog (teachers per subject) -->
-    <v-dialog v-model="showGroupDetailsDialog" max-width="480">
-      <v-card rounded="xl" elevation="0" class="dialog-card">
-        <div class="d-flex align-center justify-space-between mb-4">
-          <div class="d-flex align-center ga-3">
-            <div class="detail-icon">
-              <v-icon color="#0f766e" size="22">mdi-account-group</v-icon>
-            </div>
-            <div>
-              <h3 class="detail-title">Docentes asignados</h3>
-              <p class="detail-subtitle">Grupo {{ detailGroup ? detailGroup.group_letter : '' }} &middot; Nivel {{ detailGroup ? detailGroup.academic_level : '' }}</p>
-            </div>
+    <v-dialog v-model="showGroupDetailsDialog" max-width="600" persistent>
+      <v-card style="position: relative;">
+        <v-card-title class="text-h6 pa-4 d-flex align-center">
+          <v-icon start color="primary">mdi-account-group</v-icon>
+          Docentes asignados
+          <span class="text-body-2 text-grey-darken-1 ml-2">Grupo {{ detailGroup ? detailGroup.group_letter : '' }} · Nivel {{ detailGroup ? detailGroup.academic_level : '' }}</span>
+        </v-card-title>
+        <v-divider />
+        <v-card-text class="pa-4">
+          <div v-if="detailGroup && detailGroup.assignments && detailGroup.assignments.length > 0">
+            <v-list density="compact" class="border rounded">
+              <v-list-item v-for="a in detailGroup.assignments" :key="a.id_assignment">
+                <template #prepend>
+                  <v-icon color="primary" size="small">mdi-account-tie</v-icon>
+                </template>
+                <v-list-item-title class="text-body-2 font-weight-medium">{{ a.teacher.full_name }}</v-list-item-title>
+                <v-list-item-subtitle>{{ a.subject.name }}</v-list-item-subtitle>
+              </v-list-item>
+            </v-list>
           </div>
-          <v-btn icon variant="text" @click="showGroupDetailsDialog = false"><v-icon>mdi-close</v-icon></v-btn>
-        </div>
-        <div v-if="detailGroup && detailGroup.assignments && detailGroup.assignments.length > 0" class="detail-list">
-          <div v-for="a in detailGroup.assignments" :key="a.id_assignment" class="detail-row">
-            <div class="d-flex align-center ga-3">
-              <div class="teacher-icon-wrap">
-                <v-icon size="16" color="#0f766e">mdi-account-tie</v-icon>
-              </div>
-              <div>
-                <p class="detail-teacher">{{ a.teacher.full_name }}</p>
-                <p class="detail-subject">{{ a.subject.name }}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-        <v-alert v-else type="info" variant="tonal" density="compact" rounded="lg">
-          Este grupo no tiene docentes asignados.
-        </v-alert>
-        <div class="d-flex justify-end mt-4">
-          <v-btn variant="outlined" rounded="lg" @click="showGroupDetailsDialog = false">Cerrar</v-btn>
-        </div>
+          <v-alert v-else type="info" variant="tonal" density="compact" rounded="lg">
+            Este grupo no tiene docentes asignados.
+          </v-alert>
+        </v-card-text>
+        <v-divider />
+        <v-card-actions class="pa-4">
+          <v-spacer />
+          <v-btn variant="text" color="grey" @click="showGroupDetailsDialog = false">Cerrar</v-btn>
+        </v-card-actions>
       </v-card>
     </v-dialog>
 
@@ -178,7 +178,9 @@
       @changed="handleTeacherAssigned"
     />
 
-    <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="2600">
+    <ConfirmDialog ref="confirmDialog" />
+
+    <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="2600" location="top right">
       {{ snackbar.message }}
     </v-snackbar>
   </v-container>
@@ -190,6 +192,7 @@ import { useRoute, useRouter } from 'vue-router';
 import GenerationGroupCard from '../components/GenerationGroupCard.vue';
 import AssignTeacherDialog from '../components/AssignTeacherDialog.vue';
 import Loader from '@/components/Loader.vue';
+import ConfirmDialog from '@/components/ConfirmDialog.vue';
 import { GenerationController } from '@/modules/generations/adapters/generation.controller';
 import { Generation } from '@/modules/generations/entities/generation';
 import { getGenerationGroupsInteractor, createGenerationGroupInteractor, updateGenerationGroupInteractor, setGenerationGroupStatusInteractor } from '../generation-group.controller';
@@ -204,6 +207,11 @@ const controller = new GenerationController();
 
 const generationId = Number(route.params.id);
 const generationYear = ref<number | null>(null);
+
+const breadcrumbItems = computed(() => [
+  { title: 'Generaciones', disabled: false, href: '/generations' },
+  { title: generationYear.value ? `Generación ${generationYear.value}` : 'Grupos', disabled: true },
+]);
 const generationTotalLevels = ref<number>(11);
 
 const loading = ref(true);
@@ -402,7 +410,13 @@ const saveGroup = async () => {
   await loadGroups();
 };
 
+const confirmDialog = ref<InstanceType<typeof ConfirmDialog> | null>(null);
+
 const toggleGroupStatus = async (group: GenerationGroup, value: boolean) => {
+  const action = value ? 'activar' : 'desactivar';
+  const confirmed = await confirmDialog.value?.open(`¿Está seguro de ${action} el grupo ${group.group_letter}?`);
+  if (!confirmed) return;
+
   const response = await setGenerationGroupStatusInteractor.execute({ id: group.id_group, status: value });
   if (!response.success) {
     showToast(response.message || 'No se pudo actualizar el estatus del grupo.', 'error');

@@ -5,8 +5,8 @@
         <v-card rounded="xl" class="pa-4 pa-md-6" elevation="2">
           <div class="d-flex justify-space-between align-start flex-wrap ga-3 mb-6">
             <div>
-              <h1 class="text-h5 font-weight-bold mb-1">Mis respuestas</h1>
-              <p class="text-body-2 text-medium-emphasis mb-0">{{ examTitle }} · {{ answers.length }} preguntas</p>
+              <h1 class="page-title text-h4 font-weight-bold mb-2">Mis respuestas</h1>
+              <p class="page-subtitle text-body-1 text-grey-darken-1 mb-0">{{ examTitle }} · {{ answers.length }} preguntas</p>
             </div>
             <v-btn variant="text" prepend-icon="mdi-arrow-left" @click="goBack">Volver</v-btn>
           </div>

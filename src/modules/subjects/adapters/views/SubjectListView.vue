@@ -123,6 +123,8 @@
       <SubjectDetailDialog v-model="detailDialog" :subject="detailSubject" />
     </template>
 
+    <ConfirmDialog ref="confirmDialog" />
+
     <v-snackbar v-model="snackbar.show" :color="snackbar.color" :timeout="3200" location="top right">
       {{ snackbar.message }}
     </v-snackbar>
@@ -133,6 +135,7 @@
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import Loader from '@/components/Loader.vue';
+import ConfirmDialog from '@/components/ConfirmDialog.vue';
 import SubjectFormDialog from '../components/SubjectFormDialog.vue';
 import SubjectCard from '../components/SubjectCard.vue';
 import SubjectDetailDialog from '../components/SubjectDetailDialog.vue';
@@ -189,6 +192,7 @@ const detailDialog = ref(false);
 const detailSubject = ref<Subject | null>(null);
 
 const statusTogglingId = ref<number | null>(null);
+const confirmDialog = ref<InstanceType<typeof ConfirmDialog> | null>(null);
 
 const snackbar = ref({ show: false, message: '', color: 'success' });
 
@@ -221,6 +225,10 @@ function onFormSaved() {
 }
 
 async function onToggleStatus(subject: Subject, value: boolean) {
+  const action = value ? 'activar' : 'desactivar';
+  const confirmed = await confirmDialog.value?.open(`¿Está seguro de ${action} la materia "${subject.name}"?`);
+  if (!confirmed) return;
+
   statusTogglingId.value = subject.id_subject;
   try {
     const res = await setSubjectStatus(subject.id_subject, value);

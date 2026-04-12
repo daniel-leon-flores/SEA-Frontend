@@ -1,5 +1,5 @@
 <template>
-  <v-container fluid class="pa-8">
+  <v-container fluid class="pa-8" style="background: #f9fbff; min-height: 100vh;">
     <Loader :visible="loading" message="Cargando preguntas..." />
 
     <div class="d-flex align-start justify-space-between mb-6 flex-wrap ga-4">
@@ -149,10 +149,16 @@
     </v-row>
 
     <!-- Form dialog -->
-    <v-dialog v-model="formDialog" max-width="720" scrollable persistent>
-      <v-card>
-        <v-card-title>{{ editingId ? 'Editar pregunta' : 'Nueva pregunta' }}</v-card-title>
-        <v-card-text>
+    <v-dialog v-model="formDialog" max-width="600" persistent>
+      <v-card style="position: relative;">
+        <v-card-title class="text-h6 pa-4 d-flex align-center">
+          <v-icon start :color="editingId ? 'primary' : 'success'">
+            {{ editingId ? 'mdi-pencil-outline' : 'mdi-plus-circle-outline' }}
+          </v-icon>
+          {{ editingId ? 'Editar pregunta' : 'Registrar pregunta' }}
+        </v-card-title>
+        <v-divider />
+        <v-card-text class="pa-4">
           <v-alert
             v-if="formErrors.non_field.length"
             type="error"
@@ -340,19 +346,31 @@
             />
           </template>
         </v-card-text>
-        <v-card-actions>
+        <v-divider />
+        <v-card-actions class="pa-4">
           <v-spacer />
-          <v-btn variant="text" @click="formDialog = false">Cancelar</v-btn>
-          <v-btn color="primary" :loading="saving" @click="saveQuestion">Guardar</v-btn>
+          <v-btn variant="text" color="grey" @click="formDialog = false">Cancelar</v-btn>
+          <v-btn
+            variant="elevated"
+            :color="editingId ? 'primary' : 'success'"
+            :loading="saving"
+            @click="saveQuestion"
+          >
+            {{ editingId ? 'Guardar cambios' : 'Registrar pregunta' }}
+          </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
 
     <!-- Upload -->
-    <v-dialog v-model="uploadDialog" max-width="520">
-      <v-card>
-        <v-card-title>Cargar Excel</v-card-title>
-        <v-card-text>
+    <v-dialog v-model="uploadDialog" max-width="600" persistent>
+      <v-card style="position: relative;">
+        <v-card-title class="text-h6 pa-4 d-flex align-center">
+          <v-icon start color="primary">mdi-upload</v-icon>
+          Cargar Excel
+        </v-card-title>
+        <v-divider />
+        <v-card-text class="pa-4">
           <v-file-input v-model="uploadFile" label="Archivo .xlsx" accept=".xlsx" variant="outlined" prepend-icon="mdi-file-excel" />
           <p class="text-body-2 text-medium-emphasis mt-2 mb-0">
             Use la hoja <strong>Plantilla</strong> para las filas de preguntas. La plantilla incluye <strong>Materias</strong> y listas
@@ -368,10 +386,11 @@
             </div>
           </v-alert>
         </v-card-text>
-        <v-card-actions>
+        <v-divider />
+        <v-card-actions class="pa-4">
           <v-spacer />
-          <v-btn variant="text" @click="uploadDialog = false">Cerrar</v-btn>
-          <v-btn color="primary" :loading="uploading" :disabled="!uploadFile" @click="runUpload">Subir</v-btn>
+          <v-btn variant="text" color="grey" @click="uploadDialog = false">Cerrar</v-btn>
+          <v-btn variant="elevated" color="primary" :loading="uploading" :disabled="!uploadFile" @click="runUpload">Subir</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>

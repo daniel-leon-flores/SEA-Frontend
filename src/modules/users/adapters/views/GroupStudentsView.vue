@@ -399,17 +399,13 @@ onMounted(async () => {
 }
 
 .page-title {
-  font-size: 40px;
-  line-height: 1;
-  margin: 0;
-  color: #0f172a;
-  font-weight: 750;
+  color: #1a1a1a;
+  line-height: 1.2;
 }
 
 .page-subtitle {
-  margin: 8px 0 0;
-  color: #64748b;
-  font-size: 18px;
+  color: #666;
+  line-height: 1.5;
 }
 
 .status-chip {

@@ -1,6 +1,13 @@
 <template>
-  <v-container fluid class="pa-6">
-    <HeaderSession title="Reportes" />
+  <v-container fluid class="pa-8" style="background: #f9fbff; min-height: 100vh;">
+    <div class="d-flex align-start justify-space-between mb-8 flex-wrap ga-4">
+      <div>
+        <h1 class="page-title text-h4 font-weight-bold mb-2">Reportes</h1>
+        <p class="page-subtitle text-body-1 text-grey-darken-1">
+          Genera y visualiza reportes del sistema
+        </p>
+      </div>
+    </div>
 
     <!-- Report type selector -->
     <ReportFilters :user-role="userRole" @generate="handleGenerate" @loading="onFiltersLoading" />
@@ -214,7 +221,6 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import HeaderSession from '@/components/HeaderSession.vue';
 import Loader from '@/components/Loader.vue';
 import ReportFilters from '../components/ReportFilters.vue';
 import MetricCards from '../components/MetricCards.vue';

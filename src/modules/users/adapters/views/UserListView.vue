@@ -1,5 +1,5 @@
 <template>
-  <v-container fluid class="pa-8">
+  <v-container fluid class="pa-8" style="background: #f9fbff; min-height: 100vh;">
     <Loader :visible="loading" message="Cargando usuarios..." />
 
     <!-- Header mejorado al estilo de generaciones -->
@@ -532,8 +532,6 @@ export default {
 
     handleTeacherGroupsAssigned() {
       this.showSnackbar('Asignación de grupos actualizada exitosamente.', 'success')
-      this.assignGroupsDialog = false
-      this.selectedTeacherForGroups = null
     },
   }
 }
