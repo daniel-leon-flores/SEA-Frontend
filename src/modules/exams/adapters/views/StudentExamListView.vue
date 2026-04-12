@@ -1,10 +1,10 @@
 <template>
-  <v-container fluid class="pa-6">
+  <v-container fluid class="pa-8" style="background: #f9fbff; min-height: 100vh;">
     <!-- Header -->
-    <div class="d-flex align-center mb-6">
+    <div class="d-flex align-start justify-space-between mb-8 flex-wrap ga-4">
       <div>
-        <h1 class="text-h5 font-weight-bold">Mis Exámenes</h1>
-        <p class="text-body-2 text-medium-emphasis mt-1">
+        <h1 class="page-title text-h4 font-weight-bold mb-2">Mis Exámenes</h1>
+        <p class="page-subtitle text-body-1 text-grey-darken-1">
           Consulta y realiza los exámenes asignados a tu grupo
         </p>
       </div>
@@ -157,6 +157,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { encodeId } from '@/kernel/url-cipher';
 import Loader from '@/components/Loader.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import { ExamController } from '../exam.controller';
@@ -210,7 +211,7 @@ async function startExam(item: MyAssignment) {
 
   await router.push({
     name: 'AnswerExam',
-    params: { assignmentId: String(item.id_assignment) },
+    params: { assignmentId: encodeId(item.id_assignment) },
   });
 }
 
@@ -222,7 +223,7 @@ async function viewAnswers(item: MyAssignment) {
 
   await router.push({
     name: 'ReviewExam',
-    params: { assignmentId: String(item.id_assignment) },
+    params: { assignmentId: encodeId(item.id_assignment) },
   });
 }
 

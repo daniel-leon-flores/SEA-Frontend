@@ -1,19 +1,15 @@
 <template>
-  <v-dialog v-model="dialogModel" max-width="500" persistent>
-    <v-card rounded="lg">
-      <v-card-title class="d-flex align-center justify-space-between pa-5 bg-primary">
-        <div class="d-flex align-center ga-3">
-          <v-icon color="white" size="28">mdi-lock-reset</v-icon>
-          <span class="text-h6 text-white">Cambiar contraseña</span>
-        </div>
-        <v-btn icon variant="text" @click="close">
-          <v-icon color="white">mdi-close</v-icon>
-        </v-btn>
+  <v-dialog v-model="dialogModel" max-width="600" persistent>
+    <v-card style="position: relative;">
+      <v-card-title class="text-h6 pa-4 d-flex align-center">
+        <v-icon start color="primary">mdi-lock-reset</v-icon>
+        Cambiar contraseña
       </v-card-title>
+      <v-divider />
 
-      <v-card-text class="pa-6">
+      <v-card-text class="pa-4">
         <v-form ref="formRef" v-model="valid" @submit.prevent="submit">
-          <v-row>
+          <v-row dense>
             <v-col cols="12">
               <v-text-field
                 v-model="form.current_password"
@@ -21,7 +17,7 @@
                 :type="showCurrentPassword ? 'text' : 'password'"
                 :append-inner-icon="showCurrentPassword ? 'mdi-eye-off' : 'mdi-eye'"
                 variant="outlined"
-                density="compact"
+                density="comfortable"
                 :rules="[rules.required]"
                 :error-messages="serverErrors.current_password"
                 @click:append-inner="showCurrentPassword = !showCurrentPassword"
@@ -36,7 +32,7 @@
                 :type="showNewPassword ? 'text' : 'password'"
                 :append-inner-icon="showNewPassword ? 'mdi-eye-off' : 'mdi-eye'"
                 variant="outlined"
-                density="compact"
+                density="comfortable"
                 :rules="[rules.required, rules.minLength]"
                 :error-messages="serverErrors.new_password"
                 @click:append-inner="showNewPassword = !showNewPassword"
@@ -53,7 +49,7 @@
                 :type="showConfirmPassword ? 'text' : 'password'"
                 :append-inner-icon="showConfirmPassword ? 'mdi-eye-off' : 'mdi-eye'"
                 variant="outlined"
-                density="compact"
+                density="comfortable"
                 :rules="[rules.required, rules.passwordMatch]"
                 :error-messages="serverErrors.confirm_password"
                 @click:append-inner="showConfirmPassword = !showConfirmPassword"
@@ -62,17 +58,13 @@
             </v-col>
           </v-row>
         </v-form>
-
-        <v-alert type="info" variant="tonal" density="compact" class="mt-4">
-          Asegúrate de recordar tu nueva contraseña. 
-        </v-alert>
       </v-card-text>
 
       <v-divider />
 
       <v-card-actions class="pa-4">
         <v-spacer />
-        <v-btn variant="text" @click="close" :disabled="loading">
+        <v-btn variant="text" color="grey" @click="close" :disabled="loading">
           Cancelar
         </v-btn>
         <v-btn
@@ -82,7 +74,6 @@
           :disabled="!valid"
           @click="submit"
         >
-          <v-icon start>mdi-check</v-icon>
           Continuar
         </v-btn>
       </v-card-actions>

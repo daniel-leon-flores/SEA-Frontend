@@ -1,25 +1,16 @@
 <template>
-  <v-dialog :model-value="modelValue" max-width="640" persistent @update:model-value="$emit('update:modelValue', $event)">
-    <v-card class="dialog-card" rounded="xl" elevation="0">
-      <!-- Header -->
-      <div class="d-flex align-center justify-space-between mb-5">
-        <div class="d-flex align-center ga-3">
-          <div class="dialog-icon">
-            <v-icon color="#0f766e">mdi-account-group</v-icon>
-          </div>
-          <div>
-            <h2 class="dialog-title">Asignar a grupos</h2>
-            <p v-if="teacher" class="dialog-subtitle">{{ teacher.first_name }} {{ teacher.last_name }}</p>
-          </div>
-        </div>
-        <v-btn icon variant="text" @click="close">
-          <v-icon>mdi-close</v-icon>
-        </v-btn>
-      </div>
+  <v-dialog :model-value="modelValue" max-width="600" persistent @update:model-value="$emit('update:modelValue', $event)">
+    <v-card style="position: relative;">
+      <v-progress-linear v-if="loading" indeterminate color="primary" />
+      <v-card-title class="text-h6 pa-4 d-flex align-center">
+        <v-icon start color="primary">mdi-account-group</v-icon>
+        Asignar a grupos
+        <span v-if="teacher" class="text-body-2 text-grey-darken-1 ml-2">{{ teacher.first_name }} {{ teacher.last_name }}</span>
+      </v-card-title>
+      <v-divider />
 
-      <div v-if="loading" class="d-flex justify-center align-center py-8">
-        <v-progress-circular indeterminate color="#0f766e" size="36" />
-      </div>
+      <v-card-text class="pa-4">
+      <div v-if="loading" style="min-height: 80px;" />
 
       <v-alert
         v-else-if="!loading && groups.length === 0"
@@ -77,10 +68,12 @@
         </div>
       </template>
 
-      <v-divider class="my-5" />
-      <div class="d-flex justify-end">
-        <v-btn variant="outlined" rounded="lg" @click="close">Cerrar</v-btn>
-      </div>
+      </v-card-text>
+      <v-divider />
+      <v-card-actions class="pa-4">
+        <v-spacer />
+        <v-btn variant="text" color="grey" @click="close">Cerrar</v-btn>
+      </v-card-actions>
     </v-card>
   </v-dialog>
 </template>

@@ -1,27 +1,21 @@
 <template>
-  <v-dialog v-model="dialog" max-width="400" persistent>
-    <v-card>
-      <v-card-title class="text-h5 pa-4">
-        <v-icon start color="warning">mdi-alert</v-icon>
-        Confirmar Acción
+  <v-dialog v-model="dialog" max-width="600" persistent>
+    <v-card style="position: relative;">
+      <v-card-title class="text-h6 pa-4 d-flex align-center">
+        <v-icon start color="primary">mdi-help-circle-outline</v-icon>
+        Confirmar acción
       </v-card-title>
+      <v-divider />
       <v-card-text class="pa-4">
         {{ message }}
       </v-card-text>
+      <v-divider />
       <v-card-actions class="pa-4">
-        <v-spacer></v-spacer>
-        <v-btn
-          color="grey"
-          variant="text"
-          @click="cancel"
-        >
+        <v-spacer />
+        <v-btn variant="text" color="grey" @click="cancel">
           Cancelar
         </v-btn>
-        <v-btn
-          color="error"
-          variant="elevated"
-          @click="confirm"
-        >
+        <v-btn variant="elevated" color="primary" @click="confirm">
           Confirmar
         </v-btn>
       </v-card-actions>

@@ -1,9 +1,9 @@
 <template>
-  <v-dialog :model-value="dialog" max-width="900" @update:model-value="emit('update:dialog', $event)">
-    <v-card rounded="lg">
-      <v-card-title class="d-flex align-center justify-space-between py-4 px-5">
-        <span class="text-h6 font-weight-bold">Detalle de movimiento</span>
-        <v-btn icon="mdi-close" variant="text" @click="emit('update:dialog', false)" />
+  <v-dialog :model-value="dialog" max-width="600" persistent @update:model-value="emit('update:dialog', $event)">
+    <v-card style="position: relative;">
+      <v-card-title class="text-h6 pa-4 d-flex align-center">
+        <v-icon start color="primary">mdi-clipboard-text-outline</v-icon>
+        Detalle de movimiento
       </v-card-title>
 
       <v-divider />
@@ -75,8 +75,9 @@
 
       <v-divider />
 
-      <v-card-actions class="justify-end pa-4">
-        <v-btn variant="outlined" color="primary" @click="emit('update:dialog', false)">
+      <v-card-actions class="pa-4">
+        <v-spacer />
+        <v-btn variant="text" color="grey" @click="emit('update:dialog', false)">
           Cerrar
         </v-btn>
       </v-card-actions>

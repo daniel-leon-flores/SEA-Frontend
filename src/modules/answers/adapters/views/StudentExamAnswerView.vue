@@ -325,6 +325,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { decodeId } from '@/kernel/url-cipher';
 import CodeMirrorEditor from '../components/CodeMirrorEditor.vue';
 import { useSecureExam } from '../../composables/useSecureExam';
 import { ExamController } from '@/modules/exams/adapters/exam.controller';
@@ -750,7 +751,7 @@ async function loadAssignmentConfig() {
   loadingAssignment.value = true;
 
   try {
-    const assignmentId = Number(route.params.assignmentId);
+    const assignmentId = decodeId(route.params.assignmentId as string);
     const response = await controller.getStudentAssignments({ include_completed: true });
 
     if (!response.success || !Array.isArray(response.data)) {

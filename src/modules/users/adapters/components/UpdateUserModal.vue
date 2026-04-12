@@ -1,54 +1,52 @@
 <template>
-  <v-dialog v-model="dialogModel" max-width="640" persistent scrollable>
-    <v-card>
-      <v-card-title class="pa-5 pb-3 d-flex align-center">
-        <v-icon start color="primary">mdi-account-edit</v-icon>
+  <v-dialog v-model="dialogModel" max-width="600" persistent>
+    <v-card style="position: relative;">
+      <v-card-title class="text-h6 pa-4 d-flex align-center">
+        <v-icon start color="primary">mdi-pencil-outline</v-icon>
         Editar usuario
-        <v-spacer />
-        <v-btn icon="mdi-close" variant="text" size="small" @click="close" />
       </v-card-title>
       <v-divider />
 
-      <v-card-text class="pa-5">
+      <v-card-text class="pa-4">
         <v-form ref="formRef" v-model="valid" @submit.prevent="submit">
-          <v-row>
-            <v-col cols="12" md="6">
+          <v-row dense>
+            <v-col cols="12" sm="6">
               <v-text-field
                 v-model="payload.first_name"
                 label="Nombre(s)"
                 variant="outlined"
-                density="compact"
+                density="comfortable"
                 :rules="[rules.required]"
                 :error-messages="serverErrors.first_name"
               />
             </v-col>
-            <v-col cols="12" md="6">
+            <v-col cols="12" sm="6">
               <v-text-field
                 v-model="payload.last_name"
                 label="Apellidos"
                 variant="outlined"
-                density="compact"
+                density="comfortable"
                 :rules="[rules.required]"
                 :error-messages="serverErrors.last_name"
               />
             </v-col>
-            <v-col cols="12" md="6">
+            <v-col cols="12" sm="6">
               <v-text-field
                 v-model="payload.email"
                 label="Correo electrónico"
                 type="email"
                 variant="outlined"
-                density="compact"
+                density="comfortable"
                 :rules="[rules.required, rules.email]"
                 :error-messages="serverErrors.email"
               />
             </v-col>
-            <v-col v-if="payload.role !== 'admin'" cols="12" md="6">
+            <v-col v-if="payload.role !== 'admin'" cols="12" sm="6">
               <v-text-field
                 v-model="payload.matricula"
                 label="Matrícula"
                 variant="outlined"
-                density="compact"
+                density="comfortable"
                 :rules="[rules.required]"
                 :error-messages="serverErrors.matricula"
               />
@@ -62,7 +60,7 @@
                 item-title="label"
                 item-value="id_group"
                 variant="outlined"
-                density="compact"
+                density="comfortable"
                 :error-messages="serverErrors.id_group"
                 :loading="loadingGroups"
                 clearable
@@ -78,7 +76,7 @@
                 item-title="name"
                 item-value="id_subject"
                 variant="outlined"
-                density="compact"
+                density="comfortable"
                 multiple
                 chips
                 clearable
@@ -91,9 +89,9 @@
       </v-card-text>
 
       <v-divider />
-      <v-card-actions class="pa-5 pt-3">
+      <v-card-actions class="pa-4">
         <v-spacer />
-        <v-btn variant="text" @click="close">Cancelar</v-btn>
+        <v-btn variant="text" color="grey" @click="close">Cancelar</v-btn>
         <v-btn
           color="primary"
           variant="elevated"
@@ -101,8 +99,7 @@
           :disabled="!valid"
           @click="submit"
         >
-          <v-icon start>mdi-check</v-icon>
-          Actualizar
+          Guardar cambios
         </v-btn>
       </v-card-actions>
     </v-card>

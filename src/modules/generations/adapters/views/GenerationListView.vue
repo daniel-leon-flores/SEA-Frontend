@@ -7,7 +7,7 @@
         <h1 class="page-title">Generaciones</h1>
         <p class="page-subtitle">Gestiona las generaciones académicas y sus grupos</p>
       </div>
-      <v-btn color="success" size="default" rounded="lg" class="action-btn" prepend-icon="mdi-plus" @click="openCreateModal">
+      <v-btn color="success" size="large" rounded="lg" class="text-none" prepend-icon="mdi-plus" @click="openCreateModal">
         Registrar generación
       </v-btn>
     </div>
@@ -22,7 +22,6 @@
           density="comfortable"
           clearable
           hide-details
-          bg-color="white"
           @update:model-value="onSearchChange"
         />
       </v-col>
@@ -65,55 +64,48 @@
     </p>
 
     <v-dialog v-model="showModal" max-width="600" persistent>
-      <v-card class="modal-card" rounded="xl" elevation="0">
-        <div class="d-flex align-start justify-space-between mb-5">
-          <div class="d-flex align-center ga-3">
-            <div class="modal-icon">
-              <v-icon color="#0f766e">mdi-calendar</v-icon>
-            </div>
-            <h2 class="modal-title">{{ isEditMode ? 'Editar generación' : 'Registrar generación' }}</h2>
-          </div>
-          <v-btn icon variant="text" @click="closeModal">
-            <v-icon>mdi-close</v-icon>
-          </v-btn>
-        </div>
+      <v-card style="position: relative;">
+        <v-card-title class="text-h6 pa-4 d-flex align-center">
+          <v-icon start :color="isEditMode ? 'primary' : 'success'">
+            {{ isEditMode ? 'mdi-pencil-outline' : 'mdi-calendar-plus' }}
+          </v-icon>
+          {{ isEditMode ? 'Editar generación' : 'Registrar generación' }}
+        </v-card-title>
 
-          <v-tabs v-if="!isEditMode" v-model="activeTab" color="primary" class="step-tabs mb-4" grow>
+        <v-divider />
+
+        <v-card-text class="pa-4">
+          <v-tabs v-if="!isEditMode" v-model="activeTab" color="primary" class="mb-4" grow>
           <v-tab value="info" prepend-icon="mdi-calendar-blank-outline">Información</v-tab>
           <v-tab value="groups" prepend-icon="mdi-account-group-outline" :disabled="isEditMode">Grupos</v-tab>
         </v-tabs>
 
-        <div class="modal-scroll-area">
         <v-window v-model="activeTab">
           <v-window-item value="info">
-            <v-row>
+            <v-row dense>
               <v-col cols="12">
-                <label class="field-label" for="generation-year">Año de generación</label>
                 <v-text-field
-                  id="generation-year"
                   v-model.number="form.year"
+                  label="Año de generación"
                   type="number"
                   :max="currentYear"
                   :error="!!yearError"
                   :error-messages="yearError"
                   hide-details="auto"
-                  variant="solo-filled"
-                  rounded="lg"
+                  variant="outlined"
                   density="comfortable"
                 />
               </v-col>
 
-              <v-col cols="12" md="6">
-                <label class="field-label" for="total-levels">Cantidad de cuatrimestres</label>
+              <v-col cols="12" sm="6">
                 <v-text-field
-                  id="total-levels"
                   v-model.number="form.total_levels"
+                  label="Cantidad de cuatrimestres"
                   type="number"
                   min="1"
                   max="20"
                   hide-details
-                  variant="solo-filled"
-                  rounded="lg"
+                  variant="outlined"
                   density="comfortable"
                 />
               </v-col>
@@ -152,28 +144,24 @@
               </div>
 
               <v-row>
-                <v-col cols="12" md="5">
-                  <label class="field-label" :for="`group-letter-${group.uid}`">Nombre del grupo</label>
+                <v-col cols="12" sm="5">
                   <v-text-field
-                    :id="`group-letter-${group.uid}`"
                     v-model="group.group_letter"
+                    label="Nombre del grupo"
                     hide-details
-                    variant="solo-filled"
-                    rounded="lg"
+                    variant="outlined"
                     density="comfortable"
                     placeholder="A"
                     @update:model-value="group.group_letter = normalizeLetter(group.group_letter)"
                   />
                 </v-col>
 
-                <v-col cols="12" md="5">
-                  <label class="field-label" :for="`academic-level-${group.uid}`">Nivel académico actual</label>
+                <v-col cols="12" sm="5">
                   <v-text-field
-                    :id="`academic-level-${group.uid}`"
                     :model-value="detectedAcademicLevel"
+                    label="Nivel académico actual"
                     hide-details
-                    variant="solo-filled"
-                    rounded="lg"
+                    variant="outlined"
                     density="comfortable"
                     readonly
                   />
@@ -190,28 +178,36 @@
             </v-btn>
           </v-window-item>
         </v-window>
-        </div>
+        </v-card-text>
 
-        <v-divider class="my-6" />
+        <v-divider />
 
-        <div class="d-flex justify-end ga-3">
-          <v-btn variant="outlined" rounded="lg" @click="closeModal">Cancelar</v-btn>
+        <v-card-actions class="pa-4">
+          <v-spacer />
+          <v-btn variant="text" color="grey" @click="closeModal">Cancelar</v-btn>
           <v-btn
             v-if="activeTab === 'info' && !isEditMode"
             color="primary"
-            rounded="lg"
+            variant="elevated"
             @click="activeTab = 'groups'"
           >
             Continuar
           </v-btn>
-          <v-btn color="success" rounded="lg" :loading="saving" @click="saveGeneration">
-            Guardar generación
+          <v-btn
+            variant="elevated"
+            :color="isEditMode ? 'primary' : 'success'"
+            :loading="saving"
+            @click="saveGeneration"
+          >
+            {{ isEditMode ? 'Guardar cambios' : 'Guardar generación' }}
           </v-btn>
-        </div>
+        </v-card-actions>
       </v-card>
     </v-dialog>
 
-    <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="2600">
+    <ConfirmDialog ref="confirmDialog" />
+
+    <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="2600" location="top right">
       {{ snackbar.message }}
     </v-snackbar>
   </v-container>
@@ -220,8 +216,10 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
+import { encodeId } from '@/kernel/url-cipher';
 import GenerationCard from '../components/GenerationCard.vue';
-  import Loader from '@/components/Loader.vue';
+import ConfirmDialog from '@/components/ConfirmDialog.vue';
+import Loader from '@/components/Loader.vue';
 import { GenerationController } from '../generation.controller';
 import { getGenerationGroupsInteractor, createGenerationGroupInteractor } from '@/modules/groups/adapters/generation-group.controller';
 import { Generation } from '../../entities/generation';
@@ -255,6 +253,7 @@ const isEditMode = ref(false);
 const editGenerationId = ref<number | null>(null);
 const activeTab = ref<'info' | 'groups'>('info');
 
+const confirmDialog = ref<InstanceType<typeof ConfirmDialog> | null>(null);
 const snackbar = ref({
   show: false,
   color: 'success',
@@ -461,7 +460,7 @@ const saveGeneration = async () => {
       showToast(groupResponse.message || 'La generación se creó, pero falló el registro de grupos.', 'warning');
       showModal.value = false;
       await loadGenerations();
-      await router.push(`/generations/${generationId}/groups`);
+      await router.push(`/generations/${encodeId(generationId)}/groups`);
       return;
     }
   }
@@ -470,14 +469,18 @@ const saveGeneration = async () => {
   showToast('Generación y grupos registrados correctamente.');
   showModal.value = false;
   await loadGenerations();
-  await router.push(`/generations/${generationId}/groups`);
+  await router.push(`/generations/${encodeId(generationId)}/groups`);
 };
 
 const goToGroups = async (idGeneration: number) => {
-  await router.push(`/generations/${idGeneration}/groups`);
+  await router.push(`/generations/${encodeId(idGeneration)}/groups`);
 };
 
 const toggleGenerationStatus = async (generation: Generation, value: boolean) => {
+  const action = value ? 'activar' : 'desactivar';
+  const confirmed = await confirmDialog.value?.open(`¿Está seguro de ${action} la generación ${generation.year}?`);
+  if (!confirmed) return;
+
   const response = await controller.setGenerationStatus(generation.id_generation, value);
   if (!response.success) {
     showToast(response.message || 'No se pudo actualizar el estatus.', 'error');

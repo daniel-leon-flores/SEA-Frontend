@@ -1,17 +1,13 @@
 <template>
-  <v-dialog v-model="dialogModel" max-width="500" persistent>
-    <v-card rounded="lg" elevation="0">
-      <v-card-title class="d-flex align-center justify-space-between pa-5 bg-primary">
-        <div class="d-flex align-center ga-3">
-          <v-icon color="white">mdi-information-outline</v-icon>
-          <span class="text-h6 text-white">Detalles Adicionales</span>
-        </div>
-        <v-btn icon variant="text" @click="close">
-          <v-icon color="white">mdi-close</v-icon>
-        </v-btn>
+  <v-dialog v-model="dialogModel" max-width="600" persistent>
+    <v-card style="position: relative;">
+      <v-card-title class="text-h6 pa-4 d-flex align-center">
+        <v-icon start color="primary">mdi-information-outline</v-icon>
+        Detalles del usuario
       </v-card-title>
+      <v-divider />
 
-      <v-card-text class="pa-5" v-if="user">
+      <v-card-text class="pa-4" v-if="user">
         <v-row>
           <!-- Solo mostrar grupo si NO es admin -->
           <template v-if="user.role !== 'admin'">
@@ -80,7 +76,7 @@
 
       <v-card-actions class="pa-4">
         <v-spacer />
-        <v-btn variant="text" color="primary" @click="close">
+        <v-btn variant="text" color="grey" @click="close">
           Cerrar
         </v-btn>
       </v-card-actions>

@@ -1,51 +1,29 @@
 <template>
-  <v-dialog v-model="dialogModel" max-width="450" persistent>
-    <v-card rounded="lg">
-      <v-card-title class="d-flex align-center justify-space-between pa-5 bg-primary">
-        <div class="d-flex align-center ga-3">
-          <v-icon color="white" size="28">mdi-shield-alert-outline</v-icon>
-          <span class="text-h6 text-white">Confirmar cambio</span>
-        </div>
+  <v-dialog v-model="dialogModel" max-width="600" persistent>
+    <v-card style="position: relative;">
+      <v-card-title class="text-h6 pa-4 d-flex align-center">
+        <v-icon start color="primary">mdi-lock-check</v-icon>
+        Confirmar cambio de contraseña
       </v-card-title>
-
-      <v-card-text class="pa-6">
-        <div class="text-center mb-4">
-          <v-icon color="warning" size="64">
-            mdi-lock-alert
-          </v-icon>
-        </div>
-        
-        <p class="text-body-1 text-center mb-2">
+      <v-divider />
+      <v-card-text class="pa-4">
+        <p class="text-body-1 mb-2">
           ¿Estás seguro de que deseas cambiar tu contraseña?
         </p>
-        
-        <p class="text-body-2 text-center text-grey-darken-1">
+        <p class="text-body-2 text-grey-darken-1 mb-3">
           Esta acción cerrará tu sesión actual y deberás iniciar sesión nuevamente con tu nueva contraseña.
         </p>
-
-        <v-alert type="warning" variant="tonal" density="compact" class="mt-4">
+        <v-alert type="warning" variant="tonal" density="compact">
           <strong>Importante:</strong> Asegúrate de recordar tu nueva contraseña.
         </v-alert>
       </v-card-text>
-
       <v-divider />
-
       <v-card-actions class="pa-4">
         <v-spacer />
-        <v-btn 
-          variant="text" 
-          @click="cancel"
-          :disabled="loading"
-        >
+        <v-btn variant="text" color="grey" @click="cancel" :disabled="loading">
           Cancelar
         </v-btn>
-        <v-btn
-          color="primary"
-          variant="elevated"
-          @click="confirm"
-          :loading="loading"
-        >
-          <v-icon start>mdi-check-circle</v-icon>
+        <v-btn variant="elevated" color="primary" @click="confirm" :loading="loading">
           Confirmar cambio
         </v-btn>
       </v-card-actions>
