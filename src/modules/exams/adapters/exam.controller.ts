@@ -73,6 +73,10 @@ export class ExamController {
     return this.getRepository().getAcademicGroups(page, pageSize);
   }
 
+  getAssignableGroups(): Promise<ApiResponse<AcademicGroup[]>> {
+    return this.getRepository().getAssignableGroups();
+  }
+
   getMySubjects(): Promise<ApiResponse<{ results: Subject[] }>> {
     return this.getRepository().getMySubjects();
   }
