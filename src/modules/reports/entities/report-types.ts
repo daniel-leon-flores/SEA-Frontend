@@ -2,7 +2,6 @@
 
 export type ReportType =
   | 'by-exam'
-  | 'by-period'
   | 'by-group'
   | 'by-student'
   | 'student-exam-detail';
@@ -21,13 +20,6 @@ export const REPORT_TYPE_OPTIONS: ReportTypeOption[] = [
     label: 'Por Examen',
     description: 'Resultados generales de un examen específico',
     icon: 'mdi-file-document-outline',
-    roles: ['TEACHER', 'ADMIN'],
-  },
-  {
-    value: 'by-period',
-    label: 'Por Periodo',
-    description: 'Resumen académico de un periodo (cuatrimestre)',
-    icon: 'mdi-calendar-range',
     roles: ['TEACHER', 'ADMIN'],
   },
   {

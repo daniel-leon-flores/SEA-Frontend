@@ -8,7 +8,6 @@ import type {
   ExamOption,
   StudentOption,
   ExamReportData,
-  PeriodReportData,
   GroupReportData,
   StudentReportData,
   StudentExamDetailData,
@@ -83,32 +82,6 @@ export function mockExamReport(examId: number): ExamReportData {
   };
 }
 
-// --- Reporte Por Periodo ---
-export function mockPeriodReport(periodId: number): PeriodReportData {
-  return {
-    periodId,
-    periodName: 'Enero-Abril',
-    year: 2026,
-    startDate: '2026-01-11',
-    endDate: '2026-04-30',
-    metrics: { ...METRICS, totalStudents: 120, totalExams: 6 },
-    gradeDistribution: [
-      { range: '0-59',   count: 12, percentage: 10 },
-      { range: '60-69',  count: 16, percentage: 13.3 },
-      { range: '70-79',  count: 32, percentage: 26.7 },
-      { range: '80-89',  count: 36, percentage: 30 },
-      { range: '90-100', count: 24, percentage: 20 },
-    ],
-    exams: [
-      { examId: 1, examTitle: 'Parcial 1',     subjectName: 'Matemáticas', groupLetter: '1A', averageGrade: 78.5, approvalRate: 83.3, totalStudents: 30 },
-      { examId: 2, examTitle: 'Parcial 2',     subjectName: 'Matemáticas', groupLetter: '1A', averageGrade: 74.2, approvalRate: 76.7, totalStudents: 30 },
-      { examId: 3, examTitle: 'Extraordinario',subjectName: 'Matemáticas', groupLetter: '1A', averageGrade: 65, approvalRate: 60, totalStudents: 10 },
-      { examId: 4, examTitle: 'Parcial 1',     subjectName: 'Matemáticas', groupLetter: '1B', averageGrade: 81.3, approvalRate: 86.7, totalStudents: 30 },
-      { examId: 5, examTitle: 'Parcial 2',     subjectName: 'Matemáticas', groupLetter: '1B', averageGrade: 77.9, approvalRate: 80, totalStudents: 30 },
-      { examId: 6, examTitle: 'Extraordinario',subjectName: 'Matemáticas', groupLetter: '1B', averageGrade: 68.5, approvalRate: 62.5, totalStudents: 8  },
-    ],
-  };
-}
 
 // --- Reporte Por Grupo ---
 export function mockGroupReport(groupId: number): GroupReportData {
