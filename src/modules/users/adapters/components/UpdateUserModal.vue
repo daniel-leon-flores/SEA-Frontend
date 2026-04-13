@@ -126,6 +126,7 @@ export default {
       submitting: false,
       loadingGroups: false,
       loadingSubjects: false,
+      pendingGroupId: null,
       groups: [],
       subjects: [],
       payload: {
@@ -175,6 +176,7 @@ export default {
         this.$refs.formRef.reset()
       }
       this.serverErrors = {}
+      this.pendingGroupId = null
       Object.assign(this.payload, {
         first_name: '',
         last_name: '',
@@ -195,10 +197,12 @@ export default {
       this.payload.matricula = this.user.matricula
       this.payload.role = this.user.role
       
+      // Reset id_group to null while groups are loading to avoid showing raw ID
+      this.payload.id_group = null
       if (this.user.role === 'student' && this.user.group) {
-        this.payload.id_group = this.user.group.id_group
+        this.pendingGroupId = this.user.group.id_group
       } else {
-        this.payload.id_group = null
+        this.pendingGroupId = null
       }
       
       if (this.user.role === 'teacher' && this.user.subjects && this.user.subjects.length > 0) {
@@ -218,6 +222,11 @@ export default {
           id_group: g.id_group,
           label: `${g.academic_level}${g.group_letter} — Gen. ${g.generation_year}`
         }))
+        // Apply pending group id now that options are loaded
+        if (this.pendingGroupId !== null) {
+          this.payload.id_group = this.pendingGroupId
+          this.pendingGroupId = null
+        }
       } catch (error) {
         console.error('Error loading groups:', error)
       } finally {
