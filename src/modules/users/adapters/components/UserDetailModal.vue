@@ -9,7 +9,7 @@
 
       <v-card-text class="pa-4" v-if="user">
         <v-row>
-          <!-- Solo mostrar grupo si NO es admin -->
+                <!-- Solo mostrar grupo si NO es admin -->
           <template v-if="user.role !== 'admin'">
             <!-- Para docentes: mostrar materias que imparte -->
             <template v-if="user.role === 'teacher'">
@@ -33,6 +33,27 @@
                   </v-alert>
                 </div>
               </v-col>
+              <!-- Grupos donde imparte clases -->
+              <v-col cols="12">
+                <div class="mb-3">
+                  <p class="text-caption text-grey-darken-1 mb-2">Grupos donde imparte clases</p>
+                  <div v-if="user.teaching_groups && user.teaching_groups.length > 0" class="d-flex flex-wrap ga-2">
+                    <v-chip
+                      v-for="tg in user.teaching_groups"
+                      :key="tg.id_group"
+                      color="deep-purple"
+                      variant="tonal"
+                      size="small"
+                    >
+                      <v-icon start size="14">mdi-account-group</v-icon>
+                      {{ tg.academic_level }}{{ tg.group_letter }} &mdash; Gen. {{ tg.generation_year }}
+                    </v-chip>
+                  </div>
+                  <v-alert v-else type="info" variant="tonal" density="compact">
+                    Este docente no tiene grupos asignados
+                  </v-alert>
+                </div>
+              </v-col>
               <v-col cols="12">
                 <v-divider class="my-2" />
               </v-col>
@@ -45,7 +66,7 @@
                   <p class="text-caption text-grey-darken-1 mb-2">Grupo asignado</p>
                   <v-chip color="info" variant="tonal" size="large">
                     <v-icon start>mdi-account-group</v-icon>
-                    {{ user.group.group_letter }} - Nivel {{ user.group.academic_level }}
+                    {{ user.group.academic_level }}{{ user.group.group_letter }} &mdash; Gen. {{ user.group.generation_year }}
                   </v-chip>
                 </div>
               </v-col>

@@ -4,6 +4,7 @@ export type UserGroup = {
   id_group: number;
   group_letter: string;
   academic_level: number;
+  generation_year: number;
 };
 
 export type UserSubject = {
@@ -26,4 +27,5 @@ export type User = Entity<number> & {
   date_joined: string;
   group: UserGroup | null;
   subjects: UserSubject[];
+  teaching_groups: UserGroup[];
 };
