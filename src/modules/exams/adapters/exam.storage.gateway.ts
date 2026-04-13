@@ -1,7 +1,7 @@
 import { ApiResponse, PaginatedData } from "@/kernel/types";
 import { Exam } from "../entities/exam";
 import { ExamRepository } from "../use-cases/ports/exam.repository";
-import { handleRequest } from "@/config/http-client.gateway";
+import httpClient, { handleRequest } from "@/config/http-client.gateway";
 import { GetExamsDto } from "../entities/get-exams.dto";
 import { CreateExamDto, UpdateExamDto } from "../entities/create-exam.dto";
 import {
@@ -102,5 +102,15 @@ export class ExamStorageGateway implements ExamRepository {
       `/api/exams/${examId}/questions/`,
       body,
     );
+  }
+
+  async exportGradesExcel(examId: number, groupId: number): Promise<Blob> {
+    const res = await httpClient.getBlob(`/api/exams/${examId}/grades/groups/${groupId}/export/excel/`);
+    return res.data as Blob;
+  }
+
+  async exportGradesPDF(examId: number, groupId: number): Promise<Blob> {
+    const res = await httpClient.getBlob(`/api/exams/${examId}/grades/groups/${groupId}/export/pdf/`);
+    return res.data as Blob;
   }
 }

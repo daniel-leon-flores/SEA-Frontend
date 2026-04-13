@@ -1,5 +1,5 @@
 <template>
-  <v-container fluid class="pa-8" style="background: #f9fbff; min-height: 100vh;">
+  <v-container fluid class="pa-8 exam-grades-view">
     <Loader :visible="pageLoading" message="Cargando calificaciones..." />
 
     <!-- Breadcrumbs -->
@@ -12,7 +12,7 @@
     <!-- Header -->
     <div class="mb-6">
       <h1 class="page-title text-h4 font-weight-bold mb-2">Calificaciones</h1>
-      <p class="page-subtitle text-body-1 text-grey-darken-1">Consulta las calificaciones y estadísticas por grupo</p>
+      <p class="page-subtitle text-body-1">Consulta las calificaciones y estadísticas por grupo</p>
     </div>
 
     <!-- Error state -->
@@ -76,12 +76,35 @@
             @update:model-value="fetchStudents"
           />
         </v-col>
+        <v-spacer />
+        <v-col cols="auto" class="d-flex ga-2">
+          <v-btn
+            variant="outlined"
+            color="success"
+            prepend-icon="mdi-file-excel-outline"
+            :loading="exportingExcel"
+            :disabled="exportingExcel || exportingPDF"
+            @click="handleExportExcel"
+          >
+            Excel
+          </v-btn>
+          <v-btn
+            variant="outlined"
+            color="error"
+            prepend-icon="mdi-file-pdf-box"
+            :loading="exportingPDF"
+            :disabled="exportingPDF || exportingExcel"
+            @click="handleExportPDF"
+          >
+            PDF
+          </v-btn>
+        </v-col>
       </v-row>
 
       <!-- Students table -->
       <v-card elevation="2" class="mb-4">
         <PaginatedTable
-          :columns="studentColumns"
+          :columns="STUDENT_COLUMNS"
           :data="students"
           :total-records="studentPagination.count"
           :total-pages="studentPagination.totalPages"
@@ -110,14 +133,10 @@
           </template>
 
           <template #cell-is_passed="{ value }">
-            <template v-if="value === null">
-              <span class="text-body-2 text-grey">--</span>
-            </template>
-            <template v-else>
-              <v-chip :color="value ? 'success' : 'error'" size="small" variant="tonal">
-                {{ value ? 'Aprobado' : 'No aprobado' }}
-              </v-chip>
-            </template>
+            <span v-if="value === null" class="text-body-2 text-grey-darken-1">--</span>
+            <v-chip v-else :color="value ? 'success' : 'error'" size="small" variant="tonal">
+              {{ value ? 'Aprobado' : 'No aprobado' }}
+            </v-chip>
           </template>
 
           <template #cell-attempt_date="{ value }">
@@ -141,7 +160,7 @@
                   <v-list-item
                     prepend-icon="mdi-pencil-box-outline"
                     title="Calificar manualmente"
-                    :disabled="!canManualGrade(row)"
+                    :disabled="row.status !== 'completed'"
                     @click="goToManualGrade(row)"
                   />
                 </v-list>
@@ -151,7 +170,7 @@
         </PaginatedTable>
       </v-card>
 
-      <!-- Controles de paginación -->
+      <!-- Pagination controls -->
       <v-row v-if="!tableLoading && studentPagination.count > 0" class="align-center mt-2">
         <v-col cols="12" md="3">
           <v-select
@@ -189,11 +208,14 @@
   </v-container>
 </template>
 
-<script lang="ts">
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import PaginatedTable from '@/components/PaginatedTable.vue';
 import Loader from '@/components/Loader.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import { encodeId, decodeId } from '@/kernel/url-cipher';
+import { formatDateTime } from '@/kernel/utils';
 import { ExamController } from '../exam.controller';
 import type { ExamGroupAssignment, GroupStats, GroupStudent } from '../../entities/assign-exam.dto';
 import {
@@ -202,9 +224,6 @@ import {
   getStudentStatusColor,
   formatGroupLabel,
 } from '../../entities/exam-constants';
-import { formatDateTime } from '@/kernel/utils';
-
-const controller = new ExamController();
 
 interface StatsCard {
   label: string;
@@ -213,248 +232,314 @@ interface StatsCard {
   color: string;
 }
 
-export default {
-  name: 'ExamGradesView',
-  components: { PaginatedTable, Loader, EmptyState },
-  data() {
-    return {
-      studentColumns: [
-        { label: 'Matrícula', key: 'matricula', width: '140px', minWidth: '120px' },
-        { label: 'Nombre completo', key: 'full_name', width: '200px', minWidth: '160px' },
-        { label: 'Estado', key: 'status_label', width: '130px', minWidth: '110px' },
-        { label: 'Calificación', key: 'score', width: '120px', minWidth: '100px' },
-        { label: 'Aprobado', key: 'is_passed', width: '120px', minWidth: '100px' },
-        { label: 'Fecha de intento', key: 'attempt_date', width: '160px', minWidth: '140px' },
-        { label: 'Acciones', key: 'actions', width: '100px', minWidth: '80px' },
-      ],
-      pageLoading: false,
-      tableLoading: false,
-      errorMsg: '',
-      examId: 0,
-      groups: [] as ExamGroupAssignment[],
-      activeGroupIndex: 0,
-      stats: null as GroupStats | null,
-      students: [] as GroupStudent[],
-      examDisplayName: '',
-      searchQuery: '',
-      filterStatus: null as string | null,
-      studentPagination: {
-        count: 0,
-        totalPages: 1,
-        currentPage: 1,
-        pageSize: 10,
-      },
-      snackbar: { show: false, message: '', color: 'success' },
-      STUDENT_STATUS_OPTIONS,
-      PAGE_SIZE_OPTIONS,
-      debounceTimer: null as ReturnType<typeof setTimeout> | null,
-    };
-  },
-  computed: {
-    breadcrumbItems() {
-      return [
-        { title: 'Exámenes', disabled: false, href: '/exams' },
-        { title: 'Calificaciones', disabled: true },
-      ];
-    },
-    activeGroup(): ExamGroupAssignment | null {
-      return this.groups[this.activeGroupIndex] ?? null;
-    },
-    statsCards(): StatsCard[] {
-      if (!this.stats) return [];
-      return [
-        { label: 'Total alumnos', value: this.stats.total_students, icon: 'mdi-account-group', color: 'primary' },
-        { label: 'Promedio', value: this.stats.average_score ?? '--', icon: 'mdi-chart-line', color: 'info' },
-        { label: 'Más alta', value: this.stats.highest_score ?? '--', icon: 'mdi-arrow-up-bold', color: 'success' },
-        { label: 'Más baja', value: this.stats.lowest_score ?? '--', icon: 'mdi-arrow-down-bold', color: 'error' },
-        { label: 'Aprobación', value: this.stats.approval_rate ? `${this.stats.approval_rate}%` : '--', icon: 'mdi-percent', color: 'success' },
-        { label: 'Pendientes', value: this.stats.pending_count, icon: 'mdi-clock-outline', color: 'warning' },
-        { label: 'En progreso', value: this.stats.in_progress_count, icon: 'mdi-progress-clock', color: 'info' },
-        { label: 'Completados', value: this.stats.completed_count, icon: 'mdi-check-circle-outline', color: 'success' },
-      ];
-    },
-    studentPaginationInfo(): string {
-      if (this.studentPagination.count === 0) return '0 registros';
-      const start = (this.studentPagination.currentPage - 1) * this.studentPagination.pageSize + 1;
-      const end = Math.min(this.studentPagination.currentPage * this.studentPagination.pageSize, this.studentPagination.count);
-      return `Mostrando ${start}-${end} de ${this.studentPagination.count} registros`;
-    },
-  },
-  async mounted() {
-    const idParam = this.$route.params.id;
-    this.examId = decodeId(idParam as string);
-    if (!this.examId || Number.isNaN(this.examId)) {
-      this.errorMsg = 'ID de examen no válido';
-      return;
+interface ColumnDef {
+  label: string;
+  key: string;
+  width: string;
+  minWidth: string;
+}
+
+interface Pagination {
+  count: number;
+  totalPages: number;
+  currentPage: number;
+  pageSize: number;
+}
+
+const route = useRoute();
+const router = useRouter();
+const controller = new ExamController();
+
+const STUDENT_COLUMNS: ColumnDef[] = [
+  { label: 'Matrícula', key: 'matricula', width: '140px', minWidth: '120px' },
+  { label: 'Nombre completo', key: 'full_name', width: '200px', minWidth: '160px' },
+  { label: 'Estado', key: 'status_label', width: '130px', minWidth: '110px' },
+  { label: 'Calificación', key: 'score', width: '120px', minWidth: '100px' },
+  { label: 'Aprobado', key: 'is_passed', width: '120px', minWidth: '100px' },
+  { label: 'Fecha de intento', key: 'attempt_date', width: '160px', minWidth: '140px' },
+  { label: 'Acciones', key: 'actions', width: '100px', minWidth: '80px' },
+];
+
+// ── Reactive state ──
+const pageLoading = ref(true);
+const tableLoading = ref(false);
+const errorMsg = ref('');
+const examId = ref(0);
+const examDisplayName = ref('');
+const groups = ref<ExamGroupAssignment[]>([]);
+const activeGroupIndex = ref(0);
+const stats = ref<GroupStats | null>(null);
+const students = ref<GroupStudent[]>([]);
+const searchQuery = ref('');
+const filterStatus = ref<string | null>(null);
+const studentPagination = ref<Pagination>({ count: 0, totalPages: 1, currentPage: 1, pageSize: 10 });
+const snackbar = ref({ show: false, message: '', color: 'success' });
+const exportingExcel = ref(false);
+const exportingPDF = ref(false);
+
+// ── Helpers ──
+function buildExportFilename(ext: 'xlsx' | 'pdf'): string {
+  const unsafe = /[/\\:*?"<>|]/g;
+  const group = activeGroup.value;
+  const groupLabel = group ? `${group.academic_level}${group.group_label}` : 'grupo';
+  const examName = (examDisplayName.value || 'examen').replaceAll(unsafe, '').substring(0, 80).trim();
+  return `${examName}-calificaciones-${groupLabel}.${ext}`;
+}
+
+let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+// ── Computed ──
+const breadcrumbItems = computed(() => [
+  { title: 'Exámenes', disabled: false, href: '/exams' },
+  { title: 'Calificaciones', disabled: true },
+]);
+
+const activeGroup = computed<ExamGroupAssignment | null>(
+  () => groups.value[activeGroupIndex.value] ?? null,
+);
+
+const statsCards = computed<StatsCard[]>(() => {
+  const s = stats.value;
+  if (!s) return [];
+  return [
+    { label: 'Total alumnos', value: s.total_students, icon: 'mdi-account-group', color: 'primary' },
+    { label: 'Promedio', value: s.average_score ?? '--', icon: 'mdi-chart-line', color: 'info' },
+    { label: 'Más alta', value: s.highest_score ?? '--', icon: 'mdi-arrow-up-bold', color: 'success' },
+    { label: 'Más baja', value: s.lowest_score ?? '--', icon: 'mdi-arrow-down-bold', color: 'error' },
+    { label: 'Aprobación', value: s.approval_rate ? `${s.approval_rate}%` : '--', icon: 'mdi-percent', color: 'success' },
+    { label: 'Pendientes', value: s.pending_count, icon: 'mdi-clock-outline', color: 'warning' },
+    { label: 'En progreso', value: s.in_progress_count, icon: 'mdi-progress-clock', color: 'info' },
+    { label: 'Completados', value: s.completed_count, icon: 'mdi-check-circle-outline', color: 'success' },
+  ];
+});
+
+const studentPaginationInfo = computed(() => {
+  const p = studentPagination.value;
+  if (p.count === 0) return '0 registros';
+  const start = (p.currentPage - 1) * p.pageSize + 1;
+  const end = Math.min(p.currentPage * p.pageSize, p.count);
+  return `Mostrando ${start}-${end} de ${p.count} registros`;
+});
+
+// ── Data fetching ──
+async function loadExamInfo(): Promise<void> {
+  try {
+    const res = await controller.getExamById(examId.value);
+    if (res.success && res.data) {
+      examDisplayName.value = res.data.title || res.data.name || '';
     }
-    await this.loadExamInfo();
-    await this.loadGroups();
-  },
-  methods: {
-    formatDateTime,
-    getStudentStatusColor,
-    formatGroupLabel,
+  } catch {
+    examDisplayName.value = '';
+  }
+}
 
-    async loadExamInfo() {
-      try {
-        const res = await controller.getExamById(this.examId);
-        if (res.success && res.data) {
-          this.examDisplayName = res.data.title || res.data.name || '';
-        }
-      } catch {
-        this.examDisplayName = '';
+async function loadGroups(): Promise<void> {
+  pageLoading.value = true;
+  errorMsg.value = '';
+  try {
+    const res = await controller.getExamAssignments(examId.value);
+    if (res.success && res.data) {
+      groups.value = Array.isArray(res.data) ? res.data : [];
+      if (groups.value.length > 0) {
+        activeGroupIndex.value = 0;
+        await loadGroupData();
       }
+    } else {
+      errorMsg.value = res.message || 'Error al cargar los grupos';
+    }
+  } catch {
+    errorMsg.value = 'Error de conexión al cargar los grupos';
+  } finally {
+    pageLoading.value = false;
+  }
+}
+
+async function loadGroupData(): Promise<void> {
+  const group = activeGroup.value;
+  if (!group) return;
+  tableLoading.value = true;
+  try {
+    const [statsRes, studentsRes] = await Promise.all([
+      controller.getGroupStats(examId.value, group.group_id),
+      controller.getGroupStudents(examId.value, group.group_id, {
+        page: studentPagination.value.currentPage,
+        page_size: studentPagination.value.pageSize,
+        search: searchQuery.value || undefined,
+        status: filterStatus.value || undefined,
+      }),
+    ]);
+
+    if (statsRes.success && statsRes.data) {
+      stats.value = statsRes.data;
+    }
+
+    if (studentsRes.success && studentsRes.data) {
+      students.value = studentsRes.data.results || [];
+      const pg = studentsRes.data.pagination;
+      studentPagination.value = {
+        count: pg.count,
+        totalPages: pg.total_pages,
+        currentPage: pg.page,
+        pageSize: pg.page_size,
+      };
+    } else {
+      showSnackbar(studentsRes.message || 'Error al cargar alumnos', 'error');
+    }
+  } catch {
+    showSnackbar('Error al cargar datos del grupo', 'error');
+  } finally {
+    tableLoading.value = false;
+  }
+}
+
+async function fetchStudents(): Promise<void> {
+  const group = activeGroup.value;
+  if (!group) return;
+  tableLoading.value = true;
+  try {
+    const res = await controller.getGroupStudents(examId.value, group.group_id, {
+      page: studentPagination.value.currentPage,
+      page_size: studentPagination.value.pageSize,
+      search: searchQuery.value || undefined,
+      status: filterStatus.value || undefined,
+    });
+    if (res.success && res.data) {
+      students.value = res.data.results || [];
+      studentPagination.value.count = res.data.pagination.count;
+      studentPagination.value.totalPages = res.data.pagination.total_pages;
+    } else {
+      showSnackbar(res.message || 'Error al cargar alumnos', 'error');
+    }
+  } catch {
+    showSnackbar('Error al cargar alumnos', 'error');
+  } finally {
+    tableLoading.value = false;
+  }
+}
+
+// ── Event handlers ──
+async function onGroupChange(): Promise<void> {
+  searchQuery.value = '';
+  filterStatus.value = null;
+  studentPagination.value.currentPage = 1;
+  await loadGroupData();
+}
+
+function handleStudentPageChange(page: number): void {
+  studentPagination.value.currentPage = page;
+  fetchStudents();
+}
+
+function handleStudentPageSizeChange(pageSize: number): void {
+  studentPagination.value.pageSize = pageSize;
+  studentPagination.value.currentPage = 1;
+  fetchStudents();
+}
+
+function debouncedSearch(): void {
+  if (debounceTimer) clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => {
+    studentPagination.value.currentPage = 1;
+    fetchStudents();
+  }, 500);
+}
+
+// ── Export helpers ──
+function triggerBlobDownload(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+}
+
+async function handleExportExcel(): Promise<void> {
+  const group = activeGroup.value;
+  if (!group) return;
+  exportingExcel.value = true;
+  try {
+    const blob = await controller.exportGradesExcel(examId.value, group.group_id);
+    triggerBlobDownload(blob, buildExportFilename('xlsx'));
+    showSnackbar('Archivo Excel descargado correctamente');
+  } catch {
+    showSnackbar('Error al descargar el archivo Excel', 'error');
+  } finally {
+    exportingExcel.value = false;
+  }
+}
+
+async function handleExportPDF(): Promise<void> {
+  const group = activeGroup.value;
+  if (!group) return;
+  exportingPDF.value = true;
+  try {
+    const blob = await controller.exportGradesPDF(examId.value, group.group_id);
+    triggerBlobDownload(blob, buildExportFilename('pdf'));
+    showSnackbar('Archivo PDF descargado correctamente');
+  } catch {
+    showSnackbar('Error al descargar el archivo PDF', 'error');
+  } finally {
+    exportingPDF.value = false;
+  }
+}
+
+// ── Navigation ──
+function goToManualGrade(student: GroupStudent): void {
+  if (student.status !== 'completed') {
+    showSnackbar('Solo se puede calificar manualmente cuando el examen está completado.', 'warning');
+    return;
+  }
+  if (!student.assignment_id) {
+    showSnackbar('No se encontró la asignación del alumno para calificar.', 'warning');
+    return;
+  }
+  router.push({
+    name: 'ManualGrade',
+    params: {
+      examId: encodeId(examId.value),
+      assignmentId: encodeId(student.assignment_id),
     },
-
-    async loadGroups() {
-      this.pageLoading = true;
-      this.errorMsg = '';
-      try {
-        const res = await controller.getExamAssignments(this.examId);
-        if (res.success && res.data) {
-          this.groups = Array.isArray(res.data) ? res.data : [];
-          if (this.groups.length > 0) {
-            this.activeGroupIndex = 0;
-            await this.loadGroupData();
-          }
-        } else {
-          this.errorMsg = res.message || 'Error al cargar los grupos';
-        }
-      } catch {
-        this.errorMsg = 'Error de conexión al cargar los grupos';
-      } finally {
-        this.pageLoading = false;
-      }
+    query: {
+      studentName: student.full_name,
+      examName: examDisplayName.value || undefined,
     },
+  });
+}
 
-    async onGroupChange() {
-      this.searchQuery = '';
-      this.filterStatus = null;
-      this.studentPagination.currentPage = 1;
-      await this.loadGroupData();
-    },
+// ── Snackbar ──
+function showSnackbar(message: string, color = 'success'): void {
+  snackbar.value = { show: true, message, color };
+}
 
-    async loadGroupData() {
-      if (!this.activeGroup) return;
-      const groupId = this.activeGroup.group_id;
-      this.tableLoading = true;
-      try {
-        const [statsRes, studentsRes] = await Promise.all([
-          controller.getGroupStats(this.examId, groupId),
-          controller.getGroupStudents(this.examId, groupId, {
-            page: this.studentPagination.currentPage,
-            page_size: this.studentPagination.pageSize,
-            search: this.searchQuery || undefined,
-            status: this.filterStatus || undefined,
-          }),
-        ]);
-
-        if (statsRes.success && statsRes.data) {
-          this.stats = statsRes.data;
-        }
-
-        if (studentsRes.success && studentsRes.data) {
-          this.students = studentsRes.data.results || [];
-          this.studentPagination.count = studentsRes.data.pagination.count;
-          this.studentPagination.totalPages = studentsRes.data.pagination.total_pages;
-          this.studentPagination.currentPage = studentsRes.data.pagination.page;
-          this.studentPagination.pageSize = studentsRes.data.pagination.page_size;
-        } else {
-          this.showSnackbar(studentsRes.message || 'Error al cargar alumnos', 'error');
-        }
-      } catch {
-        this.showSnackbar('Error al cargar datos del grupo', 'error');
-      } finally {
-        this.tableLoading = false;
-      }
-    },
-
-    async fetchStudents() {
-      if (!this.activeGroup) return;
-      this.tableLoading = true;
-      try {
-        const res = await controller.getGroupStudents(this.examId, this.activeGroup.group_id, {
-          page: this.studentPagination.currentPage,
-          page_size: this.studentPagination.pageSize,
-          search: this.searchQuery || undefined,
-          status: this.filterStatus || undefined,
-        });
-        if (res.success && res.data) {
-          this.students = res.data.results || [];
-          this.studentPagination.count = res.data.pagination.count;
-          this.studentPagination.totalPages = res.data.pagination.total_pages;
-        } else {
-          this.showSnackbar(res.message || 'Error al cargar alumnos', 'error');
-        }
-      } catch {
-        this.showSnackbar('Error al cargar alumnos', 'error');
-      } finally {
-        this.tableLoading = false;
-      }
-    },
-
-    handleStudentPageChange(page: number) {
-      this.studentPagination.currentPage = page;
-      this.fetchStudents();
-    },
-
-    handleStudentPageSizeChange(pageSize: number) {
-      this.studentPagination.pageSize = pageSize;
-      this.studentPagination.currentPage = 1;
-      this.fetchStudents();
-    },
-
-    debouncedSearch() {
-      if (this.debounceTimer) clearTimeout(this.debounceTimer);
-      this.debounceTimer = setTimeout(() => {
-        this.studentPagination.currentPage = 1;
-        this.fetchStudents();
-      }, 500);
-    },
-
-    canManualGrade(student: GroupStudent) {
-      return student.status === 'completed';
-    },
-
-    goToManualGrade(student: GroupStudent) {
-      if (!this.canManualGrade(student)) {
-        this.showSnackbar('Solo se puede calificar manualmente cuando el examen está completado.', 'warning');
-        return;
-      }
-
-      if (!student.assignment_id) {
-        this.showSnackbar('No se encontró la asignación del alumno para calificar.', 'warning');
-        return;
-      }
-
-      this.$router.push({
-        name: 'ManualGrade',
-        params: {
-          examId: encodeId(this.examId),
-          assignmentId: encodeId(student.assignment_id),
-        },
-        query: {
-          studentName: student.full_name,
-          examName: this.examDisplayName || undefined,
-        },
-      });
-    },
-
-    showSnackbar(message: string, color = 'success') {
-      this.snackbar = { show: true, message, color };
-    },
-  },
-};
+// ── Init ──
+onMounted(async () => {
+  const idParam = route.params.id;
+  examId.value = decodeId(idParam as string);
+  if (!examId.value || Number.isNaN(examId.value)) {
+    errorMsg.value = 'ID de examen no válido';
+    return;
+  }
+  await loadExamInfo();
+  await loadGroups();
+});
 </script>
 
 <style scoped>
+.exam-grades-view {
+  background: #f9fbff;
+  min-height: 100vh;
+}
+
 .page-title {
   color: #1a1a1a;
   line-height: 1.2;
 }
 
 .page-subtitle {
-  color: #666;
+  color: #555;
   line-height: 1.5;
 }
 </style>
