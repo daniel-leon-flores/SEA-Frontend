@@ -32,4 +32,6 @@ export interface ExamRepository {
   getStudentAssignments(params: GetMyAssignmentsDto): Promise<ApiResponse<MyAssignment[]>>;
   getExamQuestions(examId: number): Promise<ApiResponse<ExamQuestionsResponse>>;
   putExamQuestions(examId: number, body: ReplaceExamQuestionsDto): Promise<ApiResponse<ExamQuestionsResponse>>;
+  exportGradesExcel(examId: number, groupId: number): Promise<Blob>;
+  exportGradesPDF(examId: number, groupId: number): Promise<Blob>;
 }

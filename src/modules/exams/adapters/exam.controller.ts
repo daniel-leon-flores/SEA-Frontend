@@ -101,4 +101,12 @@ export class ExamController {
   putExamQuestions(examId: number, body: ReplaceExamQuestionsDto): Promise<ApiResponse<ExamQuestionsResponse>> {
     return this.getRepository().putExamQuestions(examId, body);
   }
+
+  exportGradesExcel(examId: number, groupId: number): Promise<Blob> {
+    return this.getRepository().exportGradesExcel(examId, groupId);
+  }
+
+  exportGradesPDF(examId: number, groupId: number): Promise<Blob> {
+    return this.getRepository().exportGradesPDF(examId, groupId);
+  }
 }
