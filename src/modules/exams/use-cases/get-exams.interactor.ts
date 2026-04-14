@@ -1,16 +1,27 @@
 import { UseCase } from "@/kernel/contract";
-import { ApiResponse } from "@/kernel/types";
+import { ApiResponse, PaginatedData } from "@/kernel/types";
 import { Exam } from "../entities/exam";
 import { ExamRepository } from "./ports/exam.repository";
 import { GetExamsDto } from "../entities/get-exams.dto";
 
-export class GetExamsInteractor implements UseCase<GetExamsDto, ApiResponse<Exam[]>> {
+export class GetMyExamsInteractor implements UseCase<GetExamsDto, ApiResponse<PaginatedData<Exam>>> {
   constructor(private readonly examRepository: ExamRepository) {}
 
-  async execute(payload?: GetExamsDto): Promise<ApiResponse<Exam[]>> {
+  async execute(payload?: GetExamsDto): Promise<ApiResponse<PaginatedData<Exam>>> {
     if (!payload) {
-      throw new Error("Missing payload for GetExamsInteractor");
+      throw new Error("Missing payload for GetMyExamsInteractor");
     }
-    return this.examRepository.getExams(payload.pagination, payload.status);
+    return this.examRepository.getMyExams(payload);
+  }
+}
+
+export class GetAllExamsInteractor implements UseCase<GetExamsDto, ApiResponse<PaginatedData<Exam>>> {
+  constructor(private readonly examRepository: ExamRepository) {}
+
+  async execute(payload?: GetExamsDto): Promise<ApiResponse<PaginatedData<Exam>>> {
+    if (!payload) {
+      throw new Error("Missing payload for GetAllExamsInteractor");
+    }
+    return this.examRepository.getAllExams(payload);
   }
 }

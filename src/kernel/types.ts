@@ -8,9 +8,23 @@ export interface ApiResponse<T = any> {
   message: string;
   timestamp: string;
   data?: T;
+  /** Errores detallados del backend (p. ej. DRF), si vienen en el cuerpo. */
+  errors?: Record<string, unknown>;
   error?: {
     message: string;
     details?: any;
+  };
+}
+
+export interface PaginatedData<T = any> {
+  results: T[];
+  pagination: {
+    count: number;
+    page: number;
+    page_size: number;
+    total_pages: number;
+    next: string | null;
+    previous: string | null;
   };
 }
 

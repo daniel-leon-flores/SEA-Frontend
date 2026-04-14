@@ -22,6 +22,9 @@ import { useRouter } from 'vue-router';
 const router = useRouter();
 
 function goToLogin() {
-  router.push('/login');
+  localStorage.removeItem('sea_token');
+  localStorage.removeItem('sea_refresh');
+  localStorage.removeItem('sea_selectedRole');
+  router.push({ name: 'Login' });
 }
 </script>

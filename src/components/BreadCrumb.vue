@@ -13,7 +13,7 @@ import { useRoute } from 'vue-router';
 const route = useRoute();
 
 const breadcrumbItems = computed(() => {
-  const paths = route.path.split('/').filter(p => p);
+  const paths = route.path.split('/').filter(Boolean);
   return paths.map((path, index) => ({
     title: capitalizeStr(path),
     disabled: index === paths.length - 1,
