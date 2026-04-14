@@ -21,9 +21,6 @@ import {
   StudentExamDetailDto,
 } from '../entities/report-request.dto';
 
-// 🔴 DESACTIVADO
-const MOCK_ENABLED = false;
-
 // ===== HELPERS =====
 
 function extractPaginatedOptions<TRaw, TOption>(

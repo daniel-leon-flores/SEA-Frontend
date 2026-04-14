@@ -120,7 +120,6 @@
 import { reactive, ref, computed, onMounted, watch } from 'vue';
 import { ReportFiltersDto } from '../../entities/report-filters.dto';
 import { REPORT_TYPE_OPTIONS, ReportTypeOption } from '../../entities/report-types';
-import { ReportController } from '../report.controller';
 import { GenerationController } from '../../../generations/adapters/generation.controller';
 import { getGenerationGroupsInteractor } from '@/modules/groups/adapters/generation-group.controller';
 import { ExamController } from '@/modules/exams/adapters/exam.controller';
@@ -129,7 +128,6 @@ import { UserController } from '@/modules/users/adapters/user.controller';
 /* =========================
    CONTROLLERS
 ========================= */
-const reportController = new ReportController();
 const generationController = new GenerationController();
 const examController = new ExamController();
 const userController = new UserController();
@@ -336,11 +334,10 @@ async function loadStudents(groupId?: number) {
       group: groupId,
     });
 
-    // 👇 soporta ambas respuestas
-    const list =
-      res?.results ??
-      res?.data?.results ??
-      [];
+    // ApiResponse<User[]> can arrive as array or paginated payload in data.
+    const list = Array.isArray(res?.data)
+      ? res.data
+      : (res?.data as any)?.results ?? [];
 
     students.value = list.map((s: any) => ({
       id: s.id_user,
