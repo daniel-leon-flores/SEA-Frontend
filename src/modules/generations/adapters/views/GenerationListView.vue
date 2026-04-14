@@ -379,7 +379,6 @@ const getYearValidationMessage = (year: number): string => {
 const resetForm = () => {
   const baseYear = new Date().getFullYear();
   const baseTotalLevels = 11;
-  const baseAcademicLevel = calculateAcademicLevel(baseYear, baseTotalLevels);
   yearError.value = '';
   form.value = {
     year: baseYear,

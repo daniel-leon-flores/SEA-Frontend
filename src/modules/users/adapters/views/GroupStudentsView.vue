@@ -164,7 +164,7 @@
 
 <script setup lang="ts">
 import { onMounted, ref, computed } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { useRoute } from 'vue-router';
 import { encodeId, decodeId } from '@/kernel/url-cipher';
 import Loader from '@/components/Loader.vue';
 import PaginatedTable from '@/components/PaginatedTable.vue';
@@ -175,7 +175,6 @@ import { UserController } from '../user.controller';
 import type { User } from '../../entities/user';
 
 const route = useRoute();
-const router = useRouter();
 
 const generationId = decodeId(route.params.generationId as string);
 const groupId = decodeId(route.params.groupId as string);
@@ -281,13 +280,6 @@ const loadStudents = async () => {
   } finally {
     loading.value = false;
   }
-};
-
-const goBackToGroups = () => {
-  router.push(`/generations/${encodeId(generationId)}/groups`)
-    .catch(err => {
-      console.error(err);
-    });
 };
 
 // Modal
