@@ -133,7 +133,7 @@ const rules = {
     if (n < 0 || n > 9) return 'Debe estar entre 0 y 9';
     return true;
   },
-  noHtml: (v: string) => !v || !/<[^>]*>/.test(v) || 'No se permiten etiquetas HTML',
+  noHtml: (v: string) => !v || !/<[^<>]*>/.test(v) || 'No se permiten etiquetas HTML',
 };
 
 function resetForm() {
@@ -191,7 +191,7 @@ function clampUnitsInput(event: Event) {
   const input = event.target as HTMLInputElement;
   const raw = input.value;
   // Strip non-digit characters (handles paste of 1e+2100 etc.)
-  const cleaned = raw.replace(/[^0-9]/g, '');
+  const cleaned = raw.replaceAll(/\D/g, '');
   const n = cleaned ? Number.parseInt(cleaned, 10) : 0;
   const clamped = Math.min(Math.max(n, 0), 9);
   form.value.number_of_units = clamped;

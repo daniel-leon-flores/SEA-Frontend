@@ -287,7 +287,7 @@ const showToast = (message: string, color: string = 'success') => {
   snackbar.value = { show: true, color, message };
 };
 
-const normalizeLetter = (value: string): string => value.replace(/[^a-zA-Z]/g, '').trim().toUpperCase();
+const normalizeLetter = (value: string): string => value.replaceAll(/[^a-zA-Z]/g, '').trim().toUpperCase();
 
 const preventNonLetterInput = (event: KeyboardEvent) => {
   if (event.key.length > 1) return;
@@ -314,7 +314,7 @@ const totalLevelsRule = (v: unknown): true | string => {
 /** Limpia caracteres no numéricos y limita a 2 dígitos mientras escribe */
 const sanitizeTotalLevelsInput = (event: Event) => {
   const input = event.target as HTMLInputElement;
-  const cleaned = input.value.replace(/[^0-9]/g, '').slice(0, 2);
+  const cleaned = input.value.replaceAll(/\D/g, '').slice(0, 2);
   if (cleaned !== input.value) {
     input.value = cleaned;
   }
@@ -324,7 +324,7 @@ const sanitizeTotalLevelsInput = (event: Event) => {
 /** Al perder foco, clampea el valor al rango 1-11 */
 const clampTotalLevelsOnBlur = (event: Event) => {
   const input = event.target as HTMLInputElement;
-  const val = input.value.replace(/[^0-9]/g, '');
+  const val = input.value.replaceAll(/\D/g, '');
   if (!val) { form.value.total_levels = 1; input.value = '1'; return; }
   const n = Math.min(Math.max(Number.parseInt(val, 10), 1), 11);
   form.value.total_levels = n;
@@ -333,7 +333,7 @@ const clampTotalLevelsOnBlur = (event: Event) => {
 
 const clampYearInput = (event: Event) => {
   const input = event.target as HTMLInputElement;
-  const cleaned = input.value.replace(/[^0-9]/g, '').slice(0, 4);
+  const cleaned = input.value.replaceAll(/\D/g, '').slice(0, 4);
   if (!cleaned) return;
   const n = Number.parseInt(cleaned, 10);
   form.value.year = n;

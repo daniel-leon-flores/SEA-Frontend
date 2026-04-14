@@ -259,7 +259,7 @@ const showToast = (message: string, color: string = 'success') => {
   snackbar.value = { show: true, color, message };
 };
 
-const normalizeLetter = (value: string): string => value.replace(/[^a-zA-Z]/g, '').trim().toUpperCase();
+const normalizeLetter = (value: string): string => value.replaceAll(/[^a-zA-Z]/g, '').trim().toUpperCase();
 
 const preventNonLetterInput = (event: KeyboardEvent) => {
   // Allow control keys: backspace, delete, arrows, tab, etc.

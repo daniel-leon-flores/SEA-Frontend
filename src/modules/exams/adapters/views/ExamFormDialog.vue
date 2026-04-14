@@ -226,7 +226,7 @@ const rules = {
     return true;
   },
   maxLen: (v: string) => !v || v.length <= 150 || 'Máximo 150 caracteres',
-  noHtml: (v: string) => !v || !/<[^>]*>/.test(v) || 'No se permiten etiquetas HTML',
+  noHtml: (v: string) => !v || !/<[^<>]*>/.test(v) || 'No se permiten etiquetas HTML',
 };
 
 async function loadBankQuestions() {

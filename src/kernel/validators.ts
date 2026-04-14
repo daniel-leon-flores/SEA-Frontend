@@ -11,7 +11,7 @@
  */
 export function sanitizeText(value: string): string {
   if (!value) return '';
-  return value.replace(/<[^>]*>/g, '').replace(/[<>]/g, '');
+  return value.replaceAll(/<[^<>]*>/g, '').replaceAll(/[<>]/g, '');
 }
 
 /**
@@ -19,15 +19,17 @@ export function sanitizeText(value: string): string {
  */
 export function sanitizeName(value: string): string {
   if (!value) return '';
-  return value.replace(/<[^>]*>/g, '').replace(/[<>{}[\]\\]/g, '');
+  return value.replaceAll(/<[^<>]*>/g, '').replaceAll(/[<>{}[\]\\]/g, '');
 }
 
 // ─── Validation Rules (Vuetify-compatible) ──────────────────────────────────
 
 export const rules = {
   /** Field must not be empty / null / undefined */
-  required: (v: unknown): true | string =>
-    (v !== null && v !== undefined && String(v).trim() !== '') || 'Campo requerido',
+  required: (v: unknown): true | string => {
+    if (v === null || v === undefined || typeof v === 'object') return 'Campo requerido';
+    return String(v as string | number | boolean).trim() !== '' || 'Campo requerido';
+  },
 
   /** Valid email (safe regex, no catastrophic backtracking) */
   email: (v: string): true | string =>
@@ -47,7 +49,7 @@ export const rules = {
 
   /** Only letters, spaces, accents, hyphens — for names */
   nameChars: (v: string): true | string =>
-    !v || /^[a-zA-ZÀ-ÿ\u00f1\u00d1\s'-]+$/.test(v) || 'Solo se permiten letras, espacios, acentos y guiones',
+    !v || /^[a-zA-ZÀ-ÿ\s'-]+$/.test(v) || 'Solo se permiten letras, espacios, acentos y guiones',
 
   /** Alphanumeric + hyphens — for matrícula, codes */
   alphanumeric: (v: string): true | string =>
@@ -85,7 +87,7 @@ export const rules = {
 
   /** No HTML tags */
   noHtml: (v: string): true | string =>
-    !v || !/<[^>]*>/.test(v) || 'No se permiten etiquetas HTML',
+    !v || !/<[^<>]*>/.test(v) || 'No se permiten etiquetas HTML',
 
   /** No script-like patterns */
   noScript: (v: string): true | string =>
@@ -120,5 +122,5 @@ export const rules = {
 
   /** Valid URL (optional) */
   optionalUrl: (v: string): true | string =>
-    !v || /^https?:\/\/.+/.test(v) || 'Debe ser una URL válida (https://...)',
+    !v || /^https?:\/\/\S+$/.test(v) || 'Debe ser una URL válida (https://...)',
 };

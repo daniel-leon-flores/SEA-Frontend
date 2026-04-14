@@ -156,8 +156,8 @@ export default {
       rules: {
         required: (v: string) => (v !== null && v !== undefined && v !== '') || 'Campo requerido',
         email: (v: string) => /^[^\s@]{1,64}@[^\s@]{1,253}\.[^\s@]{2,63}$/.test(v) || 'Correo inválido',
-        nameChars: (v: string) => !v || /^[a-zA-ZÀ-ÿ\u00f1\u00d1\s'-]+$/.test(v) || 'Solo letras, espacios, acentos y guiones',
-        noHtml: (v: string) => !v || !/<[^>]*>/.test(v) || 'No se permiten etiquetas HTML',
+        nameChars: (v: string) => !v || /^[a-zA-ZÀ-ÿ\s'-]+$/.test(v) || 'Solo letras, espacios, acentos y guiones',
+        noHtml: (v: string) => !v || !/<[^<>]*>/.test(v) || 'No se permiten etiquetas HTML',
         alphanumeric: (v: string) => !v || /^[a-zA-Z0-9-]+$/.test(v) || 'Solo letras, números y guiones',
         maxLen100: (v: string) => !v || v.length <= 100 || 'Máximo 100 caracteres',
         maxLen254: (v: string) => !v || v.length <= 254 || 'Máximo 254 caracteres',
@@ -273,10 +273,10 @@ export default {
         const controller = new UserController()
         const sanitized = {
           ...this.payload,
-          first_name: this.payload.first_name.trim().replace(/<[^>]*>/g, ''),
-          last_name: this.payload.last_name.trim().replace(/<[^>]*>/g, ''),
+          first_name: this.payload.first_name.trim().replaceAll(/<[^<>]*>/g, ''),
+          last_name: this.payload.last_name.trim().replaceAll(/<[^<>]*>/g, ''),
           email: this.payload.email.trim(),
-          matricula: this.payload.matricula.trim().replace(/<[^>]*>/g, ''),
+          matricula: this.payload.matricula.trim().replaceAll(/<[^<>]*>/g, ''),
         }
         const response = await controller.updateUser(this.user.id_user, sanitized as any)
 
