@@ -69,38 +69,6 @@
       </ReportTable>
     </template>
 
-    <!-- ===== BY PERIOD ===== -->
-    <template v-if="!loading && activeType === 'by-period' && periodReport">
-      <MetricCards :metrics="periodMetrics" />
-      <v-row class="mb-4">
-        <v-col cols="12" md="6">
-          <ReportChart
-            title="Distribución de Calificaciones del Periodo"
-            icon="mdi-chart-bar"
-            type="bar"
-            :chart-data="periodGradeChartData"
-            :chart-options="barOptions"
-          />
-        </v-col>
-        <v-col cols="12" md="6">
-          <ReportChart
-            title="Promedio por Examen"
-            icon="mdi-chart-bar"
-            type="bar"
-            :chart-data="periodExamAvgChartData"
-            :chart-options="barOptions"
-          />
-        </v-col>
-      </v-row>
-      <ReportTable
-        title="Exámenes del Periodo"
-        :columns="periodColumns"
-        :rows="periodReport.exams"
-        @export-pdf="exportPeriodPdf"
-        @export-excel="exportPeriodExcel"
-      />
-    </template>
-
     <!-- ===== BY GROUP ===== -->
     <template v-if="!loading && activeType === 'by-group' && groupReport">
       <MetricCards :metrics="groupMetrics" />
@@ -231,7 +199,6 @@ import { ReportFiltersDto } from '../../entities/report-filters.dto';
 import { ReportType } from '../../entities/report-types';
 import type {
   ExamReportData,
-  PeriodReportData,
   GroupReportData,
   StudentReportData,
   StudentExamDetailData,
@@ -257,7 +224,6 @@ const reportData = ref<any>(null);
 
 // Typed report references
 const examReport = computed(() => activeType.value === 'by-exam' ? reportData.value as ExamReportData : null);
-const periodReport = computed(() => activeType.value === 'by-period' ? reportData.value as PeriodReportData : null);
 const groupReport = computed(() => activeType.value === 'by-group' ? reportData.value as GroupReportData : null);
 const studentReport = computed(() => activeType.value === 'by-student' ? reportData.value as StudentReportData : null);
 const detailReport = computed(() => activeType.value === 'student-exam-detail' ? reportData.value as StudentExamDetailData : null);
@@ -279,9 +245,6 @@ async function handleGenerate(filters: ReportFiltersDto) {
     switch (filters.reportType) {
       case 'by-exam':
         response = await controller.getExamReport(filters);
-        break;
-      case 'by-period':
-        response = await controller.getPeriodReport(filters);
         break;
       case 'by-group':
         response = await controller.getGroupReport(filters);
@@ -368,25 +331,6 @@ const examColumns = [
   { key: 'status', label: 'Estado', minWidth: '140px' },
 ];
 
-// --- By Period computed ---
-const periodMetrics = computed(() => periodReport.value ? buildMetrics(periodReport.value.metrics) : []);
-const periodGradeChartData = computed(() => periodReport.value ? buildGradeChart(periodReport.value.gradeDistribution) : { labels: [], datasets: [] });
-const periodExamAvgChartData = computed(() => {
-  if (!periodReport.value) return { labels: [], datasets: [] };
-  return {
-    labels: periodReport.value.exams.map((e) => e.examTitle),
-    datasets: [{ label: 'Promedio', data: periodReport.value.exams.map((e) => e.averageGrade), backgroundColor: '#069574', borderRadius: 6 }],
-  };
-});
-const periodColumns = [
-  { key: 'examTitle', label: 'Examen', minWidth: '200px' },
-  { key: 'subjectName', label: 'Materia', minWidth: '150px' },
-  { key: 'groupLetter', label: 'Grupo', minWidth: '80px' },
-  { key: 'averageGrade', label: 'Promedio', minWidth: '100px' },
-  { key: 'approvalRate', label: '% Aprobación', minWidth: '120px' },
-  { key: 'totalStudents', label: 'Alumnos', minWidth: '90px' },
-];
-
 // --- By Group computed ---
 const groupMetrics = computed(() => groupReport.value ? buildMetrics(groupReport.value.metrics) : []);
 const groupGradeChartData = computed(() => groupReport.value ? buildGradeChart(groupReport.value.gradeDistribution) : { labels: [], datasets: [] });
@@ -455,28 +399,6 @@ function exportExamExcel() {
     columns: ['Matrícula', 'Nombre', 'Calificación', 'Estado'],
     rows: r.students.map((s) => [s.matricula, s.fullName, s.grade, statusLabel(s.status)]),
     fileName: `reporte_examen_${r.examId}`,
-  });
-}
-
-function exportPeriodPdf() {
-  if (!periodReport.value) return;
-  const r = periodReport.value;
-  exportToPdf({
-    title: `Reporte: ${r.periodName} ${r.year}`,
-    columns: ['Examen', 'Materia', 'Grupo', 'Promedio', '% Aprobación', 'Alumnos'],
-    rows: r.exams.map((e) => [e.examTitle, e.subjectName, e.groupLetter, e.averageGrade, `${e.approvalRate}%`, e.totalStudents]),
-    fileName: `reporte_periodo_${r.periodId}`,
-  });
-}
-
-function exportPeriodExcel() {
-  if (!periodReport.value) return;
-  const r = periodReport.value;
-  exportToExcel({
-    sheetName: 'Por Periodo',
-    columns: ['Examen', 'Materia', 'Grupo', 'Promedio', '% Aprobación', 'Alumnos'],
-    rows: r.exams.map((e) => [e.examTitle, e.subjectName, e.groupLetter, e.averageGrade, e.approvalRate, e.totalStudents]),
-    fileName: `reporte_periodo_${r.periodId}`,
   });
 }
 

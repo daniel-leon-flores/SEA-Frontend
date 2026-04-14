@@ -59,17 +59,6 @@ export interface PeriodExamSummary {
   totalStudents: number;
 }
 
-export interface PeriodReportData {
-  periodId: number;
-  periodName: string;
-  year: number;
-  startDate: string;
-  endDate: string;
-  metrics: SummaryMetrics;
-  gradeDistribution: GradeDistribution[];
-  exams: PeriodExamSummary[];
-}
-
 // --- Report: By Group ---
 // Source: Group + StudentProfile + ExamPerson + Exam
 export interface GroupStudentRow {
