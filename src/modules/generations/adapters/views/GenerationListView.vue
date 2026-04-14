@@ -101,7 +101,7 @@
                 />
               </v-col>
 
-              <v-col cols="12" sm="6">
+              <v-col cols="12" sm="6" class="mt-3">
                 <v-text-field
                   v-model.number="form.total_levels"
                   label="Cantidad de cuatrimestres"
@@ -162,6 +162,7 @@
                     density="comfortable"
                     placeholder="A"
                     maxlength="1"
+                    @keydown="preventNonLetterInput"
                     @update:model-value="group.group_letter = normalizeLetter(group.group_letter)"
                   />
                 </v-col>
@@ -286,7 +287,14 @@ const showToast = (message: string, color: string = 'success') => {
   snackbar.value = { show: true, color, message };
 };
 
-const normalizeLetter = (value: string): string => value.trim().toUpperCase();
+const normalizeLetter = (value: string): string => value.replace(/[^a-zA-Z]/g, '').trim().toUpperCase();
+
+const preventNonLetterInput = (event: KeyboardEvent) => {
+  if (event.key.length > 1) return;
+  if (!/^[a-zA-Z]$/.test(event.key)) {
+    event.preventDefault();
+  }
+};
 
 /** Previene caracteres no numéricos en campos tipo number (e, +, -, .) */
 const preventInvalidYearChars = (event: KeyboardEvent) => {

@@ -3,6 +3,8 @@ import { ApiResponse } from '@/kernel/types';
 import type {
   SubmitExamAnswersDto,
   SubmitExamAnswersResult,
+  ForfeitExamDto,
+  ForfeitExamResult,
   AssignmentAnswersResult,
   ManualGradeDto,
   ManualGradeResult,
@@ -14,6 +16,14 @@ export class AnswersStorageGateway implements AnswersRepository {
     return handleRequest<SubmitExamAnswersResult, SubmitExamAnswersDto>(
       'post',
       '/api/answers/submit/',
+      payload,
+    );
+  }
+
+  forfeitExam(payload: ForfeitExamDto): Promise<ApiResponse<ForfeitExamResult>> {
+    return handleRequest<ForfeitExamResult, ForfeitExamDto>(
+      'post',
+      '/api/answers/forfeit/',
       payload,
     );
   }

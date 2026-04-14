@@ -207,7 +207,7 @@
             maxlength="2000"
             counter
             validate-on="input lazy"
-            :rules="[requiredRule, noHtmlRule, maxLen2000Rule]"
+            :rules="[requiredRule, maxLen2000Rule]"
             :error-messages="formErrors.text"
             @update:model-value="clearFieldError('text')"
           />
@@ -612,9 +612,6 @@ export default {
       if (v === null || v === undefined || v === '') return 'Campo requerido';
       return true;
     },
-    noHtmlRule(v: string): true | string {
-      return !v || !/<[^>]*>/.test(v) || 'No se permiten etiquetas HTML';
-    },
     maxLen2000Rule(v: string): true | string {
       return !v || v.length <= 2000 || 'Máximo 2000 caracteres';
     },
@@ -772,8 +769,6 @@ export default {
       const t = this.form.text?.trim() ?? '';
       if (!t) {
         fail('text', 'El enunciado es obligatorio.');
-      } else if (/<[^>]*>/.test(t)) {
-        fail('text', 'No se permiten etiquetas HTML en el enunciado.');
       } else if (t.length > 2000) {
         fail('text', 'El enunciado no puede superar los 2000 caracteres.');
       }

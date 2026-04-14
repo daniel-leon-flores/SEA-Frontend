@@ -25,7 +25,7 @@ function flattenDrfErrors(errors: unknown): string[] {
 
 export function getApiErrorMessage(payload: unknown): string {
   if (!payload || typeof payload !== 'object') {
-    return 'Error en la solicitud';
+    return 'Ocurrió un error inesperado. Por favor, intenta de nuevo.';
   }
   const p = payload as Record<string, unknown>;
 
@@ -48,5 +48,5 @@ export function getApiErrorMessage(payload: unknown): string {
     if (nested.length > 0) return nested.join(' ');
   }
 
-  return 'Error en la solicitud';
+  return 'Ocurrió un error inesperado. Por favor, intenta de nuevo.';
 }

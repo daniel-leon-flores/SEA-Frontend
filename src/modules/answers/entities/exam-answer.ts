@@ -15,6 +15,22 @@ export type SubmitExamAnswersDto = {
   answers: SubmitAnswerItemDto[];
 };
 
+// ──────────────────────────────────────────────
+// Forfeit endpoint (safe-mode exit auto-close)
+// ──────────────────────────────────────────────
+
+export type ForfeitExamDto = {
+  exam_assignment_id: number;
+  answers: SubmitAnswerItemDto[];
+};
+
+export type ForfeitExamResult = {
+  assignment_id: number;
+  status: 'completed';
+  score_summary: SubmitExamScoreSummary | null;
+  graded_answers: GradedAnswerDetail[];
+};
+
 export type GradedAnswerDetail = {
   question_id: number;
   graded: boolean;
