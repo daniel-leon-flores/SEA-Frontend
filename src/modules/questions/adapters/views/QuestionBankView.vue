@@ -383,6 +383,17 @@
               <ul class="pl-4">
                 <li v-for="(e, i) in uploadReport.errors" :key="i">Fila {{ e.row }}: {{ e.error }}</li>
               </ul>
+              <v-btn
+                v-if="uploadReport.errors_file"
+                class="mt-2"
+                size="small"
+                variant="outlined"
+                color="error"
+                prepend-icon="mdi-download"
+                @click="downloadErrorRowsFile"
+              >
+                Descargar filas con error
+              </v-btn>
             </div>
           </v-alert>
         </v-card-text>
@@ -391,6 +402,20 @@
           <v-spacer />
           <v-btn variant="text" color="grey" @click="uploadDialog = false">Cerrar</v-btn>
           <v-btn variant="elevated" color="primary" :loading="uploading" :disabled="!uploadFile" @click="runUpload">Subir</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="partialSubjectDialog" max-width="560">
+      <v-card>
+        <v-card-title class="text-h6 d-flex align-center">
+          <v-icon start color="warning">mdi-alert-circle-outline</v-icon>
+          Materias parcialmente válidas
+        </v-card-title>
+        <v-card-text>{{ partialSubjectMessage }}</v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn color="primary" variant="elevated" @click="partialSubjectDialog = false">Entendido</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -412,6 +437,7 @@ import { subjectService } from '@/modules/subjects/adapters/subject.service';
 import type { ApiResponse } from '@/kernel/types';
 import type { QuestionBank } from '../../entities/question-bank';
 import type { CreateQuestionDto } from '../../entities/create-question.dto';
+import type { UploadReport } from '../../use-cases/ports/question.repository';
 import {
   QUESTION_TYPE_OPTIONS,
   DIFFICULTY_OPTIONS,
@@ -550,7 +576,9 @@ export default {
       codeTestsRaw: '',
       uploadDialog: false,
       uploadFile: null as File[] | File | null,
-      uploadReport: null as { total_rows: number; created: number; errors: { row: number; error: string }[] } | null,
+      uploadReport: null as UploadReport | null,
+      partialSubjectDialog: false,
+      partialSubjectMessage: '',
       snackbar: { show: false, message: '', color: 'success' },
       formErrors: emptyFormErrors(),
       QUESTION_TYPE_OPTIONS,
@@ -599,7 +627,6 @@ export default {
     showSnackbar(message: string, color = 'success') {
       this.snackbar = { show: true, message, color };
     },
-
     clearFormErrors() {
       this.formErrors = emptyFormErrors();
     },
@@ -993,7 +1020,7 @@ export default {
         a.download = 'plantilla_preguntas.xlsx';
         a.click();
         globalThis.URL.revokeObjectURL(url);
-        this.showSnackbar('Plantilla descargada');
+        this.showSnackbar('Plantilla descargada. Revisa la hoja "Materias" para usar solo las materias disponibles.', 'warning');
       } catch {
         this.showSnackbar('Error al descargar plantilla', 'error');
       } finally {
@@ -1009,6 +1036,11 @@ export default {
         const res = await controller.uploadExcel(f);
         if (res.success && res.data) {
           this.uploadReport = res.data;
+          if (res.data.partial_subject_access && (res.data.valid_subjects?.length ?? 0) > 0) {
+            const list = res.data.valid_subjects?.join(', ') ?? '';
+            this.partialSubjectMessage = `Solo se registrarán preguntas de las materias: ${list}, ya que no tienes acceso a las demás.`;
+            this.partialSubjectDialog = true;
+          }
           this.showSnackbar(`Carga finalizada: ${res.data.created} creadas`);
           await this.fetchQuestions();
         } else {
@@ -1016,6 +1048,32 @@ export default {
         }
       } finally {
         this.uploading = false;
+      }
+    },
+    downloadErrorRowsFile() {
+      const file = this.uploadReport?.errors_file;
+      if (!file?.content_base64) {
+        this.showSnackbar('No hay archivo de errores para descargar.', 'warning');
+        return;
+      }
+      try {
+        const binary = atob(file.content_base64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i += 1) {
+          bytes[i] = binary.codePointAt(i)!;
+        }
+        const blob = new Blob(
+          [bytes],
+          { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' },
+        );
+        const url = globalThis.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = file.filename || 'preguntas_con_error.xlsx';
+        a.click();
+        globalThis.URL.revokeObjectURL(url);
+      } catch {
+        this.showSnackbar('No se pudo descargar el archivo de errores.', 'error');
       }
     },
   },

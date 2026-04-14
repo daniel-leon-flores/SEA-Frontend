@@ -10,7 +10,6 @@ import { ReportType } from './report-types';
 export interface ReportFiltersDto {
   reportType: ReportType;
   examId?: number;
-  periodId?: number;
   groupId?: number;
   studentId?: number;
   subjectId?: number;
