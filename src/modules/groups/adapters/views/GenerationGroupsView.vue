@@ -269,7 +269,7 @@ const resetGroupForm = () => {
 };
 
 const loadGenerationInfo = async () => {
-  const response = await controller.getGenerations(generationId, undefined, 1, 1);
+  const response = await controller.getGenerations(generationId, undefined, undefined, 1, 1);
   if (!response.success || !response.data) {
     return;
   }
@@ -309,10 +309,6 @@ const loadGroups = async () => {
   } finally {
     loading.value = false;
   }
-};
-
-const goBack = () => {
-  router.push('/generations');
 };
 
 

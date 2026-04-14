@@ -2,8 +2,6 @@ import { ref } from 'vue';
 import type { Subject } from '../entities/subject';
 import { handleRequest } from '@/config/http-client.gateway';
 
-type GroupEntry = { subject: { id_subject: number } };
-
 export function useTeacherSubjects() {
   const loading = ref(false);
   const subjects = ref<Subject[]>([]);
@@ -29,9 +27,9 @@ export function useTeacherSubjects() {
       const query = params.toString();
       const endpoint = `/api/academic/subjects/my-subjects/?${query}`;
 
-      const [subjectsRes, groupsRes] = await Promise.all([
+      const [subjectsRes, withGroupsRes] = await Promise.all([
         handleRequest<{ results: Subject[]; pagination: { count: number; total_pages: number; page: number; page_size: number } }>('get', endpoint),
-        handleRequest<{ results: GroupEntry[] }>('get', '/api/academic/groups/my-groups/'),
+        handleRequest<number[]>('get', '/api/academic/subjects/my-subjects-with-groups/'),
       ]);
 
       if (subjectsRes.success && subjectsRes.data) {
@@ -50,11 +48,9 @@ export function useTeacherSubjects() {
         subjects.value = [];
       }
 
-      if (groupsRes.success && groupsRes.data) {
-        const raw = groupsRes.data as unknown as { results: GroupEntry[] };
-        subjectIdsWithGroups.value = new Set(
-          (raw.results ?? []).map((g) => g.subject?.id_subject).filter(Boolean)
-        );
+      if (withGroupsRes.success && withGroupsRes.data) {
+        const ids = withGroupsRes.data as unknown as number[];
+        subjectIdsWithGroups.value = new Set(ids.filter(Boolean));
       } else {
         subjectIdsWithGroups.value = new Set();
       }

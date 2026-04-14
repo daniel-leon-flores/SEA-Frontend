@@ -126,6 +126,7 @@ export default {
       submitting: false,
       loadingGroups: false,
       loadingSubjects: false,
+      pendingGroupId: null,
       groups: [],
       subjects: [],
       payload: {
@@ -137,15 +138,15 @@ export default {
         id_group: null,
         subject_ids: []
       },
-      serverErrors: {},
+      serverErrors: {} as Record<string, string | undefined>,
       roleItems: [
         { label: 'Alumno', value: 'student' },
         { label: 'Docente', value: 'teacher' },
         { label: 'Administrador', value: 'admin' }
       ],
       rules: {
-        required: (v) => (v !== null && v !== undefined && v !== '') || 'Campo requerido',
-        email: (v) => /^[^\s@]{1,64}@[^\s@]{1,253}\.[^\s@]{2,63}$/.test(v) || 'Correo inválido'
+        required: (v: string) => (v !== null && v !== undefined && v !== '') || 'Campo requerido',
+        email: (v: string) => /^[^\s@]{1,64}@[^\s@]{1,253}\.[^\s@]{2,63}$/.test(v) || 'Correo inválido'
       }
     }
   },
@@ -154,7 +155,7 @@ export default {
       get() {
         return this.dialog
       },
-      set(value) {
+      set(value: boolean) {
         this.$emit('update:dialog', value)
       }
     }
@@ -172,9 +173,10 @@ export default {
     close() {
       this.dialogModel = false
       if (this.$refs.formRef) {
-        this.$refs.formRef.reset()
+        (this.$refs.formRef as any).reset()
       }
       this.serverErrors = {}
+      this.pendingGroupId = null
       Object.assign(this.payload, {
         first_name: '',
         last_name: '',
@@ -195,14 +197,16 @@ export default {
       this.payload.matricula = this.user.matricula
       this.payload.role = this.user.role
       
+      // Reset id_group to null while groups are loading to avoid showing raw ID
+      this.payload.id_group = null
       if (this.user.role === 'student' && this.user.group) {
-        this.payload.id_group = this.user.group.id_group
+        this.pendingGroupId = this.user.group.id_group
       } else {
-        this.payload.id_group = null
+        this.pendingGroupId = null
       }
       
       if (this.user.role === 'teacher' && this.user.subjects && this.user.subjects.length > 0) {
-        this.payload.subject_ids = this.user.subjects.map(s => s.id_subject)
+        this.payload.subject_ids = this.user.subjects.map((s: any) => s.id_subject)
       } else {
         this.payload.subject_ids = []
       }
@@ -214,10 +218,15 @@ export default {
         const { default: AxiosClient } = await import('@/config/axios')
         const res = await AxiosClient.get('/api/academic/groups/?status=true&page_size=100')
         const results = res.data?.data?.results ?? res.data?.data ?? []
-        this.groups = results.map((g) => ({
+        this.groups = results.map((g: any) => ({
           id_group: g.id_group,
           label: `${g.academic_level}${g.group_letter} — Gen. ${g.generation_year}`
         }))
+        // Apply pending group id now that options are loaded
+        if (this.pendingGroupId !== null) {
+          this.payload.id_group = this.pendingGroupId
+          this.pendingGroupId = null
+        }
       } catch (error) {
         console.error('Error loading groups:', error)
       } finally {
@@ -240,14 +249,14 @@ export default {
     
     async submit() {
       this.serverErrors = {}
-      const { valid } = await this.$refs.formRef.validate()
+      const { valid } = await (this.$refs.formRef as any).validate()
       if (!valid) return
 
       this.submitting = true
       try {
         const { UserController } = await import('../user.controller')
         const controller = new UserController()
-        const response = await controller.updateUser(this.user.id_user, { ...this.payload })
+        const response = await controller.updateUser(this.user.id_user, { ...this.payload } as any)
 
         if (response.success) {
           this.$emit('user-updated', response.data)
@@ -255,7 +264,7 @@ export default {
         } else {
           const errors = response?.errors ?? {}
           Object.entries(errors).forEach(([k, v]) => {
-            this.serverErrors[k] = Array.isArray(v) ? v[0] : String(v)
+            (this.serverErrors as Record<string, string | undefined>)[k] = Array.isArray(v) ? v[0] : String(v)
           })
         }
       } catch (error) {
