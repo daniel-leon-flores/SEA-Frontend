@@ -24,6 +24,7 @@ export interface AcademicGroup {
   group_letter: string;
   academic_level: number;
   status: boolean;
+  subject_name: string | null;
 }
 
 export interface Subject {
