@@ -124,12 +124,15 @@ import { ReportController } from '../report.controller';
 import { GenerationController } from '../../../generations/adapters/generation.controller';
 import { getGenerationGroupsInteractor } from '@/modules/groups/adapters/generation-group.controller';
 import { ExamController } from '@/modules/exams/adapters/exam.controller';
+import { UserController } from '@/modules/users/adapters/user.controller';
+
 /* =========================
    CONTROLLERS
 ========================= */
 const reportController = new ReportController();
 const generationController = new GenerationController();
 const examController = new ExamController();
+const userController = new UserController();
 
 /* =========================
    EMIT / PROPS
@@ -312,6 +315,45 @@ watch(selectedGeneration, async (val) => {
 
   await loadGroups(val);
 });
+/* =========================
+   LOAD STUDENTS ✅ NUEVO
+========================= */
+async function loadStudents(groupId?: number) {
+  loadingStudents.value = true;
+
+  try {
+    if (!groupId) {
+      students.value = [];
+      return;
+    }
+
+    const res = await userController.getUsers({
+      pagination: {
+        page: 1,
+        limit: 100,
+      },
+      role: 'student',
+      group: groupId,
+    });
+
+    // 👇 soporta ambas respuestas
+    const list =
+      res?.results ??
+      res?.data?.results ??
+      [];
+
+    students.value = list.map((s: any) => ({
+      id: s.id_user,
+      label: `${s.first_name} ${s.last_name}`, // 🔥 importante
+    }));
+
+  } catch (error) {
+    console.error('loadStudents error:', error);
+    students.value = [];
+  } finally {
+    loadingStudents.value = false;
+  }
+}
 
 /* =========================
    GROUP → SUBJECTS
@@ -323,6 +365,7 @@ watch(() => localFilters.groupId, async (groupId) => {
 
   subjects.value = [];
   exams.value = [];
+  students.value = []; // 👈 limpia primero
 
   if (!groupId) return;
 
@@ -330,14 +373,14 @@ watch(() => localFilters.groupId, async (groupId) => {
     (g) => Number(g.id_group) === Number(groupId)
   );
 
-  if (!group?.assignments) return;
+  if (group?.assignments) {
+    subjects.value = group.assignments.map((a: any) => ({
+      id: a.subject.id_subject,
+      label: a.subject.name,
+    }));
+  }
 
-  subjects.value = group.assignments.map((a: any) => ({
-    id: a.subject.id_subject,
-    label: a.subject.name,
-  }));
-
-  await loadStudents(groupId);
+  await loadStudents(groupId); // 🔥 aquí sucede la magia
 });
 
 /* =========================
