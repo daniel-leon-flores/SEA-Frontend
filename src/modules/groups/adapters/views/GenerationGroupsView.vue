@@ -91,6 +91,7 @@
                 variant="outlined"
                 density="comfortable"
                 placeholder="A"
+                maxlength="1"
                 @update:model-value="groupForm.group_letter = normalizeLetter(groupForm.group_letter)"
               />
             </v-col>

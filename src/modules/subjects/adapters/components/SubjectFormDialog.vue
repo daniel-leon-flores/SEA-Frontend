@@ -15,7 +15,9 @@
             label="Nombre de la materia"
             variant="outlined"
             density="comfortable"
-            :rules="[rules.required, rules.maxLen]"
+            maxlength="150"
+            counter
+            :rules="[rules.required, rules.maxLen, rules.noHtml]"
             :disabled="saving"
             :error-messages="fieldErrors.name"
             @update:model-value="clearFieldError('name')"
@@ -41,14 +43,18 @@
             label="Número de unidades (opcional)"
             type="number"
             min="0"
-            max="50"
-            hint="Si indicas un número, se crearán unidades numeradas automáticamente."
+            max="9"
+            step="1"
+            hint="Si indicas un número (0-9), se crearán unidades numeradas automáticamente."
             persistent-hint
             variant="outlined"
             density="comfortable"
+            maxlength="1"
             :disabled="saving"
             :rules="[rules.nonNegativeUnits]"
             :error-messages="fieldErrors.number_of_units"
+            @keydown="preventInvalidNumberChars($event)"
+            @input="clampUnitsInput"
             @update:model-value="clearFieldError('number_of_units')"
           />
 
@@ -69,6 +75,7 @@
           variant="elevated"
           :color="isEdit ? 'primary' : 'success'"
           :loading="saving"
+          :disabled="!formValid || saving"
           @click="submit"
         >
           {{ isEdit ? 'Guardar cambios' : 'Registrar materia' }}
@@ -119,7 +126,14 @@ const rules = {
   required: (v: unknown) => (v !== undefined && v !== null && String(v).trim() !== '') || 'Campo requerido',
   maxLen: (v: string) => !v || v.length <= 150 || 'Máximo 150 caracteres',
   minLevel: (v: number) => (v >= 1) || 'El nivel debe ser al menos 1',
-  nonNegativeUnits: (v: number) => v === undefined || v === null || (v >= 0 && v <= 50) || 'Entre 0 y 50',
+  nonNegativeUnits: (v: unknown) => {
+    if (v === undefined || v === null || v === '' || v === 0) return true;
+    const n = Number(v);
+    if (!Number.isInteger(n)) return 'Debe ser un número entero';
+    if (n < 0 || n > 9) return 'Debe estar entre 0 y 9';
+    return true;
+  },
+  noHtml: (v: string) => !v || !/<[^>]*>/.test(v) || 'No se permiten etiquetas HTML',
 };
 
 function resetForm() {
@@ -167,6 +181,23 @@ function clearFieldError(key: string) {
   fieldErrors.value = next;
 }
 
+function preventInvalidNumberChars(event: KeyboardEvent) {
+  if (['e', 'E', '+', '-', '.', ','].includes(event.key)) {
+    event.preventDefault();
+  }
+}
+
+function clampUnitsInput(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const raw = input.value;
+  // Strip non-digit characters (handles paste of 1e+2100 etc.)
+  const cleaned = raw.replace(/[^0-9]/g, '');
+  const n = cleaned ? Number.parseInt(cleaned, 10) : 0;
+  const clamped = Math.min(Math.max(n, 0), 9);
+  form.value.number_of_units = clamped;
+  input.value = String(clamped);
+}
+
 function mapServerErrors(details: unknown): void {
   const out: Record<string, string[]> = {};
   if (details && typeof details === 'object') {
@@ -210,9 +241,9 @@ async function submit() {
         level_number: form.value.level_number,
         status: form.value.status,
       };
-      const n = Number(form.value.number_of_units);
-      if (!Number.isNaN(n) && n > 0) {
-        dto.number_of_units = n;
+      const rawUnits = Number(form.value.number_of_units);
+      if (Number.isInteger(rawUnits) && rawUnits > 0 && rawUnits <= 9) {
+        dto.number_of_units = rawUnits;
       }
       const res = await controller.createSubject(dto);
       if (res.success) {

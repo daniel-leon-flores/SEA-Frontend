@@ -20,7 +20,9 @@
                 placeholder="Ej. Examen Parcial 1"
                 variant="outlined"
                 density="comfortable"
-                :rules="[rules.required]"
+                maxlength="150"
+                counter
+                :rules="[rules.required, rules.maxLen, rules.noHtml]"
                 :disabled="submitting || loadingSubjects"
               />
             </v-col>
@@ -223,6 +225,8 @@ const rules = {
     if (num < MIN_SCORE || num > MAX_SCORE) return `Debe estar entre ${MIN_SCORE} y ${MAX_SCORE}`;
     return true;
   },
+  maxLen: (v: string) => !v || v.length <= 150 || 'Máximo 150 caracteres',
+  noHtml: (v: string) => !v || !/<[^>]*>/.test(v) || 'No se permiten etiquetas HTML',
 };
 
 async function loadBankQuestions() {
