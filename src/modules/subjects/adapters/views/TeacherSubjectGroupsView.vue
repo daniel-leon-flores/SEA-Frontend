@@ -105,7 +105,7 @@ const fetchGroups = async () => {
   try {
     const res = await handleRequest<{ results: TeacherGroup[] }>(
       'get',
-      `/api/academic/groups/my-groups/?subject_id=${subjectId}`
+      `/api/academic/subjects/${subjectId}/my-groups/`
     );
     if (res.success && res.data) {
       groups.value = (res.data as unknown as { results: TeacherGroup[] }).results ?? [];
