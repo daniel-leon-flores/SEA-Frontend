@@ -365,7 +365,6 @@ watch(() => localFilters.groupId, async (groupId) => {
 
   subjects.value = [];
   exams.value = [];
-  students.value = []; // 👈 limpia primero
 
   if (!groupId) return;
 
@@ -373,14 +372,14 @@ watch(() => localFilters.groupId, async (groupId) => {
     (g) => Number(g.id_group) === Number(groupId)
   );
 
-  if (group?.assignments) {
-    subjects.value = group.assignments.map((a: any) => ({
-      id: a.subject.id_subject,
-      label: a.subject.name,
-    }));
-  }
+  if (!group?.assignments) return;
 
-  await loadStudents(groupId); // 🔥 aquí sucede la magia
+  subjects.value = group.assignments.map((a: any) => ({
+    id: a.subject.id_subject,
+    label: a.subject.name,
+  }));
+
+  await loadStudents(groupId);
 });
 
 /* =========================
