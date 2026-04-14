@@ -148,15 +148,15 @@ export default {
         id_group: null,
         subject_ids: []
       },
-      serverErrors: {},
+      serverErrors: {} as Record<string, string | undefined>,
       roleItems: [
         { label: 'Alumno', value: 'student' },
         { label: 'Docente', value: 'teacher' },
         { label: 'Administrador', value: 'admin' }
       ],
       rules: {
-        required: (v) => (v !== null && v !== undefined && v !== '') || 'Campo requerido',
-        email: (v) => /^[^\s@]{1,64}@[^\s@]{1,253}\.[^\s@]{2,63}$/.test(v) || 'Correo inválido'
+        required: (v: string) => (v !== null && v !== undefined && v !== '') || 'Campo requerido',
+        email: (v: string) => /^[^\s@]{1,64}@[^\s@]{1,253}\.[^\s@]{2,63}$/.test(v) || 'Correo inválido'
       }
     }
   },
@@ -165,7 +165,7 @@ export default {
       get() {
         return this.dialog
       },
-      set(value) {
+      set(value: boolean) {
         this.$emit('update:dialog', value)
       }
     }
@@ -178,50 +178,50 @@ export default {
       }
     },
     'payload.first_name'() {
-      if (this.serverErrors.first_name) {
-        this.serverErrors.first_name = undefined
+      if ((this.serverErrors as Record<string, string | undefined>).first_name) {
+        (this.serverErrors as Record<string, string | undefined>).first_name = undefined
         this.$nextTick(() => {
-          this.$refs.formRef.validate()
+          (this.$refs.formRef as any).validate()
         })
       }
     },
     'payload.last_name'() {
-      if (this.serverErrors.last_name) {
-        this.serverErrors.last_name = undefined
+      if ((this.serverErrors as Record<string, string | undefined>).last_name) {
+        (this.serverErrors as Record<string, string | undefined>).last_name = undefined
         this.$nextTick(() => {
-          this.$refs.formRef.validate()
+          (this.$refs.formRef as any).validate()
         })
       }
     },
     'payload.email'() {
-      if (this.serverErrors.email) {
-        this.serverErrors.email = undefined
+      if ((this.serverErrors as Record<string, string | undefined>).email) {
+        (this.serverErrors as Record<string, string | undefined>).email = undefined
         this.$nextTick(() => {
-          this.$refs.formRef.validate()
+          (this.$refs.formRef as any).validate()
         })
       }
     },
     'payload.matricula'() {
-      if (this.serverErrors.matricula) {
-        this.serverErrors.matricula = undefined
+      if ((this.serverErrors as Record<string, string | undefined>).matricula) {
+        (this.serverErrors as Record<string, string | undefined>).matricula = undefined
         this.$nextTick(() => {
-          this.$refs.formRef.validate()
+          (this.$refs.formRef as any).validate()
         })
       }
     },
     'payload.id_group'() {
-      if (this.serverErrors.id_group) {
-        this.serverErrors.id_group = undefined
+      if ((this.serverErrors as Record<string, string | undefined>).id_group) {
+        (this.serverErrors as Record<string, string | undefined>).id_group = undefined
         this.$nextTick(() => {
-          this.$refs.formRef.validate()
+          (this.$refs.formRef as any).validate()
         })
       }
     },
     'payload.subject_ids'() {
-      if (this.serverErrors.subject_ids) {
-        this.serverErrors.subject_ids = undefined
+      if ((this.serverErrors as Record<string, string | undefined>).subject_ids) {
+        (this.serverErrors as Record<string, string | undefined>).subject_ids = undefined
         this.$nextTick(() => {
-          this.$refs.formRef.validate()
+          (this.$refs.formRef as any).validate()
         })
       }
     }
@@ -230,7 +230,7 @@ export default {
     close() {
       this.dialogModel = false
       if (this.$refs.formRef) {
-        this.$refs.formRef.reset()
+        (this.$refs.formRef as any).reset()
       }
       this.serverErrors = {}
       Object.assign(this.payload, {
@@ -255,7 +255,7 @@ export default {
         const { default: AxiosClient } = await import('@/config/axios')
         const res = await AxiosClient.get('/api/academic/groups/?status=true&page_size=100')
         const results = res.data?.data?.results ?? res.data?.data ?? []
-        this.groups = results.map((g) => ({
+        this.groups = results.map((g: any) => ({
           id_group: g.id_group,
           label: `${g.academic_level}${g.group_letter} — Gen. ${g.generation_year}`
         }))
@@ -281,14 +281,14 @@ export default {
     
     async submit() {
       this.serverErrors = {}
-      const { valid } = await this.$refs.formRef.validate()
+      const { valid } = await (this.$refs.formRef as any).validate()
       if (!valid) return
 
       this.submitting = true
       try {
         const { UserController } = await import('../user.controller')
         const controller = new UserController()
-        const response = await controller.createUser({ ...this.payload })
+        const response = await controller.createUser({ ...this.payload } as any)
 
         if (response.success) {
           this.$emit('user-created', response.data)
@@ -296,7 +296,7 @@ export default {
         } else {
           const errors = response?.errors ?? {}
           Object.entries(errors).forEach(([k, v]) => {
-            this.serverErrors[k] = Array.isArray(v) ? v[0] : String(v)
+            (this.serverErrors as Record<string, string | undefined>)[k] = Array.isArray(v) ? v[0] : String(v)
           })
         }
       } catch (error) {

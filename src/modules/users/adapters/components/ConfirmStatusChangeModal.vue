@@ -83,7 +83,7 @@ export default {
       get() {
         return this.dialog
       },
-      set(value) {
+      set(value: boolean) {
         this.$emit('update:dialog', value)
       }
     }
