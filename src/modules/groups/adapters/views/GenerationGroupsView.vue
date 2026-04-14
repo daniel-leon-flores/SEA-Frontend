@@ -91,6 +91,8 @@
                 variant="outlined"
                 density="comfortable"
                 placeholder="A"
+                maxlength="1"
+                @keydown="preventNonLetterInput"
                 @update:model-value="groupForm.group_letter = normalizeLetter(groupForm.group_letter)"
               />
             </v-col>
@@ -257,7 +259,15 @@ const showToast = (message: string, color: string = 'success') => {
   snackbar.value = { show: true, color, message };
 };
 
-const normalizeLetter = (value: string): string => value.trim().toUpperCase();
+const normalizeLetter = (value: string): string => value.replaceAll(/[^a-zA-Z]/g, '').trim().toUpperCase();
+
+const preventNonLetterInput = (event: KeyboardEvent) => {
+  // Allow control keys: backspace, delete, arrows, tab, etc.
+  if (event.key.length > 1) return;
+  if (!/^[a-zA-Z]$/.test(event.key)) {
+    event.preventDefault();
+  }
+};
 
 const resetGroupForm = () => {
   groupForm.value = {

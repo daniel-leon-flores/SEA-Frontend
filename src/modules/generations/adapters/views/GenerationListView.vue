@@ -83,30 +83,39 @@
         <v-window v-model="activeTab">
           <v-window-item value="info">
             <v-row dense>
-              <v-col cols="12">
+              <v-col cols="12" class="mt-3">
                 <v-text-field
                   v-model.number="form.year"
                   label="Año de generación"
                   type="number"
+                  step="1"
+                  :min="1900"
                   :max="currentYear"
                   :error="!!yearError"
                   :error-messages="yearError"
                   hide-details="auto"
                   variant="outlined"
                   density="comfortable"
+                  @keydown="preventInvalidYearChars($event)"
+                  @input="clampYearInput"
                 />
               </v-col>
 
-              <v-col cols="12" sm="6">
+              <v-col cols="12" sm="6" class="mt-3">
                 <v-text-field
                   v-model.number="form.total_levels"
                   label="Cantidad de cuatrimestres"
                   type="number"
+                  step="1"
                   min="1"
-                  max="20"
-                  hide-details
+                  max="11"
+                  hide-details="auto"
                   variant="outlined"
                   density="comfortable"
+                  :rules="[totalLevelsRule]"
+                  @keydown="preventInvalidYearChars($event)"
+                  @input="sanitizeTotalLevelsInput"
+                  @blur="clampTotalLevelsOnBlur"
                 />
               </v-col>
 
@@ -152,6 +161,8 @@
                     variant="outlined"
                     density="comfortable"
                     placeholder="A"
+                    maxlength="1"
+                    @keydown="preventNonLetterInput"
                     @update:model-value="group.group_letter = normalizeLetter(group.group_letter)"
                   />
                 </v-col>
@@ -276,7 +287,58 @@ const showToast = (message: string, color: string = 'success') => {
   snackbar.value = { show: true, color, message };
 };
 
-const normalizeLetter = (value: string): string => value.trim().toUpperCase();
+const normalizeLetter = (value: string): string => value.replaceAll(/[^a-zA-Z]/g, '').trim().toUpperCase();
+
+const preventNonLetterInput = (event: KeyboardEvent) => {
+  if (event.key.length > 1) return;
+  if (!/^[a-zA-Z]$/.test(event.key)) {
+    event.preventDefault();
+  }
+};
+
+/** Previene caracteres no numéricos en campos tipo number (e, +, -, .) */
+const preventInvalidYearChars = (event: KeyboardEvent) => {
+  if (['e', 'E', '+', '-', '.', ','].includes(event.key)) {
+    event.preventDefault();
+  }
+};
+
+const totalLevelsRule = (v: unknown): true | string => {
+  if (v === null || v === undefined || v === '') return 'Campo requerido';
+  const n = Number(v);
+  if (!Number.isInteger(n)) return 'Debe ser un número entero';
+  if (n < 1 || n > 11) return 'Debe estar entre 1 y 11';
+  return true;
+};
+
+/** Limpia caracteres no numéricos y limita a 2 dígitos mientras escribe */
+const sanitizeTotalLevelsInput = (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  const cleaned = input.value.replaceAll(/\D/g, '').slice(0, 2);
+  if (cleaned !== input.value) {
+    input.value = cleaned;
+  }
+  form.value.total_levels = cleaned ? Number.parseInt(cleaned, 10) : ('' as unknown as number);
+};
+
+/** Al perder foco, clampea el valor al rango 1-11 */
+const clampTotalLevelsOnBlur = (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  const val = input.value.replaceAll(/\D/g, '');
+  if (!val) { form.value.total_levels = 1; input.value = '1'; return; }
+  const n = Math.min(Math.max(Number.parseInt(val, 10), 1), 11);
+  form.value.total_levels = n;
+  input.value = String(n);
+};
+
+const clampYearInput = (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  const cleaned = input.value.replaceAll(/\D/g, '').slice(0, 4);
+  if (!cleaned) return;
+  const n = Number.parseInt(cleaned, 10);
+  form.value.year = n;
+  input.value = String(n);
+};
 
 // Contador seguro para generar UIDs únicos
 let uidCounter = 0;

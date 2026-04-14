@@ -181,6 +181,7 @@
             variant="outlined"
             density="comfortable"
             class="mb-1"
+            :rules="[requiredRule]"
             :error-messages="formErrors.id_subject"
             @update:model-value="clearFieldError('id_subject')"
           />
@@ -193,6 +194,7 @@
             variant="outlined"
             density="comfortable"
             class="mb-1"
+            :rules="[requiredRule]"
             :error-messages="formErrors.question_type"
             @update:model-value="onTypeChange"
           />
@@ -202,6 +204,10 @@
             variant="outlined"
             rows="3"
             class="mb-1"
+            maxlength="2000"
+            counter
+            validate-on="input lazy"
+            :rules="[requiredRule, maxLen2000Rule]"
             :error-messages="formErrors.text"
             @update:model-value="clearFieldError('text')"
           />
@@ -215,6 +221,7 @@
                 item-value="value"
                 variant="outlined"
                 density="comfortable"
+                :rules="[requiredRule]"
                 :error-messages="formErrors.difficulty"
                 @update:model-value="clearFieldError('difficulty')"
               />
@@ -228,6 +235,7 @@
                 item-value="value"
                 variant="outlined"
                 density="comfortable"
+                :rules="[requiredRule]"
                 :error-messages="formErrors.bloom_level"
                 @update:model-value="clearFieldError('bloom_level')"
               />
@@ -238,9 +246,14 @@
                 label="Puntos"
                 type="number"
                 min="1"
+                max="100"
+                step="1"
                 variant="outlined"
                 density="comfortable"
+                validate-on="input lazy"
+                :rules="[pointsRule]"
                 :error-messages="formErrors.points"
+                @keydown="preventInvalidNumberChars($event)"
                 @update:model-value="clearFieldError('points')"
               />
             </v-col>
@@ -251,6 +264,8 @@
             variant="outlined"
             density="comfortable"
             class="mb-1"
+            maxlength="500"
+            :rules="[optionalUrlRule]"
             :error-messages="formErrors.image_url"
             @update:model-value="clearFieldError('image_url')"
           />
@@ -289,6 +304,7 @@
                   density="compact"
                   class="flex-grow-1"
                   style="min-width: 200px"
+                  maxlength="500"
                   :error-messages="formErrors.optionRows[idx]"
                   @update:model-value="clearOptionRowError(idx)"
                 />
@@ -318,6 +334,7 @@
                 :label="`Opción ${idx + 1}`"
                 variant="outlined"
                 density="compact"
+                maxlength="500"
                 :error-messages="formErrors.optionRows[idx]"
                 @update:model-value="clearOptionRowError(idx)"
               />
@@ -619,6 +636,28 @@ export default {
     labelQuestionType,
     labelDifficulty,
     labelBloom,
+    requiredRule(v: unknown): true | string {
+      if (v === null || v === undefined || v === '') return 'Campo requerido';
+      return true;
+    },
+    maxLen2000Rule(v: string): true | string {
+      return !v || v.length <= 2000 || 'Máximo 2000 caracteres';
+    },
+    pointsRule(v: unknown): true | string {
+      if (v === null || v === undefined || v === '') return 'Campo requerido';
+      const n = Number(v);
+      if (!Number.isInteger(n)) return 'Debe ser un número entero';
+      if (n < 1 || n > 100) return 'Debe estar entre 1 y 100';
+      return true;
+    },
+    optionalUrlRule(v: string): true | string {
+      return !v || /^https?:\/\/.+/.test(v) || 'Debe ser una URL válida (https://...)';
+    },
+    preventInvalidNumberChars(event: KeyboardEvent) {
+      if (['e', 'E', '+', '-', '.', ','].includes(event.key)) {
+        event.preventDefault();
+      }
+    },
     difficultyColor(d: string): string {
       if (d === 'easy') return 'success';
       if (d === 'hard') return 'error';
@@ -757,6 +796,8 @@ export default {
       const t = this.form.text?.trim() ?? '';
       if (!t) {
         fail('text', 'El enunciado es obligatorio.');
+      } else if (t.length > 2000) {
+        fail('text', 'El enunciado no puede superar los 2000 caracteres.');
       }
       if (!this.form.difficulty) {
         fail('difficulty', 'Seleccione la dificultad.');
@@ -767,6 +808,8 @@ export default {
       const pts = this.form.points;
       if (pts == null || Number.isNaN(Number(pts)) || Number(pts) < 1) {
         fail('points', 'Los puntos deben ser un número mayor o igual a 1.');
+      } else if (Number(pts) > 100) {
+        fail('points', 'Los puntos no pueden superar 100.');
       }
 
       this.validateAnswerOptions(fail);

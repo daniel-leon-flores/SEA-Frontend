@@ -30,6 +30,7 @@
               placeholder="correo@example.com"
               variant="outlined"
               density="comfortable"
+              maxlength="254"
               :rules="[rules.required, rules.email]"
             />
 
@@ -40,6 +41,7 @@
               placeholder="Ingresa tu contraseña"
               variant="outlined"
               density="comfortable"
+              maxlength="128"
               :rules="[rules.required]"
             >
               <template #append-inner>
@@ -132,7 +134,7 @@ async function login() {
   loading.value = true;
   try {
     const { data } = await AxiosClient.post('/api/auth/login/', {
-      email: email.value,
+      email: email.value.trim(),
       password: password.value,
     });
     localStorage.setItem('sea_token', data.access);
