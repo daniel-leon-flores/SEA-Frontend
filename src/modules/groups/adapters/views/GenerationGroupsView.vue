@@ -11,7 +11,7 @@
 
     <div class="d-flex align-start justify-space-between mb-8 flex-wrap ga-4">
       <div>
-        <h1 class="page-title text-h4 font-weight-bold mb-2">Generación {{ generationYear || generationId }}</h1>
+        <h1 class="page-title text-h4 font-weight-bold mb-2">Generación {{ generationLabel }}</h1>
         <p class="page-subtitle text-body-1 text-grey-darken-1">Administra los grupos de la generación seleccionada</p>
       </div>
       <v-btn color="success" size="large" rounded="lg" class="text-none" prepend-icon="mdi-plus" @click="openCreateGroupModal">
@@ -209,10 +209,17 @@ const controller = new GenerationController();
 
 const generationId = decodeId(route.params.id as string);
 const generationYear = ref<number | null>(null);
+const generationEndYear = ref<number | null>(null);
+
+const generationLabel = computed(() => {
+  if (generationYear.value && generationEndYear.value) return `${generationYear.value}-${generationEndYear.value}`;
+  if (generationYear.value) return String(generationYear.value);
+  return String(generationId);
+});
 
 const breadcrumbItems = computed(() => [
   { title: 'Generaciones', disabled: false, href: '/generations' },
-  { title: generationYear.value ? `Generación ${generationYear.value}` : 'Grupos', disabled: true },
+  { title: generationYear.value ? `Generación ${generationLabel.value}` : 'Grupos', disabled: true },
 ]);
 const generationTotalLevels = ref<number>(11);
 
@@ -285,6 +292,7 @@ const loadGenerationInfo = async () => {
   }
   const generation = response.data.results?.[0] as Generation | undefined;
   generationYear.value = generation?.year ?? null;
+  generationEndYear.value = generation?.end_year ?? null;
   generationTotalLevels.value = generation?.total_levels ?? 11;
 };
 
@@ -359,6 +367,10 @@ const openAssignTeacherDialog = (group: GenerationGroup) => {
 };
 
 const openEditGroupModal = (group: GenerationGroup) => {
+  if (!group.status) {
+    showToast('No se puede editar un registro desactivado.', 'error');
+    return;
+  }
   groupEditId.value = group.id_group;
   groupForm.value = {
     group_letter: group.group_letter,

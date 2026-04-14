@@ -43,7 +43,7 @@
                     <div class="mb-1 font-weight-bold" style="color: #1a1a1a; font-size: 0.875rem;">Correo electrónico</div>
                     <v-text-field
                       v-model="email"
-                      placeholder="correo@example.com"
+                      placeholder="correo@ejemplo.com"
                       variant="outlined"
                       density="comfortable"
                       maxlength="254"

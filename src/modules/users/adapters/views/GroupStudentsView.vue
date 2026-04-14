@@ -10,9 +10,6 @@
     <!-- Header -->
     <div class="d-flex align-start justify-space-between mb-8 flex-wrap ga-4">
       <div class="d-flex align-start ga-4">
-        <v-btn icon variant="text" class="mt-2" @click="goBackToGroups">
-          <v-icon size="30">mdi-arrow-left</v-icon>
-        </v-btn>
         <div>
           <h1 class="page-title">Grupo {{ groupName }}</h1>
           <p class="page-subtitle">Administra los estudiantes del grupo</p>

@@ -140,11 +140,11 @@
                   <v-list-item-title>Ver detalles</v-list-item-title>
                 </v-list-item>
                 
-                <v-list-item @click="editUser(row)">
+                <v-list-item :disabled="!row.status" @click="editUser(row)">
                   <template #prepend>
                     <v-icon color="warning">mdi-pencil-outline</v-icon>
                   </template>
-                  <v-list-item-title>Editar usuario</v-list-item-title>
+                  <v-list-item-title>{{ row.status ? 'Editar usuario' : 'No se puede editar (desactivado)' }}</v-list-item-title>
                 </v-list-item>
 
                 <v-list-item v-if="row.role === 'teacher'" @click="openAssignGroupsDialog(row)">
@@ -476,6 +476,7 @@ export default {
     },
     
     editUser(user: Record<string, any>) {
+      if (!user.status) return
       this.selectedUserForEdit = user
       this.updateDialog = true
     },
