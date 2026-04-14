@@ -124,7 +124,7 @@ export default {
       get() {
         return this.dialog
       },
-      set(value) {
+      set(value: boolean) {
         this.$emit('update:dialog', value)
       }
     }
@@ -133,7 +133,7 @@ export default {
     close() {
       this.dialogModel = false
     },
-    formatDate(dateString) {
+    formatDate(dateString: string | null | undefined) {
       if (!dateString) return 'N/A'
       const date = new Date(dateString)
       return date.toLocaleDateString('es-MX', {

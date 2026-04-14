@@ -103,11 +103,11 @@ export default {
         new_password: '',
         confirm_password: ''
       },
-      serverErrors: {},
+      serverErrors: {} as Record<string, string | undefined>,
       rules: {
         required: (v: string) => (v !== null && v !== undefined && v !== '') || 'Campo requerido',
         minLength: (v: string) => (v && v.length >= 8) || 'Mínimo 8 caracteres',
-        passwordMatch: (v: string) => v === this.form.new_password || 'Las contraseñas no coinciden'
+        passwordMatch: (v: string) => v === (this as any).form.new_password || 'Las contraseñas no coinciden'
       }
     }
   },
@@ -147,12 +147,12 @@ export default {
       this.showNewPassword = false
       this.showConfirmPassword = false
     },
-    setServerErrors(errors: Record<string, string>) {
+    setServerErrors(errors: Record<string, string | undefined>) {
       this.serverErrors = errors
     },
     clearServerError(field: string) {
-      if (this.serverErrors[field]) {
-        delete this.serverErrors[field]
+      if ((this.serverErrors as Record<string, string | undefined>)[field]) {
+        delete (this.serverErrors as Record<string, string | undefined>)[field]
         // Forzar revalidación del formulario
         this.$nextTick(() => {
           if (this.$refs.formRef) {

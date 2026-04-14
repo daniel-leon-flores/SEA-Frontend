@@ -152,7 +152,7 @@
     <!-- Modal: Editar estudiante -->
     <UpdateUserModal
       v-model:dialog="updateDialog"
-      :user="selectedStudent"
+      :user="selectedStudent || undefined"
       @user-updated="onStudentUpdated"
     />
 
@@ -186,7 +186,6 @@ const groupName = computed(() => (route.query.groupName as string) || 'Nombre de
 
 // Estado
 const loading = ref(false);
-const registering = ref(false);
 const students = ref<User[]>([]);
 const showAddStudentModal = ref(false);
 const updateDialog = ref(false);
@@ -228,7 +227,7 @@ const breadcrumbItems = computed(() => [
 ]);
 
 // Debounce para búsqueda
-let debounceTimer: NodeJS.Timeout | null = null;
+let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 const debouncedSearch = () => {
   if (debounceTimer) clearTimeout(debounceTimer);
   debounceTimer = setTimeout(() => {
@@ -247,7 +246,7 @@ const loadStudents = async () => {
   loading.value = true;
   try {
     const userController = new UserController();
-    const response = await userController.getUsers({
+    const response: any = await userController.getUsers({
       pagination: {
         page: pagination.value.currentPage,
         limit: pagination.value.pageSize,
@@ -299,11 +298,7 @@ const openAddStudentModal = () => {
   showAddStudentModal.value = true;
 };
 
-const closeAddStudentModal = () => {
-  showAddStudentModal.value = false;
-};
-
-const onStudentCreated = async (student: User) => {
+const onStudentCreated = async (_student: User) => {
   showToast('Alumno registrado correctamente.', 'success');
   await loadStudents();
 };
@@ -341,7 +336,7 @@ const toggleStudentStatus = async (row: User) => {
   }
 };
 
-const onStudentUpdated = async (student: User) => {
+const onStudentUpdated = async (_student: User) => {
   selectedStudent.value = null;
   showToast('Alumno actualizado correctamente.', 'success');
   await loadStudents();

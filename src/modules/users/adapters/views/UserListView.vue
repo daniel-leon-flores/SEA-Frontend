@@ -209,7 +209,7 @@
     <UserDetailModal
       :dialog="detailModal"
       @update:dialog="detailModal = $event"
-      :user="selectedUser"
+      :user="selectedUser || undefined"
     />
 
     <!-- Modales de creación y edición -->
@@ -222,7 +222,7 @@
     <UpdateUserModal 
       :dialog="updateDialog"
       @update:dialog="updateDialog = $event"
-      :user="selectedUserForEdit"
+      :user="selectedUserForEdit || undefined"
       @user-updated="handleUserUpdated"
     />
 
@@ -230,7 +230,7 @@
     <StatusChangeInfoModal
       :dialog="statusInfoDialog"
       @update:dialog="statusInfoDialog = $event"
-      :user="userForStatusChange"
+      :user="userForStatusChange || undefined"
       :new-status="newStatusValue"
       :loading="statusLoading"
       @confirm="handleStatusChangeConfirm"
@@ -267,6 +267,7 @@ import UserDetailModal from '../components/UserDetailModal.vue'
 import StatusChangeInfoModal from '../components/StatusChangeInfoModal.vue'
 import ConfirmStatusChangeModal from '../components/ConfirmStatusChangeModal.vue'
 import AssignTeacherGroupsDialog from '../components/AssignTeacherGroupsDialog.vue'
+import type { User } from '../../entities/user'
 
 export default {
   name: 'UserListView',
@@ -288,19 +289,19 @@ export default {
       filterRole: null,
       filterStatus: null,
       detailModal: false,
-      selectedUser: null,
+      selectedUser: null as Record<string, any> | null,
       // Modales separados
       createDialog: false,
       updateDialog: false,
-      selectedUserForEdit: null,
+      selectedUserForEdit: null as Record<string, any> | null,
       // Modales de cambio de estado (confirmación única)
       statusInfoDialog: false,
       statusLoading: false,
-      userForStatusChange: null,
+      userForStatusChange: null as Record<string, any> | null,
       newStatusValue: false,
       // Dialog asignar docente a grupo
       assignGroupsDialog: false,
-      selectedTeacherForGroups: null,
+      selectedTeacherForGroups: null as User | null,
       pagination: {
         count: 0,
         totalPages: 1,
@@ -336,7 +337,7 @@ export default {
         { title: '50', value: 50 },
         { title: '100', value: 100 }
       ],
-      debounceTimer: null
+      debounceTimer: undefined as ReturnType<typeof setTimeout> | undefined
     }
   },
   computed: {
@@ -357,7 +358,7 @@ export default {
         const { UserController } = await import('../user.controller')
         const controller = new UserController()
         
-        const response = await controller.getUsers({
+        const response: any = await controller.getUsers({
           pagination: {
             page: this.pagination.currentPage,
             limit: this.pagination.pageSize,
@@ -397,33 +398,33 @@ export default {
       }
     },
     
-    handlePageChange(page) {
+    handlePageChange(page: number) {
       this.pagination.currentPage = page
       this.fetchUsers()
     },
     
-    handlePageSizeChange(pageSize) {
+    handlePageSizeChange(pageSize: number) {
       this.pagination.pageSize = pageSize
       this.pagination.currentPage = 1
       this.fetchUsers()
     },
     
     debouncedSearch() {
-      clearTimeout(this.debounceTimer)
+      if (this.debounceTimer) clearTimeout(this.debounceTimer)
       this.debounceTimer = setTimeout(() => {
         this.pagination.currentPage = 1
         this.fetchUsers()
       }, 500)
     },
     
-    getInitials(user) {
+    getInitials(user: Record<string, any>) {
       const first = user.first_name?.[0] || ''
       const last = user.last_name?.[0] || ''
       return (first + last).toUpperCase()
     },
     
-    getRoleLabel(role) {
-      const labels = {
+    getRoleLabel(role: string) {
+      const labels: Record<string, string> = {
         student: 'Estudiante',
         teacher: 'Docente',
         admin: 'Administrador'
@@ -431,8 +432,8 @@ export default {
       return labels[role] || role
     },
     
-    getRoleColor(role) {
-      const colors = {
+    getRoleColor(role: string) {
+      const colors: Record<string, string> = {
         student: 'primary',
         teacher: 'success',
         admin: 'error'
@@ -440,8 +441,8 @@ export default {
       return colors[role] || 'grey'
     },
     
-    getRoleIcon(role) {
-      const icons = {
+    getRoleIcon(role: string) {
+      const icons: Record<string, string> = {
         student: 'mdi-school',
         teacher: 'mdi-account-tie',
         admin: 'mdi-shield-crown'
@@ -449,7 +450,7 @@ export default {
       return icons[role] || 'mdi-account'
     },
     
-    showSnackbar(message, color = 'success') {
+    showSnackbar(message: string, color = 'success') {
       this.snackbar.message = message
       this.snackbar.color = color
       this.snackbar.show = true
@@ -459,27 +460,27 @@ export default {
       this.createDialog = true
     },
     
-    handleUserCreated(user) {
+    handleUserCreated(_user: Record<string, any>) {
       this.showSnackbar('Usuario registrado exitosamente. Se envió el correo con las credenciales.', 'success')
       this.fetchUsers()
     },
     
-    handleUserUpdated(user) {
+    handleUserUpdated(_user: Record<string, any>) {
       this.showSnackbar('Usuario actualizado exitosamente.', 'success')
       this.fetchUsers()
     },
     
-    openDetailModal(user) {
+    openDetailModal(user: Record<string, any>) {
       this.selectedUser = user
       this.detailModal = true
     },
     
-    editUser(user) {
+    editUser(user: Record<string, any>) {
       this.selectedUserForEdit = user
       this.updateDialog = true
     },
     
-    openStatusInfoModal(user) {
+    openStatusInfoModal(user: Record<string, any>) {
       this.userForStatusChange = user
       this.newStatusValue = !user.status
       this.statusInfoDialog = true
@@ -522,11 +523,11 @@ export default {
       this.userForStatusChange = null
     },
     
-    viewUserDetail(user) {
+    viewUserDetail(user: Record<string, any>) {
       this.$router.push({ name: 'UserDetail', params: { id: encodeId(user.id_user) } })
     },
 
-    openAssignGroupsDialog(user) {
+    openAssignGroupsDialog(user: User) {
       this.selectedTeacherForGroups = user
       this.assignGroupsDialog = true
     },
