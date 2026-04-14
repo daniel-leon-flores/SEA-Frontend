@@ -618,7 +618,7 @@ export default {
         'code_tests',
       ];
       if (scalar.includes(key)) {
-        (this.formErrors as Record<string, string[]>)[key as string] = [];
+        (this.formErrors as unknown as Record<string, string[]>)[key as string] = [];
       }
     },
 
@@ -917,7 +917,7 @@ export default {
         question_type: this.form.question_type,
         difficulty: this.form.difficulty,
         bloom_level: this.form.bloom_level,
-        id_subject: this.form.id_subject,
+        id_subject: this.form.id_subject!,
         points: this.form.points || 1,
         image_url: this.form.image_url?.trim() || null,
         status: true,

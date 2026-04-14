@@ -47,15 +47,17 @@
 </template>
 
 <script lang="ts">
+import type { PropType } from 'vue'
+
 export default {
   name: "PaginatedTable",
   props: {
     columns: {
-      type: Array,
+      type: Array as PropType<Array<{ key: string; label: string; width?: string; minWidth?: string }>>,
       required: true,
     },
     data: {
-      type: Array,
+      type: Array as PropType<Array<Record<string, any>>>,
       required: true,
     },
     totalRecords: {
