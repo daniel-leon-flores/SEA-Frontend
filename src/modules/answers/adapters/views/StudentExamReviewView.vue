@@ -26,7 +26,7 @@
           <div v-if="!loading && answers.length > 0" class="d-flex flex-column ga-4">
             <v-card
               v-for="(item, index) in answers"
-              :key="item.id_student_answer"
+              :key="item.id_student_answer ?? `unanswered-${index}`"
               rounded="xl"
               variant="outlined"
               class="answer-card"

@@ -6,7 +6,7 @@
           <v-icon size="24" color="#0f766e">mdi-calendar</v-icon>
         </div>
         <div>
-          <h3 class="card-title">{{ generation.year }}</h3>
+          <h3 class="card-title">{{ generation.end_year ? `${generation.year}-${generation.end_year}` : generation.year }}</h3>
           <p class="card-subtitle">{{ subtitle }}</p>
         </div>
       </div>
@@ -35,10 +35,17 @@
       </div>
 
       <div class="d-flex align-center ga-1">
-        <v-btn color="primary" variant="tonal" size="small" rounded="lg" @click="$emit('view')">
+        <v-btn color="primary" variant="tonal" size="small" rounded="lg" :disabled="!generation.status" @click="$emit('view')">
           Ver grupos
         </v-btn>
-        <v-btn icon variant="text" size="small" @click="$emit('edit')">
+        <v-tooltip v-if="!generation.status" text="No se puede editar un registro desactivado" location="top">
+          <template #activator="{ props: tipProps }">
+            <v-btn icon variant="text" size="small" disabled v-bind="tipProps">
+              <v-icon>mdi-pencil-outline</v-icon>
+            </v-btn>
+          </template>
+        </v-tooltip>
+        <v-btn v-else icon variant="text" size="small" @click="$emit('edit')">
           <v-icon>mdi-pencil-outline</v-icon>
         </v-btn>
       </div>

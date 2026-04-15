@@ -123,14 +123,13 @@ import { REPORT_TYPE_OPTIONS, ReportTypeOption } from '../../entities/report-typ
 import { GenerationController } from '../../../generations/adapters/generation.controller';
 import { getGenerationGroupsInteractor } from '@/modules/groups/adapters/generation-group.controller';
 import { ExamController } from '@/modules/exams/adapters/exam.controller';
-import { UserController } from '@/modules/users/adapters/user.controller';
+import { handleRequest } from '@/config/http-client.gateway';
 
 /* =========================
    CONTROLLERS
 ========================= */
 const generationController = new GenerationController();
 const examController = new ExamController();
-const userController = new UserController();
 
 /* =========================
    EMIT / PROPS
@@ -221,19 +220,35 @@ async function loadGenerations() {
   loadingGenerations.value = true;
 
   try {
-    const res = await generationController.getGenerations(undefined, undefined, undefined, 1, 100);
+    if (props.userRole === 'TEACHER') {
+      // Teacher: only load generations from their assigned groups
+      const groupsRes = await handleRequest<any>('get', '/api/academic/groups/my-groups/');
+      const myGroups = Array.isArray(groupsRes?.data) ? groupsRes.data : [];
 
-    const results = res?.data?.results ?? [];
+      const genMap = new Map<number, any>();
+      for (const g of myGroups) {
+        const genId = g.id_generation;
+        if (!genMap.has(genId)) {
+          genMap.set(genId, {
+            id_generation: genId,
+            year: g.generation_year,
+            end_year: g.generation_end_year ?? null,
+            label: g.generation_end_year
+              ? `${g.generation_year} - ${g.generation_end_year}`
+              : `${g.generation_year}`,
+          });
+        }
+      }
+      generations.value = Array.from(genMap.values()).sort((a, b) => b.year - a.year);
+    } else {
+      const res = await generationController.getGenerations(undefined, undefined, undefined, 1, 100);
+      const results = res?.data?.results ?? [];
 
-    generations.value = results.map((g: any) => {
-      const start = g.year;
-      const end = g.year + (g.total_levels ? Math.ceil(g.total_levels / 2) : 1);
-
-      return {
+      generations.value = results.map((g: any) => ({
         ...g,
-        label: `${start} - ${end}`,
-      };
-    });
+        label: g.end_year ? `${g.year} - ${g.end_year}` : `${g.year}`,
+      }));
+    }
   } finally {
     loadingGenerations.value = false;
   }
@@ -325,23 +340,16 @@ async function loadStudents(groupId?: number) {
       return;
     }
 
-    const res = await userController.getUsers({
-      pagination: {
-        page: 1,
-        limit: 100,
-      },
-      role: 'student',
-      group: groupId,
-    });
+    const res = await handleRequest<any>(
+      'get',
+      `/api/academic/groups/${groupId}/students/?page=1&page_size=100`
+    );
 
-    // ApiResponse<User[]> can arrive as array or paginated payload in data.
-    const list = Array.isArray(res?.data)
-      ? res.data
-      : (res?.data as any)?.results ?? [];
+    const list = res?.data?.results ?? [];
 
     students.value = list.map((s: any) => ({
       id: s.id_user,
-      label: `${s.first_name} ${s.last_name}`, // 🔥 importante
+      label: s.full_name,
     }));
 
   } catch (error) {
