@@ -201,10 +201,10 @@ export async function handleRequest<T, P = undefined>(
     return {
       success: false,
       code: error.response?.status || 500,
-      message: error.message || 'Error inesperado en solicitud',
+      message: 'Ocurrió un error inesperado. Por favor, intenta de nuevo.',
       timestamp: new Date().toISOString(),
       error: {
-        message: error.response?.data?.error?.message || error.message,
+        message: 'Ocurrió un error inesperado. Por favor, intenta de nuevo.',
         details: error.response?.data?.error?.details
       }
     };

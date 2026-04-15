@@ -145,9 +145,13 @@ async getGroups(): Promise<ApiResponse<GroupOption[]>> {
     const query = params.toString() ? `?${params.toString()}` : '';
     const res = await handleRequest<any>('get', `/api/users/${query}`);
 
-    return extractPaginatedOptions(res, (u: any) => ({
-      id: u.id_user,
-      label: `${u.matricula} - ${u.first_name} ${u.last_name}`,
-    }));
+    const list = res?.data?.results ?? [];
+    return {
+      ...res,
+      data: list.map((u: any) => ({
+        id: u.id_user,
+        label: u.full_name,
+      })),
+    };
   }
 }

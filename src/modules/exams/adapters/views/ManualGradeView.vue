@@ -32,7 +32,7 @@
           <div v-else class="question-stack">
             <v-card
               v-for="(item, index) in gradedQuestions"
-              :key="item.id_student_answer"
+              :key="item.id_student_answer ?? `unanswered-${item.question}`"
               rounded="xl"
               class="question-card mx-auto mb-5"
               elevation="1"
@@ -71,8 +71,11 @@
                   </div>
                 </div>
 
-                <!-- Badge Correcta / Incorrecta / Pendiente -->
-                <div v-if="item.is_correct !== null" class="d-flex align-center ga-1 flex-shrink-0">
+                <!-- Badge Correcta / Incorrecta / Pendiente / No contestada -->
+                <div v-if="item.id_student_answer === null" class="flex-shrink-0">
+                  <v-chip color="grey" size="small" variant="tonal">No contestada</v-chip>
+                </div>
+                <div v-else-if="item.is_correct !== null" class="d-flex align-center ga-1 flex-shrink-0">
                   <v-icon :color="item.is_correct ? 'success' : 'error'" size="20">
                     {{ item.is_correct ? 'mdi-check-circle' : 'mdi-close-circle' }}
                   </v-icon>
@@ -117,6 +120,15 @@
                 <!-- MULTIPLE_CHOICE / MULTIPLE_SELECTION -->
                 <template v-if="item.question_type === 'MULTIPLE_CHOICE' || item.question_type === 'MULTIPLE_SELECTION'">
                   <v-sheet
+                    v-if="item.id_student_answer === null"
+                    class="answer-box pa-4 mb-3"
+                    rounded="lg"
+                    border
+                  >
+                    <p class="mb-0 text-body-1 text-medium-emphasis font-italic">(No contestada)</p>
+                  </v-sheet>
+                  <v-sheet
+                    v-else
                     class="answer-box pa-4 mb-3"
                     rounded="lg"
                     border
@@ -181,7 +193,10 @@
                 <!-- OPEN -->
                 <template v-else-if="item.question_type === 'OPEN'">
                   <v-sheet class="answer-box pa-4" rounded="lg" border>
-                    <p class="mb-0 text-body-1 answer-text-pre">
+                    <p v-if="item.id_student_answer === null" class="mb-0 text-body-1 text-medium-emphasis font-italic">
+                      (No contestada)
+                    </p>
+                    <p v-else class="mb-0 text-body-1 answer-text-pre">
                       {{ item.answer_text ?? '(Sin respuesta)' }}
                     </p>
                   </v-sheet>
@@ -189,7 +204,10 @@
 
                 <!-- CODE -->
                 <template v-else-if="item.question_type === 'CODE'">
-                  <CodeMirrorEditor :model-value="item.code_answer ?? ''" :readonly="true" />
+                  <div v-if="item.id_student_answer === null" class="answer-box pa-4 rounded-lg" style="border: 1px solid #d7e7ea; background: #f8fcfd;">
+                    <p class="mb-0 text-body-1 text-medium-emphasis font-italic">(No contestada)</p>
+                  </div>
+                  <CodeMirrorEditor v-else :model-value="item.code_answer ?? ''" :readonly="true" />
                 </template>
 
                 <v-divider class="my-5" />
@@ -402,11 +420,19 @@ async function saveAllGrades() {
 
   for (const item of gradedQuestions) {
     try {
-      const response = await answersController.manualGradeAnswer({
-        student_answer_id: item.id_student_answer,
+      const gradePayload: Record<string, unknown> = {
         score: item.teacherScore,
         is_correct: item.teacherIsCorrect,
-      });
+      };
+
+      if (item.id_student_answer) {
+        gradePayload.student_answer_id = item.id_student_answer;
+      } else {
+        gradePayload.exam_assignment_id = item.exam_assignment;
+        gradePayload.question_id = item.question;
+      }
+
+      const response = await answersController.manualGradeAnswer(gradePayload as any);
 
       if (!response.success || !response.data) {
         errorsCount++;
@@ -414,6 +440,7 @@ async function saveAllGrades() {
       }
 
       const updated = response.data.student_answer;
+      item.id_student_answer = updated.id_student_answer;
       item.is_correct = updated.is_correct;
       item.score = updated.score;
       item.teacherScore = updated.score === null ? item.teacherScore : Number(updated.score);

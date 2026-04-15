@@ -181,6 +181,7 @@
             variant="outlined"
             density="comfortable"
             class="mb-1"
+            :rules="[requiredRule]"
             :error-messages="formErrors.id_subject"
             @update:model-value="clearFieldError('id_subject')"
           />
@@ -193,6 +194,7 @@
             variant="outlined"
             density="comfortable"
             class="mb-1"
+            :rules="[requiredRule]"
             :error-messages="formErrors.question_type"
             @update:model-value="onTypeChange"
           />
@@ -202,6 +204,10 @@
             variant="outlined"
             rows="3"
             class="mb-1"
+            maxlength="2000"
+            counter
+            validate-on="input lazy"
+            :rules="[requiredRule, maxLen2000Rule]"
             :error-messages="formErrors.text"
             @update:model-value="clearFieldError('text')"
           />
@@ -215,6 +221,7 @@
                 item-value="value"
                 variant="outlined"
                 density="comfortable"
+                :rules="[requiredRule]"
                 :error-messages="formErrors.difficulty"
                 @update:model-value="clearFieldError('difficulty')"
               />
@@ -228,6 +235,7 @@
                 item-value="value"
                 variant="outlined"
                 density="comfortable"
+                :rules="[requiredRule]"
                 :error-messages="formErrors.bloom_level"
                 @update:model-value="clearFieldError('bloom_level')"
               />
@@ -238,9 +246,14 @@
                 label="Puntos"
                 type="number"
                 min="1"
+                max="100"
+                step="1"
                 variant="outlined"
                 density="comfortable"
+                validate-on="input lazy"
+                :rules="[pointsRule]"
                 :error-messages="formErrors.points"
+                @keydown="preventInvalidNumberChars($event)"
                 @update:model-value="clearFieldError('points')"
               />
             </v-col>
@@ -251,6 +264,8 @@
             variant="outlined"
             density="comfortable"
             class="mb-1"
+            maxlength="500"
+            :rules="[optionalUrlRule]"
             :error-messages="formErrors.image_url"
             @update:model-value="clearFieldError('image_url')"
           />
@@ -289,6 +304,7 @@
                   density="compact"
                   class="flex-grow-1"
                   style="min-width: 200px"
+                  maxlength="500"
                   :error-messages="formErrors.optionRows[idx]"
                   @update:model-value="clearOptionRowError(idx)"
                 />
@@ -318,6 +334,7 @@
                 :label="`Opción ${idx + 1}`"
                 variant="outlined"
                 density="compact"
+                maxlength="500"
                 :error-messages="formErrors.optionRows[idx]"
                 @update:model-value="clearOptionRowError(idx)"
               />
@@ -383,6 +400,17 @@
               <ul class="pl-4">
                 <li v-for="(e, i) in uploadReport.errors" :key="i">Fila {{ e.row }}: {{ e.error }}</li>
               </ul>
+              <v-btn
+                v-if="uploadReport.errors_file"
+                class="mt-2"
+                size="small"
+                variant="outlined"
+                color="error"
+                prepend-icon="mdi-download"
+                @click="downloadErrorRowsFile"
+              >
+                Descargar filas con error
+              </v-btn>
             </div>
           </v-alert>
         </v-card-text>
@@ -391,6 +419,20 @@
           <v-spacer />
           <v-btn variant="text" color="grey" @click="uploadDialog = false">Cerrar</v-btn>
           <v-btn variant="elevated" color="primary" :loading="uploading" :disabled="!uploadFile" @click="runUpload">Subir</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="partialSubjectDialog" max-width="560">
+      <v-card>
+        <v-card-title class="text-h6 d-flex align-center">
+          <v-icon start color="warning">mdi-alert-circle-outline</v-icon>
+          Materias parcialmente válidas
+        </v-card-title>
+        <v-card-text>{{ partialSubjectMessage }}</v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn color="primary" variant="elevated" @click="partialSubjectDialog = false">Entendido</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -412,6 +454,7 @@ import { subjectService } from '@/modules/subjects/adapters/subject.service';
 import type { ApiResponse } from '@/kernel/types';
 import type { QuestionBank } from '../../entities/question-bank';
 import type { CreateQuestionDto } from '../../entities/create-question.dto';
+import type { UploadReport } from '../../use-cases/ports/question.repository';
 import {
   QUESTION_TYPE_OPTIONS,
   DIFFICULTY_OPTIONS,
@@ -550,7 +593,9 @@ export default {
       codeTestsRaw: '',
       uploadDialog: false,
       uploadFile: null as File[] | File | null,
-      uploadReport: null as { total_rows: number; created: number; errors: { row: number; error: string }[] } | null,
+      uploadReport: null as UploadReport | null,
+      partialSubjectDialog: false,
+      partialSubjectMessage: '',
       snackbar: { show: false, message: '', color: 'success' },
       formErrors: emptyFormErrors(),
       QUESTION_TYPE_OPTIONS,
@@ -591,6 +636,28 @@ export default {
     labelQuestionType,
     labelDifficulty,
     labelBloom,
+    requiredRule(v: unknown): true | string {
+      if (v === null || v === undefined || v === '') return 'Campo requerido';
+      return true;
+    },
+    maxLen2000Rule(v: string): true | string {
+      return !v || v.length <= 2000 || 'Máximo 2000 caracteres';
+    },
+    pointsRule(v: unknown): true | string {
+      if (v === null || v === undefined || v === '') return 'Campo requerido';
+      const n = Number(v);
+      if (!Number.isInteger(n)) return 'Debe ser un número entero';
+      if (n < 1 || n > 100) return 'Debe estar entre 1 y 100';
+      return true;
+    },
+    optionalUrlRule(v: string): true | string {
+      return !v || /^https?:\/\/.+/.test(v) || 'Debe ser una URL válida (https://...)';
+    },
+    preventInvalidNumberChars(event: KeyboardEvent) {
+      if (['e', 'E', '+', '-', '.', ','].includes(event.key)) {
+        event.preventDefault();
+      }
+    },
     difficultyColor(d: string): string {
       if (d === 'easy') return 'success';
       if (d === 'hard') return 'error';
@@ -599,7 +666,6 @@ export default {
     showSnackbar(message: string, color = 'success') {
       this.snackbar = { show: true, message, color };
     },
-
     clearFormErrors() {
       this.formErrors = emptyFormErrors();
     },
@@ -730,6 +796,8 @@ export default {
       const t = this.form.text?.trim() ?? '';
       if (!t) {
         fail('text', 'El enunciado es obligatorio.');
+      } else if (t.length > 2000) {
+        fail('text', 'El enunciado no puede superar los 2000 caracteres.');
       }
       if (!this.form.difficulty) {
         fail('difficulty', 'Seleccione la dificultad.');
@@ -740,6 +808,8 @@ export default {
       const pts = this.form.points;
       if (pts == null || Number.isNaN(Number(pts)) || Number(pts) < 1) {
         fail('points', 'Los puntos deben ser un número mayor o igual a 1.');
+      } else if (Number(pts) > 100) {
+        fail('points', 'Los puntos no pueden superar 100.');
       }
 
       this.validateAnswerOptions(fail);
@@ -993,7 +1063,7 @@ export default {
         a.download = 'plantilla_preguntas.xlsx';
         a.click();
         globalThis.URL.revokeObjectURL(url);
-        this.showSnackbar('Plantilla descargada');
+        this.showSnackbar('Plantilla descargada. Revisa la hoja "Materias" para usar solo las materias disponibles.', 'warning');
       } catch {
         this.showSnackbar('Error al descargar plantilla', 'error');
       } finally {
@@ -1009,6 +1079,11 @@ export default {
         const res = await controller.uploadExcel(f);
         if (res.success && res.data) {
           this.uploadReport = res.data;
+          if (res.data.partial_subject_access && (res.data.valid_subjects?.length ?? 0) > 0) {
+            const list = res.data.valid_subjects?.join(', ') ?? '';
+            this.partialSubjectMessage = `Solo se registrarán preguntas de las materias: ${list}, ya que no tienes acceso a las demás.`;
+            this.partialSubjectDialog = true;
+          }
           this.showSnackbar(`Carga finalizada: ${res.data.created} creadas`);
           await this.fetchQuestions();
         } else {
@@ -1016,6 +1091,32 @@ export default {
         }
       } finally {
         this.uploading = false;
+      }
+    },
+    downloadErrorRowsFile() {
+      const file = this.uploadReport?.errors_file;
+      if (!file?.content_base64) {
+        this.showSnackbar('No hay archivo de errores para descargar.', 'warning');
+        return;
+      }
+      try {
+        const binary = atob(file.content_base64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i += 1) {
+          bytes[i] = binary.codePointAt(i)!;
+        }
+        const blob = new Blob(
+          [bytes],
+          { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' },
+        );
+        const url = globalThis.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = file.filename || 'preguntas_con_error.xlsx';
+        a.click();
+        globalThis.URL.revokeObjectURL(url);
+      } catch {
+        this.showSnackbar('No se pudo descargar el archivo de errores.', 'error');
       }
     },
   },

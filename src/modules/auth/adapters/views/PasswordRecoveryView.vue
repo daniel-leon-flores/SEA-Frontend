@@ -43,9 +43,10 @@
                     <div class="mb-1 font-weight-bold" style="color: #1a1a1a; font-size: 0.875rem;">Correo electrónico</div>
                     <v-text-field
                       v-model="email"
-                      placeholder="correo@example.com"
+                      placeholder="correo@ejemplo.com"
                       variant="outlined"
                       density="comfortable"
+                      maxlength="254"
                       :rules="[rules.required, rules.email]"
                     />
 
@@ -148,7 +149,8 @@
                       placeholder="Mínimo 8 caracteres"
                       variant="outlined"
                       density="comfortable"
-                      :rules="[rules.required, rules.minLength]"
+                      maxlength="128"
+                      :rules="[rules.required, rules.minLength, rules.noSpaces]"
                     >
                       <template #append-inner>
                         <v-btn icon variant="text" size="small" @click="togglePassword">
@@ -164,6 +166,7 @@
                       placeholder="Repite tu contraseña"
                       variant="outlined"
                       density="comfortable"
+                      maxlength="128"
                       :rules="[rules.required, rules.passwordMatch]"
                     >
                       <template #append-inner>
@@ -249,6 +252,7 @@ const rules = {
   email: (v: string) => /^[^\s@]{1,64}@[^\s@]{1,253}\.[^\s@]{2,63}$/.test(v) || 'Correo electrónico inválido',
   minLength: (v: string) => v.length >= 8 || 'Mínimo 8 caracteres',
   passwordMatch: (v: string) => v === newPassword.value || 'Las contraseñas no coinciden',
+  noSpaces: (v: string) => !v || !/\s/.test(v) || 'La contraseña no debe contener espacios',
 };
 
 // Methods
@@ -281,7 +285,7 @@ async function requestCode() {
 
   try {
     const { data } = await AxiosClient.post('/api/users/password-recovery/request/', {
-      email: email.value,
+      email: email.value.trim(),
     });
     
     successMessage.value = data.message || 'Código enviado a tu correo electrónico';

@@ -15,6 +15,22 @@ export type SubmitExamAnswersDto = {
   answers: SubmitAnswerItemDto[];
 };
 
+// ──────────────────────────────────────────────
+// Forfeit endpoint (safe-mode exit auto-close)
+// ──────────────────────────────────────────────
+
+export type ForfeitExamDto = {
+  exam_assignment_id: number;
+  answers: SubmitAnswerItemDto[];
+};
+
+export type ForfeitExamResult = {
+  assignment_id: number;
+  status: 'completed';
+  score_summary: SubmitExamScoreSummary | null;
+  graded_answers: GradedAnswerDetail[];
+};
+
 export type GradedAnswerDetail = {
   question_id: number;
   graded: boolean;
@@ -49,7 +65,7 @@ export type SubmitExamAnswersResult = {
 // ──────────────────────────────────────────────
 
 export type StudentAnswerRecord = {
-  id_student_answer: number;
+  id_student_answer: number | null;
   exam_assignment: number;
   question: number;
   question_type: 'MULTIPLE_CHOICE' | 'MULTIPLE_SELECTION' | 'OPEN' | 'CODE';
@@ -86,7 +102,9 @@ export type AssignmentAnswersResult = {
 // ──────────────────────────────────────────────
 
 export type ManualGradeDto = {
-  student_answer_id: number;
+  student_answer_id?: number | null;
+  exam_assignment_id?: number;
+  question_id?: number;
   score: number;
   is_correct: boolean;
 };

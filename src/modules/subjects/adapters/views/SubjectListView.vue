@@ -203,6 +203,10 @@ function openCreate() {
 }
 
 function openEdit(s: Subject) {
+  if (!s.status) {
+    showSnackbar('No se puede editar un registro desactivado.', 'error');
+    return;
+  }
   subjectToEdit.value = s;
   formDialog.value = true;
 }

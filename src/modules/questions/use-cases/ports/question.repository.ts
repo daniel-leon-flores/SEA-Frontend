@@ -18,4 +18,11 @@ export type UploadReport = {
   total_rows: number;
   created: number;
   errors: { row: number; error: string }[];
+  valid_subjects?: string[];
+  denied_subjects?: string[];
+  partial_subject_access?: boolean;
+  errors_file?: {
+    filename: string;
+    content_base64: string;
+  } | null;
 };

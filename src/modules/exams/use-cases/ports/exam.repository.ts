@@ -25,7 +25,7 @@ export interface ExamRepository {
   getExamAssignments(examId: number): Promise<ApiResponse<ExamGroupAssignment[]>>;
   assignExamToGroups(data: AssignExamDto): Promise<ApiResponse<unknown>>;
   getAcademicGroups(page?: number, pageSize?: number): Promise<ApiResponse<PaginatedData<AcademicGroup>>>;
-  getAssignableGroups(): Promise<ApiResponse<AcademicGroup[]>>;
+  getAssignableGroups(examId: number): Promise<ApiResponse<AcademicGroup[]>>;
   getMySubjects(): Promise<ApiResponse<{ results: Subject[] }>>;
   getGroupStats(examId: number, groupId: number): Promise<ApiResponse<GroupStats>>;
   getGroupStudents(examId: number, groupId: number, params: GetGroupStudentsDto): Promise<ApiResponse<PaginatedData<GroupStudent>>>;

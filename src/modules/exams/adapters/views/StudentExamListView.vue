@@ -128,6 +128,17 @@
                 Ver respuestas
               </v-btn>
             </template>
+            <template v-else-if="item.secure_mode && item.status === 'in_progress'">
+              <!-- Secure exam that was auto-closed — cannot be continued -->
+              <v-btn
+                color="grey"
+                variant="flat"
+                prepend-icon="mdi-lock"
+                disabled
+              >
+                Examen cerrado
+              </v-btn>
+            </template>
             <template v-else>
               <v-btn
                 color="primary"
