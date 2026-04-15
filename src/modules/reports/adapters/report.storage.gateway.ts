@@ -131,13 +131,19 @@ async getGroups(): Promise<ApiResponse<GroupOption[]>> {
   }
 
   async getStudents(groupId?: number): Promise<ApiResponse<StudentOption[]>> {
-    const query = groupId ? `?group_id=${groupId}` : '';
+    if (!groupId) {
+      return { success: true, data: [], code: 200, message: '', timestamp: '' };
+    }
 
-    const res = await handleRequest<any>('get', `/api/users/${query}`);
+    const res = await handleRequest<any>('get', `/api/academic/groups/${groupId}/students/?page=1&page_size=100`);
 
-    return extractPaginatedOptions(res, (u: any) => ({
-      id: u.id_user,
-      label: `${u.matricula} - ${u.first_name} ${u.last_name}`,
-    }));
+    const list = res?.data?.results ?? [];
+    return {
+      ...res,
+      data: list.map((u: any) => ({
+        id: u.id_user,
+        label: u.full_name,
+      })),
+    };
   }
 }

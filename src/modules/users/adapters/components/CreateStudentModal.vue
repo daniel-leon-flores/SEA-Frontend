@@ -16,7 +16,10 @@
                 label="Nombre(s)"
                 variant="outlined"
                 density="comfortable"
-                :rules="[rules.required]"
+                maxlength="100"
+                counter
+                validate-on="input lazy"
+                :rules="[rules.required, rules.nameChars, rules.noHtml, rules.maxLen100]"
                 :error-messages="serverErrors.first_name"
               />
             </v-col>
@@ -26,7 +29,10 @@
                 label="Apellidos"
                 variant="outlined"
                 density="comfortable"
-                :rules="[rules.required]"
+                maxlength="100"
+                counter
+                validate-on="input lazy"
+                :rules="[rules.required, rules.nameChars, rules.noHtml, rules.maxLen100]"
                 :error-messages="serverErrors.last_name"
               />
             </v-col>
@@ -37,7 +43,8 @@
                 type="email"
                 variant="outlined"
                 density="comfortable"
-                :rules="[rules.required, rules.email]"
+                maxlength="254"
+                :rules="[rules.required, rules.email, rules.maxLen254]"
                 :error-messages="serverErrors.email"
               />
             </v-col>
@@ -47,7 +54,9 @@
                 label="Matrícula"
                 variant="outlined"
                 density="comfortable"
-                :rules="[rules.required]"
+                maxlength="30"
+                validate-on="input lazy"
+                :rules="[rules.required, rules.alphanumeric, rules.maxLen30]"
                 :error-messages="serverErrors.matricula"
               />
             </v-col>
@@ -103,7 +112,13 @@ export default {
       serverErrors: {} as Record<string, string | undefined>,
       rules: {
         required: (v: string) => (v !== null && v !== undefined && v !== '') || 'Campo requerido',
-        email: (v: string) => /^[^\s@]{1,64}@[^\s@]{1,253}\.[^\s@]{2,63}$/.test(v) || 'Correo inválido'
+        email: (v: string) => /^[^\s@]{1,64}@[^\s@]{1,253}\.[^\s@]{2,63}$/.test(v) || 'Correo inválido',
+        nameChars: (v: string) => !v || /^[a-zA-ZÀ-ÿ\s'-]+$/.test(v) || 'Solo letras, espacios, acentos y guiones',
+        noHtml: (v: string) => !v || !/<[^<>]*>/.test(v) || 'No se permiten etiquetas HTML',
+        alphanumeric: (v: string) => !v || /^[a-zA-Z0-9-]+$/.test(v) || 'Solo letras, números y guiones',
+        maxLen100: (v: string) => !v || v.length <= 100 || 'Máximo 100 caracteres',
+        maxLen254: (v: string) => !v || v.length <= 254 || 'Máximo 254 caracteres',
+        maxLen30: (v: string) => !v || v.length <= 30 || 'Máximo 30 caracteres'
       }
     }
   },
@@ -189,7 +204,14 @@ export default {
       try {
         const { UserController } = await import('../user.controller')
         const controller = new UserController()
-        const response = await controller.createUser({ ...this.payload } as any)
+        const sanitized = {
+          ...this.payload,
+          first_name: this.payload.first_name.trim().replaceAll(/<[^<>]*>/g, ''),
+          last_name: this.payload.last_name.trim().replaceAll(/<[^<>]*>/g, ''),
+          email: this.payload.email.trim(),
+          matricula: this.payload.matricula.trim().replaceAll(/<[^<>]*>/g, ''),
+        }
+        const response = await controller.createUser(sanitized as any)
 
         if (response.success) {
           this.$emit('student-created', response.data)

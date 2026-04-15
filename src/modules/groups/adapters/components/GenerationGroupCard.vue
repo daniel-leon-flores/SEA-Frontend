@@ -30,6 +30,7 @@
       block
       class="mb-3 add-students-btn"
       rounded="lg"
+      :disabled="!group.status"
       @click="$emit('view-students')"
     >
       <v-icon start size="18">mdi-account-group-outline</v-icon>
@@ -42,6 +43,7 @@
       block
       class="mb-4 assign-teacher-btn"
       rounded="lg"
+      :disabled="!group.status"
       @click="$emit('assign-teacher')"
     >
       <v-icon start size="18">mdi-account-tie-outline</v-icon>
@@ -70,7 +72,14 @@
             </v-btn>
           </template>
         </v-tooltip>
-        <v-btn icon variant="text" size="small" @click="$emit('edit')">
+        <v-tooltip v-if="!group.status" text="No se puede editar un registro desactivado" location="top">
+          <template #activator="{ props: tipProps }">
+            <v-btn icon variant="text" size="small" disabled v-bind="tipProps">
+              <v-icon>mdi-pencil-outline</v-icon>
+            </v-btn>
+          </template>
+        </v-tooltip>
+        <v-btn v-else icon variant="text" size="small" @click="$emit('edit')">
           <v-icon>mdi-pencil-outline</v-icon>
         </v-btn>
       </div>

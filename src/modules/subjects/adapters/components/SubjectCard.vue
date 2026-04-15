@@ -57,7 +57,14 @@
           <v-btn icon variant="text" size="small" @click="$emit('view')">
             <v-icon>mdi-eye-outline</v-icon>
           </v-btn>
-          <v-btn icon variant="text" size="small" @click="$emit('edit')">
+          <v-tooltip v-if="!subject.status" text="No se puede editar un registro desactivado" location="top">
+            <template #activator="{ props: tipProps }">
+              <v-btn icon variant="text" size="small" disabled v-bind="tipProps">
+                <v-icon>mdi-pencil-outline</v-icon>
+              </v-btn>
+            </template>
+          </v-tooltip>
+          <v-btn v-else icon variant="text" size="small" @click="$emit('edit')">
             <v-icon>mdi-pencil-outline</v-icon>
           </v-btn>
         </template>

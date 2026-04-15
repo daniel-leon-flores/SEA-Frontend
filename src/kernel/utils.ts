@@ -19,7 +19,7 @@ export function formatDateTime(date: Date | string): string {
 export function isValidEmail(email: string): boolean {
   // Regex optimizado para evitar backtracking catastrófico
   // Usa negated character classes específicas y limita repeticiones
-  const regex = /^[a-zA-Z0-9._-]{1,64}@[a-zA-Z0-9.-]{1,255}\.[a-zA-Z]{2,}$/;
+  const regex = /^[a-zA-Z0-9._-]{1,64}@[a-zA-Z0-9.-]{1,255}\.[a-zA-Z]{2,63}$/;
   return regex.test(email);
 }
 

@@ -559,13 +559,39 @@ async function submitExam(forceSubmit = false) {
   }
 
   if (!session.assignmentId) {
-    showSnackbar('No se encontro la asignacion del examen.', 'error');
+    showSnackbar('No se encontró la asignación del examen.', 'error');
     return;
   }
 
   const answersPayload = buildSubmitAnswersPayload();
+
+  // When forced (safe-mode exit): always close via forfeit regardless of answered count
+  if (forceSubmit) {
+    isSubmittingExam.value = true;
+    try {
+      const response = await answersController.forfeitExam({
+        exam_assignment_id: session.assignmentId,
+        answers: answersPayload,
+      });
+      if (!response.success || !response.data) {
+        showSnackbar(response.message || 'No se pudo cerrar el examen automáticamente.', 'error');
+        return;
+      }
+      submitResult.value = response.data as unknown as SubmitExamAnswersResult;
+      await exitFullscreenIfNeeded();
+      examSubmitted.value = true;
+      examStarted.value = false;
+      showSnackbar('Examen cerrado automáticamente por salir del modo seguro.', 'warning');
+    } catch {
+      showSnackbar('Error al cerrar el examen automáticamente.', 'error');
+    } finally {
+      isSubmittingExam.value = false;
+    }
+    return;
+  }
+
   const unanswered = session.questions.filter((question) => !isAnswered(question.id_question));
-  if (!forceSubmit && unanswered.length > 0) {
+  if (unanswered.length > 0) {
     showSnackbar('Debes responder todas las preguntas antes de enviar el examen.', 'warning');
     return;
   }

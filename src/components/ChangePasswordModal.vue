@@ -18,6 +18,7 @@
                 :append-inner-icon="showCurrentPassword ? 'mdi-eye-off' : 'mdi-eye'"
                 variant="outlined"
                 density="comfortable"
+                maxlength="128"
                 :rules="[rules.required]"
                 :error-messages="serverErrors.current_password"
                 @click:append-inner="showCurrentPassword = !showCurrentPassword"
@@ -33,7 +34,8 @@
                 :append-inner-icon="showNewPassword ? 'mdi-eye-off' : 'mdi-eye'"
                 variant="outlined"
                 density="comfortable"
-                :rules="[rules.required, rules.minLength]"
+                maxlength="128"
+                :rules="[rules.required, rules.minLength, rules.noSpaces]"
                 :error-messages="serverErrors.new_password"
                 @click:append-inner="showNewPassword = !showNewPassword"
                 @input="clearServerError('new_password')"
@@ -50,6 +52,7 @@
                 :append-inner-icon="showConfirmPassword ? 'mdi-eye-off' : 'mdi-eye'"
                 variant="outlined"
                 density="comfortable"
+                maxlength="128"
                 :rules="[rules.required, rules.passwordMatch]"
                 :error-messages="serverErrors.confirm_password"
                 @click:append-inner="showConfirmPassword = !showConfirmPassword"
@@ -107,7 +110,8 @@ export default {
       rules: {
         required: (v: string) => (v !== null && v !== undefined && v !== '') || 'Campo requerido',
         minLength: (v: string) => (v && v.length >= 8) || 'Mínimo 8 caracteres',
-        passwordMatch: (v: string) => v === (this as any).form.new_password || 'Las contraseñas no coinciden'
+        passwordMatch: (v: string) => v === (this as any).form.new_password || 'Las contraseñas no coinciden',
+        noSpaces: (v: string) => !v || !/\s/.test(v) || 'La contraseña no debe contener espacios'
       }
     }
   },

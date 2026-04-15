@@ -10,6 +10,17 @@
       <v-divider />
 
       <v-card-text class="pa-4">
+        <!-- Subject badge -->
+        <v-chip
+          v-if="subjectName"
+          color="primary"
+          variant="tonal"
+          size="small"
+          prepend-icon="mdi-book-open-variant"
+          class="mb-4"
+        >
+          Materia: {{ subjectName }}
+        </v-chip>
         <!-- Already assigned groups (closable = unassign) -->
         <div v-if="assignedGroups.length > 0" class="mb-4">
           <p class="text-body-2 font-weight-medium mb-2">Grupos asignados:</p>
@@ -139,6 +150,7 @@ const visible = ref(false);
 const submitting = ref(false);
 const loadingGroups = ref(false);
 const examId = ref<number>(0);
+const subjectName = ref<string | null>(null);
 const assignedGroups = ref<ExamGroupAssignment[]>([]);
 const allGroups = ref<AcademicGroup[]>([]);
 const selectedGroups = ref<AcademicGroup[]>([]);
@@ -209,7 +221,7 @@ async function loadData(eId: number) {
   try {
     const [assignRes, groupsRes] = await Promise.all([
       controller.getExamAssignments(eId),
-      controller.getAssignableGroups(),
+      controller.getAssignableGroups(eId),
     ]);
 
     if (assignRes.success && assignRes.data) {
@@ -222,6 +234,7 @@ async function loadData(eId: number) {
 
     if (groupsRes.success && groupsRes.data) {
       allGroups.value = Array.isArray(groupsRes.data) ? groupsRes.data : [];
+      subjectName.value = allGroups.value[0]?.subject_name ?? null;
     }
   } finally {
     loadingGroups.value = false;
@@ -233,6 +246,7 @@ function reset() {
   selectedGroupId.value = null;
   assignedGroups.value = [];
   allGroups.value = [];
+  subjectName.value = null;
   availableFrom.value = '';
   availableTo.value = '';
   examId.value = 0;

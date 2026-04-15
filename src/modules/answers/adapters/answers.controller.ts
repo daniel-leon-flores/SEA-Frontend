@@ -2,6 +2,8 @@ import { ApiResponse } from '@/kernel/types';
 import type {
   SubmitExamAnswersDto,
   SubmitExamAnswersResult,
+  ForfeitExamDto,
+  ForfeitExamResult,
   AssignmentAnswersResult,
   ManualGradeDto,
   ManualGradeResult,
@@ -19,6 +21,10 @@ export class AnswersController {
 
   submitExamAnswers(payload: SubmitExamAnswersDto): Promise<ApiResponse<SubmitExamAnswersResult>> {
     return new SubmitExamAnswersInteractor(this.getRepository()).execute(payload);
+  }
+
+  forfeitExam(payload: ForfeitExamDto): Promise<ApiResponse<ForfeitExamResult>> {
+    return this.getRepository().forfeitExam(payload);
   }
 
   getAssignmentAnswers(assignmentId: number): Promise<ApiResponse<AssignmentAnswersResult>> {

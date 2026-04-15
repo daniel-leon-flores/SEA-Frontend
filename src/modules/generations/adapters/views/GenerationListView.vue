@@ -83,30 +83,50 @@
         <v-window v-model="activeTab">
           <v-window-item value="info">
             <v-row dense>
-              <v-col cols="12">
+              <v-col cols="12" class="mt-3">
                 <v-text-field
                   v-model.number="form.year"
-                  label="Año de generación"
+                  label="Año de inicio"
                   type="number"
+                  step="1"
+                  :min="1900"
                   :max="currentYear"
                   :error="!!yearError"
                   :error-messages="yearError"
                   hide-details="auto"
                   variant="outlined"
                   density="comfortable"
+                  @keydown="preventInvalidYearChars($event)"
+                  @input="clampYearInput"
                 />
               </v-col>
 
-              <v-col cols="12" sm="6">
+              <v-col cols="12" sm="6" class="mt-3">
                 <v-text-field
                   v-model.number="form.total_levels"
                   label="Cantidad de cuatrimestres"
                   type="number"
+                  step="1"
                   min="1"
-                  max="20"
-                  hide-details
+                  max="11"
+                  hide-details="auto"
                   variant="outlined"
                   density="comfortable"
+                  :rules="[totalLevelsRule]"
+                  @keydown="preventInvalidYearChars($event)"
+                  @input="sanitizeTotalLevelsInput"
+                  @blur="clampTotalLevelsOnBlur"
+                />
+              </v-col>
+
+              <v-col cols="12" sm="6" class="mt-3">
+                <v-text-field
+                  :model-value="computedEndYear"
+                  label="Año de fin"
+                  variant="outlined"
+                  density="comfortable"
+                  readonly
+                  hide-details
                 />
               </v-col>
 
@@ -152,6 +172,8 @@
                     variant="outlined"
                     density="comfortable"
                     placeholder="A"
+                    maxlength="1"
+                    @keydown="preventNonLetterInput"
                     @update:model-value="group.group_letter = normalizeLetter(group.group_letter)"
                   />
                 </v-col>
@@ -272,11 +294,68 @@ const detectedAcademicLevel = computed(() =>
   calculateAcademicLevel(form.value.year, form.value.total_levels)
 );
 
+const computedEndYear = computed(() =>
+  form.value.year && form.value.total_levels
+    ? form.value.year + Math.ceil(form.value.total_levels / 3)
+    : ''
+);
+
 const showToast = (message: string, color: string = 'success') => {
   snackbar.value = { show: true, color, message };
 };
 
-const normalizeLetter = (value: string): string => value.trim().toUpperCase();
+const normalizeLetter = (value: string): string => value.replaceAll(/[^a-zA-Z]/g, '').trim().toUpperCase();
+
+const preventNonLetterInput = (event: KeyboardEvent) => {
+  if (event.key.length > 1) return;
+  if (!/^[a-zA-Z]$/.test(event.key)) {
+    event.preventDefault();
+  }
+};
+
+/** Previene caracteres no numéricos en campos tipo number (e, +, -, .) */
+const preventInvalidYearChars = (event: KeyboardEvent) => {
+  if (['e', 'E', '+', '-', '.', ','].includes(event.key)) {
+    event.preventDefault();
+  }
+};
+
+const totalLevelsRule = (v: unknown): true | string => {
+  if (v === null || v === undefined || v === '') return 'Campo requerido';
+  const n = Number(v);
+  if (!Number.isInteger(n)) return 'Debe ser un número entero';
+  if (n < 1 || n > 11) return 'Debe estar entre 1 y 11';
+  return true;
+};
+
+/** Limpia caracteres no numéricos y limita a 2 dígitos mientras escribe */
+const sanitizeTotalLevelsInput = (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  const cleaned = input.value.replaceAll(/\D/g, '').slice(0, 2);
+  if (cleaned !== input.value) {
+    input.value = cleaned;
+  }
+  form.value.total_levels = cleaned ? Number.parseInt(cleaned, 10) : ('' as unknown as number);
+};
+
+/** Al perder foco, clampea el valor al rango 1-11 */
+const clampTotalLevelsOnBlur = (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  const val = input.value.replaceAll(/\D/g, '');
+  if (!val) { form.value.total_levels = 1; input.value = '1'; return; }
+  const n = Math.min(Math.max(Number.parseInt(val, 10), 1), 11);
+  form.value.total_levels = n;
+  input.value = String(n);
+};
+
+const clampYearInput = (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  const cleaned = input.value.replaceAll(/\D/g, '').slice(0, 4);
+  if (!cleaned) return;
+  const n = Number.parseInt(cleaned, 10);
+  form.value.year = n;
+  input.value = String(n);
+};
 
 // Contador seguro para generar UIDs únicos
 let uidCounter = 0;
@@ -300,13 +379,12 @@ const getYearValidationMessage = (year: number): string => {
 const resetForm = () => {
   const baseYear = new Date().getFullYear();
   const baseTotalLevels = 11;
-  const baseAcademicLevel = calculateAcademicLevel(baseYear, baseTotalLevels);
   yearError.value = '';
   form.value = {
     year: baseYear,
     status: true,
     total_levels: baseTotalLevels,
-    groups: [{ uid: nextUid(), group_letter: 'A', academic_level: baseAcademicLevel, status: true }],
+    groups: [] as FormGroup[],
   };
   activeTab.value = 'info';
   isEditMode.value = false;
@@ -359,6 +437,10 @@ const openCreateModal = () => {
 };
 
 const openEditModal = (generation: Generation) => {
+  if (!generation.status) {
+    showToast('No se puede editar un registro desactivado.', 'error');
+    return;
+  }
   resetForm();
   isEditMode.value = true;
   editGenerationId.value = generation.id_generation;
@@ -374,11 +456,13 @@ const closeModal = () => {
 
 const addGroup = () => {
   const groups = form.value.groups;
-  let nextLetter = '';
+  let nextLetter = 'A';
   if (groups.length > 0) {
     const lastLetter = groups[groups.length - 1].group_letter;
     if (/^[A-Z]$/.test(lastLetter) && lastLetter.codePointAt(0)! < 90) {
       nextLetter = String.fromCodePoint(lastLetter.codePointAt(0)! + 1);
+    } else {
+      nextLetter = '';
     }
   }
   form.value.groups.push({
@@ -399,7 +483,7 @@ const validateForm = (): boolean => {
     return false;
   }
 
-  if (!isEditMode.value) {
+  if (!isEditMode.value && form.value.groups.length > 0) {
     const invalid = form.value.groups.some((group) => !group.group_letter || !group.academic_level);
     if (invalid) {
       showToast('Completa la letra y nivel académico de todos los grupos.', 'error');
@@ -447,29 +531,33 @@ const saveGeneration = async () => {
 
   const generationId = generationResponse.data.id_generation;
 
-  for (const item of form.value.groups) {
-    const groupPayload: CreateGenerationGroupDto = {
-      id_generation: generationId,
-      group_letter: normalizeLetter(item.group_letter),
-      academic_level: Number(item.academic_level),
-      status: item.status,
-    };
-    const groupResponse = await createGenerationGroupInteractor.execute(groupPayload);
-    if (!groupResponse.success) {
-      saving.value = false;
-      showToast(groupResponse.message || 'La generación se creó, pero falló el registro de grupos.', 'warning');
-      showModal.value = false;
-      await loadGenerations();
-      await router.push(`/generations/${encodeId(generationId)}/groups`);
-      return;
+  if (form.value.groups.length > 0) {
+    for (const item of form.value.groups) {
+      const groupPayload: CreateGenerationGroupDto = {
+        id_generation: generationId,
+        group_letter: normalizeLetter(item.group_letter),
+        academic_level: Number(item.academic_level),
+        status: item.status,
+      };
+      const groupResponse = await createGenerationGroupInteractor.execute(groupPayload);
+      if (!groupResponse.success) {
+        saving.value = false;
+        showToast(groupResponse.message || 'La generación se creó, pero falló el registro de grupos.', 'warning');
+        showModal.value = false;
+        await loadGenerations();
+        await router.push(`/generations/${encodeId(generationId)}/groups`);
+        return;
+      }
     }
   }
 
   saving.value = false;
-  showToast('Generación y grupos registrados correctamente.');
+  showToast(form.value.groups.length > 0 ? 'Generación y grupos registrados correctamente.' : 'Generación registrada correctamente.');
   showModal.value = false;
   await loadGenerations();
-  await router.push(`/generations/${encodeId(generationId)}/groups`);
+  if (form.value.groups.length > 0) {
+    await router.push(`/generations/${encodeId(generationId)}/groups`);
+  }
 };
 
 const goToGroups = async (idGeneration: number) => {
