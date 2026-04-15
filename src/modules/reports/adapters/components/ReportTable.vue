@@ -30,7 +30,7 @@
       <thead>
         <tr>
           <th
-            v-for="col in columns"
+            v-for="col in safeColumns"
             :key="col.key"
             scope="col"
             class="font-weight-bold text-center"
@@ -41,14 +41,14 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-if="rows.length === 0">
-          <td :colspan="columns.length" class="text-center text-grey pa-6">
+        <tr v-if="safeRows.length === 0">
+          <td :colspan="safeColumns.length || 1" class="text-center text-grey pa-6">
             Sin datos para mostrar
           </td>
         </tr>
-        <tr v-for="(row, idx) in rows" :key="idx">
+        <tr v-for="(row, idx) in safeRows" :key="idx">
           <td
-            v-for="col in columns"
+            v-for="col in safeColumns"
             :key="col.key"
             class="text-center"
           >
@@ -63,17 +63,25 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
+
 interface ReportColumn {
   key: string;
   label: string;
   minWidth?: string;
 }
 
-defineProps<{
+const props = withDefaults(defineProps<{
   title: string;
   columns: ReportColumn[];
   rows: Record<string, any>[];
-}>();
+}>(), {
+  columns: () => [],
+  rows: () => [],
+});
+
+const safeColumns = computed(() => Array.isArray(props.columns) ? props.columns : []);
+const safeRows = computed(() => Array.isArray(props.rows) ? props.rows : []);
 
 defineEmits(['export-excel', 'export-pdf']);
 </script>

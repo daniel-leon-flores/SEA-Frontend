@@ -4,10 +4,10 @@
 export interface SummaryMetrics {
   totalStudents: number;
   totalExams: number;
-  averageGrade: number;
-  approvalRate: number;
-  highestGrade: number;
-  lowestGrade: number;
+  averageGrade: number | null;
+  approvalRate: number | null;
+  highestGrade: number | null;
+  lowestGrade: number | null;
 }
 
 export interface GradeDistribution {
@@ -54,8 +54,8 @@ export interface PeriodExamSummary {
   examTitle: string;
   subjectName: string;
   groupLetter: string;
-  averageGrade: number;
-  approvalRate: number;
+  averageGrade: number | null;
+  approvalRate: number | null;
   totalStudents: number;
 }
 
@@ -66,8 +66,8 @@ export interface GroupStudentRow {
   matricula: string;
   fullName: string;
   totalExams: number;
-  averageGrade: number;
-  approvalRate: number;
+  averageGrade: number | null;
+  approvalRate: number | null;
 }
 
 export interface GroupReportData {
@@ -139,6 +139,18 @@ export interface PeriodOption {
 export interface GroupOption {
   id: number;
   label: string; // "1A - Nivel 3"
+  groupLetter?: string;
+  academicLevel?: number;
+  generationYear?: number;
+  idGeneration?: number;
+  assignments?: Array<{
+    subject?: {
+      id_subject?: number;
+      id?: number;
+      name?: string;
+      label?: string;
+    };
+  }>;
 }
 
 export interface SubjectOption {

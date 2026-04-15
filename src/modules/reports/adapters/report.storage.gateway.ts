@@ -97,11 +97,16 @@ export class ReportStorageGateway implements ReportRepository {
   // =========================
 
 async getGroups(): Promise<ApiResponse<GroupOption[]>> {
-  const res = await handleRequest<any>('get', '/api/academic/groups/');
+  const res = await handleRequest<any>('get', '/api/reports/groups/');
 
   return extractPaginatedOptions(res, (g: any) => ({
     id: g.id_group,
     label: `${g.group_letter} - Nivel ${g.academic_level} (${g.generation_year})`,
+    groupLetter: g.group_letter,
+    academicLevel: g.academic_level,
+    generationYear: g.generation_year,
+    idGeneration: g.id_generation,
+    assignments: Array.isArray(g.assignments) ? g.assignments : [],
   }));
 }
 
@@ -131,11 +136,14 @@ async getGroups(): Promise<ApiResponse<GroupOption[]>> {
   }
 
   async getStudents(groupId?: number): Promise<ApiResponse<StudentOption[]>> {
-    if (!groupId) {
-      return { success: true, data: [], code: 200, message: '', timestamp: '' };
+    const params = new URLSearchParams();
+    params.append('role', 'student');
+    if (groupId) {
+      params.append('group', String(groupId));
     }
 
-    const res = await handleRequest<any>('get', `/api/academic/groups/${groupId}/students/?page=1&page_size=100`);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    const res = await handleRequest<any>('get', `/api/users/${query}`);
 
     const list = res?.data?.results ?? [];
     return {

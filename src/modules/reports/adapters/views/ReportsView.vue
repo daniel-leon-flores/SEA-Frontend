@@ -18,10 +18,17 @@
     <!-- Error state -->
     <v-alert v-if="!loading && errorMsg" type="error" variant="tonal" class="mb-4" closable @click:close="errorMsg = ''">
       {{ errorMsg }}
+      <template #append>
+        <v-btn variant="text" size="small" @click="lastFilters && handleGenerate(lastFilters)">Reintentar</v-btn>
+      </template>
+    </v-alert>
+
+    <v-alert v-if="!loading && !errorMsg && noDataMsg" type="info" variant="tonal" class="mb-4" closable @click:close="noDataMsg = ''">
+      {{ noDataMsg }}
     </v-alert>
 
     <!-- Empty / initial state -->
-    <div v-if="!loading && !errorMsg && !reportData" class="text-center py-16">
+    <div v-if="!loading && !errorMsg && !noDataMsg && !hasVisibleReportData" class="text-center py-16">
       <v-icon size="100" color="grey-lighten-1" class="mb-4">mdi-chart-bar</v-icon>
       <h3 class="text-h5 text-grey-darken-1 mb-2">Selecciona un tipo de reporte</h3>
       <p class="text-body-2 text-grey">Elige los filtros y haz clic en "Generar Reporte" para visualizar los datos.</p>
@@ -70,7 +77,7 @@
     </template>
 
     <!-- ===== BY GROUP ===== -->
-    <template v-if="!loading && activeType === 'by-group' && groupReport">
+    <template v-if="!loading && activeType === 'by-group' && filteredGroupReport">
       <MetricCards :metrics="groupMetrics" />
       <v-row class="mb-4">
         <v-col cols="12" md="6">
@@ -95,13 +102,18 @@
       <ReportTable
         title="Alumnos del Grupo"
         :columns="groupColumns"
-        :rows="groupReport.students"
+        :rows="filteredGroupReport.students"
         @export-pdf="exportGroupPdf"
         @export-excel="exportGroupExcel"
       >
         <template #cell-averageGrade="{ value }">
           <v-chip :color="gradeColor(value)" size="small" variant="flat">
-            {{ value }}
+            {{ formatNumber(value) }}
+          </v-chip>
+        </template>
+        <template #cell-approvalRate="{ value }">
+          <v-chip color="primary" size="small" variant="tonal">
+            {{ formatPercent(value) }}
           </v-chip>
         </template>
       </ReportTable>
@@ -135,7 +147,7 @@
             icon="mdi-chart-bar"
             type="bar"
             :chart-data="studentExamChartData"
-            :chart-options="barOptions"
+            :chart-options="studentExamBarOptions"
           />
         </v-col>
       </v-row>
@@ -200,6 +212,7 @@ import { ReportType } from '../../entities/report-types';
 import type {
   ExamReportData,
   GroupReportData,
+  GroupStudentRow,
   StudentReportData,
   StudentExamDetailData,
   SummaryMetrics,
@@ -211,72 +224,119 @@ import { exportToExcel } from '../utils/export-excel';
 const controller = new ReportController();
 const userRole = computed(() => localStorage.getItem('sea_selectedRole') || 'TEACHER');
 
-// State
 const filtersLoading = ref(true);
 const reportLoading = ref(false);
 const loading = computed(() => filtersLoading.value || reportLoading.value);
-const loaderMessage = computed(() =>
-  filtersLoading.value ? 'Cargando filtros...' : 'Generando reporte...'
-);
+const loaderMessage = computed(() => filtersLoading.value ? 'Cargando filtros...' : 'Generando reporte...');
 const errorMsg = ref('');
+const noDataMsg = ref('');
 const activeType = ref<ReportType | null>(null);
 const reportData = ref<any>(null);
+const lastFilters = ref<ReportFiltersDto | null>(null);
 
-// Typed report references
+const selectedGroupId = ref<number | undefined>(undefined);
+const selectedStudentId = ref<number | undefined>(undefined);
+const groupReportData = ref<GroupReportData | null>(null);
+
 const examReport = computed(() => activeType.value === 'by-exam' ? reportData.value as ExamReportData : null);
-const groupReport = computed(() => activeType.value === 'by-group' ? reportData.value as GroupReportData : null);
+const groupReport = computed(() => activeType.value === 'by-group' ? groupReportData.value : null);
 const studentReport = computed(() => activeType.value === 'by-student' ? reportData.value as StudentReportData : null);
 const detailReport = computed(() => activeType.value === 'student-exam-detail' ? reportData.value as StudentExamDetailData : null);
+const hasVisibleReportData = computed(() => activeType.value === 'by-group' ? !!groupReportData.value : !!reportData.value);
 
-// --- Filters loading handler ---
 function onFiltersLoading(value: boolean) {
   filtersLoading.value = value;
 }
 
-// --- Generate handler ---
 async function handleGenerate(filters: ReportFiltersDto) {
   reportLoading.value = true;
   errorMsg.value = '';
+  noDataMsg.value = '';
   reportData.value = null;
+  groupReportData.value = null;
+  selectedGroupId.value = undefined;
+  selectedStudentId.value = undefined;
   activeType.value = filters.reportType;
+  lastFilters.value = { ...filters };
 
   try {
-    let response;
-    switch (filters.reportType) {
-      case 'by-exam':
-        response = await controller.getExamReport(filters);
-        break;
-      case 'by-group':
-        response = await controller.getGroupReport(filters);
-        break;
-      case 'by-student':
-        response = await controller.getStudentReport(filters);
-        break;
-      case 'student-exam-detail':
-        response = await controller.getStudentExamDetail(filters);
-        break;
-    }
+    const response = await requestReportByType(filters);
+
     if (response?.success && response?.data) {
-      reportData.value = response.data;
-    } else {
-      errorMsg.value = response?.message || 'Error al generar el reporte';
+      applyReportData(filters, response.data);
+      return;
     }
+
+    errorMsg.value = getResponseErrorMessage(response?.code, response?.message);
   } catch (err: any) {
-    errorMsg.value = err.message || 'Error inesperado';
+    errorMsg.value = getExceptionErrorMessage(err);
   } finally {
     reportLoading.value = false;
   }
 }
 
-// --- Helpers ---
+function requestReportByType(filters: ReportFiltersDto) {
+  switch (filters.reportType) {
+    case 'by-exam':
+      return controller.getExamReport(filters);
+    case 'by-group':
+      return controller.getGroupReport(filters);
+    case 'by-student':
+      return controller.getStudentReport(filters);
+    case 'student-exam-detail':
+      return controller.getStudentExamDetail(filters);
+    default:
+      return Promise.resolve(null);
+  }
+}
+
+function applyReportData(filters: ReportFiltersDto, data: ExamReportData | GroupReportData | StudentReportData | StudentExamDetailData) {
+  if (filters.reportType === 'by-group') {
+    const groupData = data as GroupReportData;
+    groupReportData.value = groupData;
+    selectedGroupId.value = filters.groupId;
+    selectedStudentId.value = filters.studentId;
+
+    if (Array.isArray(groupData.students) && groupData.students.length === 0) {
+      noDataMsg.value = 'No hay datos de alumnos para el grupo seleccionado.';
+    }
+    return;
+  }
+
+  reportData.value = data;
+}
+
+function getResponseErrorMessage(code?: number, message?: string): string {
+  if (code === 403) return 'No tienes permisos para generar este reporte con el rol actual.';
+  if (code === 400) return message || 'La solicitud es invalida. Verifica los filtros seleccionados.';
+  return message || 'Error al generar el reporte';
+}
+
+function getExceptionErrorMessage(err: any): string {
+  const status = err?.response?.status;
+  if (status === 403) return 'No tienes permisos para generar este reporte con el rol actual.';
+  if (status === 400) return err?.response?.data?.message || 'La solicitud es invalida. Verifica los filtros seleccionados.';
+  return err?.message || 'Error inesperado';
+}
+
+function formatNumber(value: number | null | undefined, digits = 1): string {
+  if (value === null || value === undefined) return '—';
+  return Number(value).toFixed(digits);
+}
+
+function formatPercent(value: number | null | undefined): string {
+  if (value === null || value === undefined) return '—';
+  return `${Number(value).toFixed(1)}%`;
+}
+
 function buildMetrics(m: SummaryMetrics) {
   return [
     { label: 'Total Alumnos', value: m.totalStudents, icon: 'mdi-account-group', iconColor: '#069574' },
     { label: 'Total Exámenes', value: m.totalExams, icon: 'mdi-file-document-multiple', iconColor: '#081e53' },
-    { label: 'Promedio', value: m.averageGrade.toFixed(1), icon: 'mdi-chart-line', iconColor: '#FFC107' },
-    { label: '% Aprobación', value: `${m.approvalRate.toFixed(1)}%`, icon: 'mdi-check-decagram', iconColor: '#4CAF50' },
-    { label: 'Más Alta', value: m.highestGrade, icon: 'mdi-arrow-up-bold', iconColor: '#4CAF50' },
-    { label: 'Más Baja', value: m.lowestGrade, icon: 'mdi-arrow-down-bold', iconColor: '#FF5252' },
+    { label: 'Promedio', value: formatNumber(m.averageGrade), icon: 'mdi-chart-line', iconColor: '#FFC107' },
+    { label: '% Aprobación', value: formatPercent(m.approvalRate), icon: 'mdi-check-decagram', iconColor: '#4CAF50' },
+    { label: 'Más Alta', value: formatNumber(m.highestGrade), icon: 'mdi-arrow-up-bold', iconColor: '#4CAF50' },
+    { label: 'Más Baja', value: formatNumber(m.lowestGrade), icon: 'mdi-arrow-down-bold', iconColor: '#FF5252' },
   ];
 }
 
@@ -294,7 +354,107 @@ function buildGradeChart(dist: GradeDistribution[]) {
   };
 }
 
+function buildGroupMetricsFromStudents(students: GroupStudentRow[]): SummaryMetrics {
+  if (students.length === 0) {
+    return {
+      totalStudents: 0,
+      totalExams: 0,
+      averageGrade: null,
+      approvalRate: null,
+      highestGrade: null,
+      lowestGrade: null,
+    };
+  }
+
+  const validGrades = students
+    .map((s) => s.averageGrade)
+    .filter((grade): grade is number => grade !== null && grade !== undefined);
+  const validApproval = students
+    .map((s) => s.approvalRate)
+    .filter((rate): rate is number => rate !== null && rate !== undefined);
+
+  return {
+    totalStudents: students.length,
+    totalExams: students.reduce((sum, s) => sum + (s.totalExams ?? 0), 0),
+    averageGrade: validGrades.length ? validGrades.reduce((sum, grade) => sum + grade, 0) / validGrades.length : null,
+    approvalRate: validApproval.length ? validApproval.reduce((sum, rate) => sum + rate, 0) / validApproval.length : null,
+    highestGrade: validGrades.length ? Math.max(...validGrades) : null,
+    lowestGrade: validGrades.length ? Math.min(...validGrades) : null,
+  };
+}
+
+function buildGroupGradeDistributionFromStudents(students: GroupStudentRow[]): GradeDistribution[] {
+  const ranges = [
+    { key: '0-59', min: 0, max: 59.999 },
+    { key: '60-69', min: 60, max: 69.999 },
+    { key: '70-79', min: 70, max: 79.999 },
+    { key: '80-89', min: 80, max: 89.999 },
+    { key: '90-100', min: 90, max: 100 },
+  ];
+
+  const validGrades = students
+    .map((s) => s.averageGrade)
+    .filter((grade): grade is number => grade !== null && grade !== undefined);
+
+  const total = validGrades.length;
+
+  return ranges.map((range) => {
+    const count = validGrades.filter((grade) => grade >= range.min && grade <= range.max).length;
+    return {
+      range: range.key,
+      count,
+      percentage: total > 0 ? (count * 100) / total : 0,
+    };
+  });
+}
+
 const barOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } };
+
+const studentExamBarOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  indexAxis: 'y' as const,
+  plugins: {
+    legend: { display: false },
+    tooltip: { enabled: true },
+  },
+  scales: {
+    x: {
+      min: 0,
+      max: 10,
+      ticks: {
+        stepSize: 1,
+      },
+      grid: {
+        color: '#e5e7eb',
+      },
+    },
+    y: {
+      ticks: {
+        autoSkip: false,
+      },
+      grid: {
+        display: false,
+      },
+    },
+  },
+  datasets: {
+    bar: {
+      borderRadius: 6,
+      barThickness: 14,
+      maxBarThickness: 16,
+      categoryPercentage: 0.9,
+      barPercentage: 0.8,
+    },
+  },
+};
+
+function shortExamTitle(title: string): string {
+  if (!title) return 'Sin titulo';
+  const normalized = String(title).trim();
+  if (normalized.length <= 28) return normalized;
+  return `${normalized.slice(0, 28)}...`;
+}
 
 function gradeColor(grade: number | null): string {
   if (grade === null) return 'grey';
@@ -313,7 +473,6 @@ function statusLabel(status: string): string {
   return map[status] || status;
 }
 
-// --- By Exam computed ---
 const examMetrics = computed(() => examReport.value ? buildMetrics(examReport.value.metrics) : []);
 const examGradeChartData = computed(() => examReport.value ? buildGradeChart(examReport.value.gradeDistribution) : { labels: [], datasets: [] });
 const examStatusChartData = computed(() => {
@@ -331,15 +490,34 @@ const examColumns = [
   { key: 'status', label: 'Estado', minWidth: '140px' },
 ];
 
-// --- By Group computed ---
-const groupMetrics = computed(() => groupReport.value ? buildMetrics(groupReport.value.metrics) : []);
-const groupGradeChartData = computed(() => groupReport.value ? buildGradeChart(groupReport.value.gradeDistribution) : { labels: [], datasets: [] });
+const filteredStudentsData = computed<GroupStudentRow[]>(() => {
+  if (!groupReport.value) return [];
+  if (!selectedStudentId.value) return groupReport.value.students;
+  return groupReport.value.students.filter((student) => Number(student.studentId) === Number(selectedStudentId.value));
+});
+
+const filteredGroupReport = computed<GroupReportData | null>(() => {
+  if (!groupReport.value) return null;
+
+  const students = filteredStudentsData.value;
+  return {
+    ...groupReport.value,
+    students,
+    metrics: buildGroupMetricsFromStudents(students),
+    gradeDistribution: buildGroupGradeDistributionFromStudents(students),
+  };
+});
+
+const groupMetrics = computed(() => filteredGroupReport.value ? buildMetrics(filteredGroupReport.value.metrics) : []);
+const groupGradeChartData = computed(() => filteredGroupReport.value ? buildGradeChart(filteredGroupReport.value.gradeDistribution) : { labels: [], datasets: [] });
 const groupApprovalChartData = computed(() => {
-  if (!groupReport.value) return { labels: [], datasets: [] };
-  const sorted = [...groupReport.value.students].sort((a, b) => b.approvalRate - a.approvalRate).slice(0, 15);
+  if (!filteredGroupReport.value) return { labels: [], datasets: [] };
+  const sorted = [...filteredGroupReport.value.students]
+    .sort((a, b) => (b.approvalRate ?? -1) - (a.approvalRate ?? -1))
+    .slice(0, 15);
   return {
     labels: sorted.map((s) => s.fullName),
-    datasets: [{ label: '% Aprobación', data: sorted.map((s) => s.approvalRate), backgroundColor: '#069574', borderRadius: 6 }],
+    datasets: [{ label: '% Aprobación', data: sorted.map((s) => s.approvalRate ?? 0), backgroundColor: '#069574', borderRadius: 6 }],
   };
 });
 const groupColumns = [
@@ -350,14 +528,14 @@ const groupColumns = [
   { key: 'approvalRate', label: '% Aprobación', minWidth: '120px' },
 ];
 
-// --- By Student computed ---
 const studentMetrics = computed(() => studentReport.value ? buildMetrics(studentReport.value.metrics) : []);
 const studentGradeChartData = computed(() => studentReport.value ? buildGradeChart(studentReport.value.gradeDistribution) : { labels: [], datasets: [] });
 const studentExamChartData = computed(() => {
   if (!studentReport.value) return { labels: [], datasets: [] };
+  const exams = studentReport.value.exams;
   return {
-    labels: studentReport.value.exams.map((e) => e.examTitle),
-    datasets: [{ label: 'Calificación', data: studentReport.value.exams.map((e) => e.grade ?? 0), backgroundColor: '#081e53', borderRadius: 6 }],
+    labels: exams.map((e) => shortExamTitle(e.examTitle)),
+    datasets: [{ label: 'Calificación', data: exams.map((e) => e.grade ?? 0), backgroundColor: '#081e53' }],
   };
 });
 const studentColumns = [
@@ -367,7 +545,6 @@ const studentColumns = [
   { key: 'status', label: 'Estado', minWidth: '140px' },
 ];
 
-// --- Student-Exam detail ---
 const detailColumns = [
   { key: 'questionOrder', label: '#', minWidth: '50px' },
   { key: 'statement', label: 'Pregunta', minWidth: '300px' },
@@ -376,8 +553,6 @@ const detailColumns = [
   { key: 'correctAnswer', label: 'Respuesta Correcta', minWidth: '200px' },
   { key: 'isCorrect', label: 'Correcto', minWidth: '90px' },
 ];
-
-// ===== EXPORT FUNCTIONS =====
 
 function exportExamPdf() {
   if (!examReport.value) return;
@@ -403,24 +578,24 @@ function exportExamExcel() {
 }
 
 function exportGroupPdf() {
-  if (!groupReport.value) return;
-  const r = groupReport.value;
+  if (!filteredGroupReport.value) return;
+  const r = filteredGroupReport.value;
   exportToPdf({
     title: `Reporte Grupo: ${r.groupLetter} — Nivel ${r.academicLevel}`,
     subtitle: `Generación ${r.generationYear}`,
     columns: ['Matrícula', 'Nombre', 'Exámenes', 'Promedio', '% Aprobación'],
-    rows: r.students.map((s) => [s.matricula, s.fullName, s.totalExams, s.averageGrade, `${s.approvalRate}%`]),
+    rows: r.students.map((s) => [s.matricula, s.fullName, s.totalExams, formatNumber(s.averageGrade), formatPercent(s.approvalRate)]),
     fileName: `reporte_grupo_${r.groupId}`,
   });
 }
 
 function exportGroupExcel() {
-  if (!groupReport.value) return;
-  const r = groupReport.value;
+  if (!filteredGroupReport.value) return;
+  const r = filteredGroupReport.value;
   exportToExcel({
     sheetName: 'Por Grupo',
     columns: ['Matrícula', 'Nombre', 'Exámenes', 'Promedio', '% Aprobación'],
-    rows: r.students.map((s) => [s.matricula, s.fullName, s.totalExams, s.averageGrade, s.approvalRate]),
+    rows: r.students.map((s) => [s.matricula, s.fullName, s.totalExams, s.averageGrade ?? null, s.approvalRate ?? null]),
     fileName: `reporte_grupo_${r.groupId}`,
   });
 }
