@@ -132,8 +132,10 @@ AxiosClient.interceptors.response.use(
       }
     }
 
-    // Si es 403, redirigir a página de no autorizado
-    if (status === 403) {
+    // Si es 403, redirigir a no autorizado excepto en reportes,
+    // donde la UI necesita mostrar mensajes de error de negocio.
+    const isReportsEndpoint = originalRequest?.url?.includes('/api/reports/');
+    if (status === 403 && !isReportsEndpoint) {
       globalThis.location.href = '/unauthorized';
     }
 
