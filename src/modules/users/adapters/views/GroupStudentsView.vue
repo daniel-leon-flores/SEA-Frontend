@@ -253,8 +253,6 @@ const loadStudents = async () => {
       status: filterStatus.value || undefined,
     });
 
-    console.log('Response from backend:', response);
-
     // Manejar dos posibles estructuras de respuesta
     if (response.results) {
       // Respuesta directa del paginador
