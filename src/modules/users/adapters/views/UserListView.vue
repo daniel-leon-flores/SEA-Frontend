@@ -368,8 +368,6 @@ export default {
           status: this.filterStatus || undefined
         })
         
-        console.log('Response from backend:', response)
-        
         // El backend devuelve la respuesta directamente sin envolver en ApiResponse.data
         // Verificar si response tiene la estructura de paginación directamente
         if (response.results) {
