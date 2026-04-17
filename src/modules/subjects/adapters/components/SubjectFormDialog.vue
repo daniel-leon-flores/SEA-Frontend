@@ -37,26 +37,75 @@
             @update:model-value="clearFieldError('level_number')"
           />
 
-          <v-text-field
-            v-if="!isEdit"
-            v-model.number="form.number_of_units"
-            label="Número de unidades (opcional)"
-            type="number"
-            min="0"
-            max="9"
-            step="1"
-            hint="Si indicas un número (0-9), se crearán unidades numeradas automáticamente."
-            persistent-hint
-            variant="outlined"
-            density="comfortable"
-            maxlength="1"
-            :disabled="saving"
-            :rules="[rules.nonNegativeUnits]"
-            :error-messages="fieldErrors.number_of_units"
-            @keydown="preventInvalidNumberChars($event)"
-            @input="clampUnitsInput"
-            @update:model-value="clearFieldError('number_of_units')"
-          />
+          <div class="rounded-lg pa-3 mt-2" style="background: rgba(6, 50, 68, 0.06)">
+            <div class="d-flex align-center justify-space-between flex-wrap ga-2 mb-2">
+              <div>
+                <div class="text-body-2 font-weight-medium">Unidades</div>
+                <div class="text-caption text-medium-emphasis">
+                  {{ unitsSectionSubtitle }}
+                </div>
+              </div>
+              <v-btn
+                color="primary"
+                variant="tonal"
+                size="small"
+                class="text-none"
+                prepend-icon="mdi-plus"
+                :disabled="saving || unitsDraft.length >= 9"
+                @click="addUnitRow"
+              >
+                Agregar unidad
+              </v-btn>
+            </div>
+
+            <p v-if="unitsDraft.length === 0" class="text-body-2 text-medium-emphasis mb-0">
+              No hay unidades. Usa «Agregar unidad» para registrar cada una con nombre y número, o guarda sin unidades
+              si aún no aplica.
+            </p>
+
+            <div v-for="row in unitsDraft" :key="row.clientId" class="d-flex flex-wrap align-start ga-2 mb-2">
+              <v-text-field
+                v-model="row.unit_name"
+                label="Nombre de la unidad"
+                variant="outlined"
+                density="comfortable"
+                maxlength="150"
+                hide-details="auto"
+                class="flex-grow-1"
+                style="min-width: 180px"
+                :disabled="saving"
+                :rules="[rules.required, rules.maxLen, rules.noHtml]"
+                @update:model-value="clearFieldError('units')"
+              />
+              <v-text-field
+                :model-value="row.unit_number"
+                label="Número"
+                type="number"
+                min="1"
+                max="9"
+                step="1"
+                variant="outlined"
+                density="comfortable"
+                maxlength="1"
+                hide-details="auto"
+                style="max-width: 110px"
+                :disabled="saving"
+                @keydown="preventInvalidNumberChars($event)"
+                @update:model-value="(v: unknown) => onUnitNumberInput(row.clientId, v)"
+              />
+              <v-btn
+                icon="mdi-delete-outline"
+                variant="text"
+                color="error"
+                :disabled="saving"
+                :aria-label="'Eliminar unidad'"
+                @click="removeUnitRow(row.clientId)"
+              />
+            </div>
+            <p v-if="fieldErrors.units?.length" class="text-caption text-error mt-1">
+              {{ fieldErrors.units[0] }}
+            </p>
+          </div>
 
           <div class="d-flex align-center justify-space-between rounded-lg pa-3 mt-2" style="background: rgba(6, 50, 68, 0.06)">
             <div>
@@ -88,8 +137,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import type { Subject } from '../../entities/subject';
-import type { CreateSubjectDto } from '../../entities/create-subject.dto';
-import type { UpdateSubjectDto } from '../../entities/update-subject.dto';
+import type { CreateSubjectDto, CreateSubjectUnitDto } from '../../entities/create-subject.dto';
+import type { UpdateSubjectDto, UpdateSubjectUnitDto } from '../../entities/update-subject.dto';
 import { SubjectController } from '../subject.controller';
 
 const props = defineProps<{
@@ -110,15 +159,29 @@ const fieldErrors = ref<Record<string, string[]>>({});
 
 const isEdit = computed(() => !!props.subject);
 
+const unitsSectionSubtitle = computed(() =>
+  isEdit.value
+    ? 'Máximo 9. Los números deben ser únicos (1–9). Si hay exámenes asociados a un número, no podrás eliminarlo ni cambiar ese número.'
+    : 'Máximo 9. Los números deben ser únicos (1–9). Agrega cada unidad con nombre y número.',
+);
+
 const levelItems = Array.from({ length: 11 }, (_, i) => ({
   title: `Nivel ${i + 1}`,
   value: i + 1,
 }));
 
+type UnitDraftRow = {
+  clientId: string;
+  id_unit?: number;
+  unit_name: string;
+  unit_number: number;
+};
+
+const unitsDraft = ref<UnitDraftRow[]>([]);
+
 const form = ref({
   name: '',
   level_number: 1 as number,
-  number_of_units: 0 as number,
   status: true,
 });
 
@@ -126,23 +189,23 @@ const rules = {
   required: (v: unknown) => (v !== undefined && v !== null && String(v).trim() !== '') || 'Campo requerido',
   maxLen: (v: string) => !v || v.length <= 150 || 'Máximo 150 caracteres',
   minLevel: (v: number) => (v >= 1) || 'El nivel debe ser al menos 1',
-  nonNegativeUnits: (v: unknown) => {
-    if (v === undefined || v === null || v === '' || v === 0) return true;
-    const n = Number(v);
-    if (!Number.isInteger(n)) return 'Debe ser un número entero';
-    if (n < 0 || n > 9) return 'Debe estar entre 0 y 9';
-    return true;
-  },
   noHtml: (v: string) => !v || !/<[^<>]*>/.test(v) || 'No se permiten etiquetas HTML',
 };
+
+function randomClientId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return `u-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
 
 function resetForm() {
   form.value = {
     name: '',
     level_number: 1,
-    number_of_units: 0,
     status: true,
   };
+  unitsDraft.value = [];
   fieldErrors.value = {};
 }
 
@@ -154,9 +217,16 @@ function applySubject(s: Subject | null) {
   form.value = {
     name: s.name,
     level_number: s.level_number,
-    number_of_units: 0,
     status: s.status,
   };
+  unitsDraft.value = [...(s.units ?? [])]
+    .sort((a, b) => a.unit_number - b.unit_number)
+    .map((u) => ({
+      clientId: `existing-${u.id_unit}`,
+      id_unit: u.id_unit,
+      unit_name: u.unit_name,
+      unit_number: u.unit_number,
+    }));
   fieldErrors.value = {};
 }
 
@@ -187,15 +257,68 @@ function preventInvalidNumberChars(event: KeyboardEvent) {
   }
 }
 
-function clampUnitsInput(event: Event) {
-  const input = event.target as HTMLInputElement;
-  const raw = input.value;
-  // Strip non-digit characters (handles paste of 1e+2100 etc.)
-  const cleaned = raw.replaceAll(/\D/g, '');
-  const n = cleaned ? Number.parseInt(cleaned, 10) : 0;
-  const clamped = Math.min(Math.max(n, 0), 9);
-  form.value.number_of_units = clamped;
-  input.value = String(clamped);
+function nextAvailableUnitNumber(): number | null {
+  const used = new Set(unitsDraft.value.map((u) => u.unit_number));
+  for (let i = 1; i <= 9; i += 1) {
+    if (!used.has(i)) return i;
+  }
+  return null;
+}
+
+function addUnitRow() {
+  if (unitsDraft.value.length >= 9) return;
+  const n = nextAvailableUnitNumber();
+  if (n === null) return;
+  unitsDraft.value.push({
+    clientId: randomClientId(),
+    unit_name: `Unidad ${n}`,
+    unit_number: n,
+  });
+}
+
+function removeUnitRow(clientId: string) {
+  unitsDraft.value = unitsDraft.value.filter((r) => r.clientId !== clientId);
+  clearFieldError('units');
+}
+
+function onUnitNumberInput(clientId: string, raw: unknown) {
+  const row = unitsDraft.value.find((r) => r.clientId === clientId);
+  if (!row) return;
+  const cleaned = String(raw ?? '').replaceAll(/\D/g, '');
+  const parsed = cleaned ? Number.parseInt(cleaned, 10) : Number.NaN;
+  const clamped = Number.isFinite(parsed) ? Math.min(Math.max(parsed, 1), 9) : row.unit_number;
+  row.unit_number = clamped;
+  clearFieldError('units');
+}
+
+function validateUnitsDraft(): string | null {
+  if (unitsDraft.value.length > 9) return 'No puede haber más de 9 unidades.';
+  const names = unitsDraft.value.map((u) => u.unit_name.trim());
+  if (names.some((n) => !n)) return 'Cada unidad debe tener nombre.';
+  const nums = unitsDraft.value.map((u) => u.unit_number);
+  if (nums.some((n) => !Number.isInteger(n) || n < 1 || n > 9)) {
+    return 'Cada número de unidad debe ser un entero entre 1 y 9.';
+  }
+  if (new Set(nums).size !== nums.length) return 'Los números de unidad deben ser únicos.';
+  return null;
+}
+
+function buildUpdateUnitsPayload(): UpdateSubjectUnitDto[] {
+  return unitsDraft.value.map((r) => {
+    const item: UpdateSubjectUnitDto = {
+      unit_name: r.unit_name.trim(),
+      unit_number: r.unit_number,
+    };
+    if (r.id_unit != null) item.id_unit = r.id_unit;
+    return item;
+  });
+}
+
+function buildCreateUnitsPayload(): CreateSubjectUnitDto[] {
+  return unitsDraft.value.map((r) => ({
+    unit_name: r.unit_name.trim(),
+    unit_number: r.unit_number,
+  }));
 }
 
 function mapServerErrors(details: unknown): void {
@@ -216,6 +339,12 @@ async function submit() {
   const result = await formRef.value?.validate();
   if (!result?.valid) return;
 
+  const unitsError = validateUnitsDraft();
+  if (unitsError) {
+    fieldErrors.value = { units: [unitsError] };
+    return;
+  }
+
   saving.value = true;
   fieldErrors.value = {};
   const controller = new SubjectController();
@@ -226,6 +355,7 @@ async function submit() {
         name: form.value.name.trim(),
         level_number: form.value.level_number,
         status: form.value.status,
+        units: buildUpdateUnitsPayload(),
       };
       const res = await controller.updateSubject(props.subject.id_subject, dto);
       if (res.success) {
@@ -240,11 +370,8 @@ async function submit() {
         name: form.value.name.trim(),
         level_number: form.value.level_number,
         status: form.value.status,
+        units: buildCreateUnitsPayload(),
       };
-      const rawUnits = Number(form.value.number_of_units);
-      if (Number.isInteger(rawUnits) && rawUnits > 0 && rawUnits <= 9) {
-        dto.number_of_units = rawUnits;
-      }
       const res = await controller.createSubject(dto);
       if (res.success) {
         emit('saved');
