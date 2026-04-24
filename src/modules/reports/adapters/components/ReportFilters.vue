@@ -4,7 +4,7 @@
       <v-icon start size="20">mdi-filter-variant</v-icon>
       Filtros del Reporte
     </v-card-title>
-      <v-row dense>
+    <v-row dense>
 
       <!-- REPORT TYPE -->
       <v-col cols="12" md="4">
@@ -33,6 +33,7 @@
           prepend-inner-icon="mdi-calendar"
           :loading="loadingGenerations"
           clearable
+          :disabled="loadingGroups"
         />
       </v-col>
 
@@ -87,18 +88,45 @@
       <v-col v-if="showStudent" cols="12" md="4">
         <v-select
           v-model="localFilters.studentId"
-          :items="students"
+          :items="studentOptions"
           item-title="label"
           item-value="id"
           label="Alumno"
           variant="outlined"
           density="compact"
           prepend-inner-icon="mdi-account-school"
-          clearable
+          :placeholder="studentPlaceholder"
+          persistent-placeholder
+          :disabled="studentDisabled"
           :loading="loadingStudents"
         />
       </v-col>
     </v-row>
+
+    <v-alert
+      v-if="groupLoadError"
+      type="error"
+      variant="tonal"
+      density="comfortable"
+      class="mt-4"
+    >
+      {{ groupLoadError }}
+      <template #append>
+        <v-btn variant="text" size="small" @click="retryGroupLoad">
+          Reintentar
+        </v-btn>
+      </template>
+    </v-alert>
+
+    <v-alert
+      v-if="showStudent && localFilters.reportType === 'by-group' && localFilters.groupId && !loadingStudents && students.length === 0 && !groupLoadError"
+      type="info"
+      variant="tonal"
+      density="comfortable"
+      class="mt-4"
+    >
+      No hay alumnos en el reporte para el grupo seleccionado.
+    </v-alert>
 
     <div class="d-flex justify-end mt-4">
       <v-btn
@@ -120,16 +148,15 @@
 import { reactive, ref, computed, onMounted, watch } from 'vue';
 import { ReportFiltersDto } from '../../entities/report-filters.dto';
 import { REPORT_TYPE_OPTIONS, ReportTypeOption } from '../../entities/report-types';
-import { GenerationController } from '../../../generations/adapters/generation.controller';
+import { ReportController } from '../report.controller';
+import { UserController } from '@/modules/users/adapters/user.controller';
 import { getGenerationGroupsInteractor } from '@/modules/groups/adapters/generation-group.controller';
-import { ExamController } from '@/modules/exams/adapters/exam.controller';
-import { handleRequest } from '@/config/http-client.gateway';
 
 /* =========================
    CONTROLLERS
 ========================= */
-const generationController = new GenerationController();
-const examController = new ExamController();
+const reportController = new ReportController();
+const userController = new UserController();
 
 /* =========================
    EMIT / PROPS
@@ -147,6 +174,7 @@ const emit = defineEmits<{
 const selectedGeneration = ref<number | null>(null);
 
 const generations = ref<any[]>([]);
+const allGroups = ref<any[]>([]);
 const groups = ref<any[]>([]);
 const subjects = ref<any[]>([]);
 const exams = ref<any[]>([]);
@@ -157,6 +185,7 @@ const loadingGenerations = ref(false);
 const loadingGroups = ref(false);
 const loadingExams = ref(false);
 const loadingStudents = ref(false);
+const groupLoadError = ref('');
 
 /* =========================
    FILTERS
@@ -195,6 +224,22 @@ const showStudent = computed(() =>
   ['by-student', 'student-exam-detail'].includes(localFilters.reportType)
 );
 
+const studentOptions = computed(() => {
+  return students.value;
+});
+
+const studentPlaceholder = computed(() => {
+  if (!localFilters.groupId) return 'Selecciona un grupo primero';
+  return 'Selecciona un alumno';
+});
+
+const studentDisabled = computed(() => {
+  if (!showStudent.value) return true;
+  if (!localFilters.groupId) return true;
+  if (loadingStudents.value) return true;
+  return false;
+});
+
 /* =========================
    VALIDATION
 ========================= */
@@ -214,68 +259,39 @@ const canGenerate = computed(() => {
 });
 
 /* =========================
-   LOAD GENERATIONS
-========================= */
-async function loadGenerations() {
-  loadingGenerations.value = true;
-
-  try {
-    if (props.userRole === 'TEACHER') {
-      // Teacher: only load generations from their assigned groups
-      const groupsRes = await handleRequest<any>('get', '/api/academic/groups/my-groups/');
-      const myGroups = Array.isArray(groupsRes?.data) ? groupsRes.data : [];
-
-      const genMap = new Map<number, any>();
-      for (const g of myGroups) {
-        const genId = g.id_generation;
-        if (!genMap.has(genId)) {
-          genMap.set(genId, {
-            id_generation: genId,
-            year: g.generation_year,
-            end_year: g.generation_end_year ?? null,
-            label: g.generation_end_year
-              ? `${g.generation_year} - ${g.generation_end_year}`
-              : `${g.generation_year}`,
-          });
-        }
-      }
-      generations.value = Array.from(genMap.values()).sort((a, b) => b.year - a.year);
-    } else {
-      const res = await generationController.getGenerations(undefined, undefined, undefined, 1, 100);
-      const results = res?.data?.results ?? [];
-
-      generations.value = results.map((g: any) => ({
-        ...g,
-        label: g.end_year ? `${g.year} - ${g.end_year}` : `${g.year}`,
-      }));
-    }
-  } finally {
-    loadingGenerations.value = false;
-  }
-}
-/* =========================
-   LOAD EXAMS ✅
+   LOAD EXAMS
 ========================= */
 async function loadExams(subjectId?: number) {
   loadingExams.value = true;
 
   try {
-    if (!subjectId) {
+    if (!subjectId || !localFilters.groupId) {
       exams.value = [];
       return;
     }
 
-    const res = await examController.getAllExams({
-      page: 1,
-      page_size: 100,
-      id_subject: subjectId, // 🔥 aquí está el filtro real
-    });
+    const subjectAllowed = subjects.value.some((subject: any) => Number(subject.id) === Number(subjectId));
+    if (!subjectAllowed) {
+      exams.value = [];
+      return;
+    }
 
-    if (res?.success && res?.data?.results) {
-      exams.value = res.data.results.map((e: any) => ({
-        id: e.id_exam,
-        label: e.name,
+    const res = await reportController.getExams(subjectId, localFilters.groupId);
+    const list = Array.isArray(res?.data) ? res.data : (res?.data as any)?.results ?? [];
+
+    if (res?.success) {
+      const mapped = list.map((e: any) => ({
+        id: e.id ?? e.id_exam,
+        label: e.label ?? e.name ?? e.title,
+        subjectId: e.subject_id ?? e.id_subject ?? e.subject?.id_subject,
       }));
+
+      // Safety check: backend should already return exams for subject+group,
+      // but we enforce it client-side if subject info is present.
+      exams.value = mapped.filter((exam: any) => {
+        if (!exam.subjectId) return true;
+        return Number(exam.subjectId) === Number(subjectId);
+      });
     } else {
       exams.value = [];
     }
@@ -287,51 +303,77 @@ async function loadExams(subjectId?: number) {
   }
 }
 
-/* =========================
-   LOAD GROUPS
-========================= */
-async function loadGroups(idGeneration: number) {
-  loadingGroups.value = true;
+function applyGroupFilter(idGeneration?: number | null) {
+  if (!idGeneration) {
+    groups.value = [...allGroups.value];
+    return;
+  }
+
+  groups.value = allGroups.value.filter((g) => Number(g.generation_year) === Number(idGeneration));
+}
+
+async function resolveGroupAssignments(groupId: number) {
+  const selectedGroup = allGroups.value.find((group) => Number(group.id_group) === Number(groupId));
+  const inlineAssignments = Array.isArray(selectedGroup?.assignments) ? selectedGroup.assignments : [];
+
+  if (inlineAssignments.length > 0) {
+    return inlineAssignments;
+  }
+
+  const idGeneration = Number((selectedGroup as any)?.id_generation);
+  if (!Number.isFinite(idGeneration)) {
+    return [];
+  }
 
   try {
-    const res = await getGenerationGroupsInteractor.execute({
+    const response = await getGenerationGroupsInteractor.execute({
       idGeneration,
       page: 1,
       pageSize: 100,
     });
 
-    const results = res?.data?.results ?? [];
-
-    groups.value = results.map((g: any) => ({
-      ...g,
-      label: `${g.group_letter} - ${g.period_info ?? ''} (${g.generation_year ?? ''})`,
-    }));
-  } finally {
-    loadingGroups.value = false;
+    const generationGroups = response?.data?.results ?? [];
+    const matchedGroup = generationGroups.find((group: any) => Number(group.id_group) === Number(groupId));
+    return Array.isArray(matchedGroup?.assignments) ? matchedGroup.assignments : [];
+  } catch {
+    return [];
   }
 }
 
-/* =========================
-   WATCH GENERATION
-========================= */
-watch(selectedGeneration, async (val) => {
-  localFilters.groupId = undefined;
-  localFilters.subjectId = undefined;
-  localFilters.examId = undefined;
-  localFilters.studentId = undefined;
+async function loadSubjectsForGroup(groupId?: number) {
+  try {
+    if (!groupId) {
+      subjects.value = [];
+      return;
+    }
 
-  groups.value = [];
-  subjects.value = [];
-  exams.value = [];
+    const assignments = await resolveGroupAssignments(groupId);
 
-  if (!val) return;
+    if (assignments.length > 0) {
+      const unique = new Map<number, { id: number; label: string }>();
 
-  await loadGroups(val);
-});
-/* =========================
-   LOAD STUDENTS ✅ NUEVO
-========================= */
-async function loadStudents(groupId?: number) {
+      assignments.forEach((assignment: any) => {
+        const subject = assignment?.subject;
+        const subjectId = Number(subject?.id_subject ?? subject?.id);
+        const subjectLabel = subject?.name ?? subject?.label;
+
+        if (Number.isFinite(subjectId) && subjectLabel) {
+          unique.set(subjectId, { id: subjectId, label: subjectLabel });
+        }
+      });
+
+      subjects.value = Array.from(unique.values());
+      return;
+    }
+
+    // Strict behavior: only subjects assigned to this group.
+    subjects.value = [];
+  } catch {
+    subjects.value = [];
+  }
+}
+
+async function loadStudentsByGroup(groupId?: number) {
   loadingStudents.value = true;
 
   try {
@@ -340,70 +382,157 @@ async function loadStudents(groupId?: number) {
       return;
     }
 
-    const res = await handleRequest<any>(
-      'get',
-      `/api/academic/groups/${groupId}/students/?page=1&page_size=100`
-    );
+    const res: any = await userController.getUsers({
+      pagination: {
+        page: 1,
+        limit: 100,
+      },
+      role: 'student',
+      group: groupId,
+    });
 
-    const list = res?.data?.results ?? [];
+    const list = Array.isArray(res?.data)
+      ? res.data
+      : (res?.data as any)?.results ?? res?.results ?? [];
 
-    students.value = list.map((s: any) => ({
-      id: s.id_user,
-      label: s.full_name,
-    }));
+    students.value = list.map((student: any) => {
+      const firstName = student.first_name || '';
+      const lastName = student.last_name || '';
+      const fullName = student.full_name || `${firstName} ${lastName}`.trim();
 
+      return {
+        id: student.id_user,
+        label: `${student.matricula} - ${fullName}`,
+      };
+    });
   } catch (error) {
-    console.error('loadStudents error:', error);
+    console.error('loadStudentsByGroup error:', error);
     students.value = [];
   } finally {
     loadingStudents.value = false;
   }
 }
 
+async function retryGroupLoad() {
+  if (!localFilters.groupId) return;
+
+  await loadStudentsByGroup(localFilters.groupId);
+}
+
 /* =========================
-   GROUP → SUBJECTS
+   WATCH REPORT TYPE
 ========================= */
-watch(() => localFilters.groupId, async (groupId) => {
+watch(() => localFilters.reportType, () => {
+  localFilters.groupId = undefined;
   localFilters.subjectId = undefined;
   localFilters.examId = undefined;
   localFilters.studentId = undefined;
 
   subjects.value = [];
   exams.value = [];
+  students.value = [];
+  groupLoadError.value = '';
 
-  if (!groupId) return;
-
-  const group = groups.value.find(
-    (g) => Number(g.id_group) === Number(groupId)
-  );
-
-  if (!group?.assignments) return;
-
-  subjects.value = group.assignments.map((a: any) => ({
-    id: a.subject.id_subject,
-    label: a.subject.name,
-  }));
-
-  await loadStudents(groupId);
+  // Aplicar filtro de grupo si hay generación seleccionada
+  if (selectedGeneration.value) {
+    applyGroupFilter(selectedGeneration.value);
+  }
 });
 
 /* =========================
-   SUBJECT → EXAMS
+   WATCH GENERATION
+========================= */
+watch(selectedGeneration, (val) => {
+  localFilters.groupId = undefined;
+  localFilters.subjectId = undefined;
+  localFilters.examId = undefined;
+  localFilters.studentId = undefined;
+
+  subjects.value = [];
+  exams.value = [];
+  students.value = [];
+  groupLoadError.value = '';
+
+  applyGroupFilter(val);
+});
+
+/* =========================
+   WATCH GROUP ID - MAIN TRIGGER
+========================= */
+watch(() => localFilters.groupId, async (groupId) => {
+  // Limpiar los filtros dependientes
+  localFilters.subjectId = undefined;
+  localFilters.examId = undefined;
+  localFilters.studentId = undefined;
+
+  subjects.value = [];
+  exams.value = [];
+  students.value = [];
+  groupLoadError.value = '';
+
+  if (!groupId) return;
+
+  // Según el tipo de reporte, cargar los datos necesarios
+  if (showSubject.value) {
+    // by-exam o student-exam-detail necesitan materias
+    await loadSubjectsForGroup(groupId);
+  }
+
+  if (showStudent.value) {
+    // by-student o student-exam-detail cargan alumnos por grupo
+    await loadStudentsByGroup(groupId);
+  }
+});
+
+/* =========================
+   WATCH SUBJECT ID → LOAD EXAMS
 ========================= */
 watch(() => localFilters.subjectId, async (subjectId) => {
   localFilters.examId = undefined;
+  exams.value = [];
 
-  if (!subjectId) return;
+  if (!subjectId || !localFilters.groupId) {
+    exams.value = [];
+    return;
+  }
 
   await loadExams(subjectId);
 });
 
 /* =========================
-   INIT
+   INIT - Load all groups and generate years
 ========================= */
 onMounted(async () => {
   emit('loading', true);
-  await loadGenerations();
-  emit('loading', false);
+  try {
+    // Cargar todos los grupos primero
+    const res = await reportController.getGroups();
+    const list = Array.isArray(res?.data) ? res.data : [];
+
+    allGroups.value = list.map((g: any) => ({
+      id_group: g.id,
+      id_generation: g.idGeneration,
+      group_letter: g.groupLetter,
+      academic_level: g.academicLevel,
+      generation_year: g.generationYear,
+      label: g.label,
+      assignments: Array.isArray(g.assignments) ? g.assignments : [],
+    }));
+
+    // Extraer años únicos y ordenarlos
+    const years = [...new Set(allGroups.value
+      .map((g) => Number(g.generation_year))
+      .filter((y) => Number.isFinite(y)))].sort((a, b) => b - a);
+
+    generations.value = years.map((year) => ({
+      id_generation: year,
+      label: String(year),
+    }));
+
+    // Mostrar todos los grupos al inicio (sin generation seleccionada)
+    groups.value = [...allGroups.value];
+  } finally {
+    emit('loading', false);
+  }
 });
 </script>
